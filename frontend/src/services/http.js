@@ -9,6 +9,11 @@
  *   `AUTH_STORAGE_KEY` y lo adjunta como `Authorization: Bearer <token>`.
  *   El login se implementará en una fase posterior; por ahora simplemente
  *   si existe el token lo envía.
+ *
+ * Retrocompat:
+ *  - `http.get/post/put/del` mantienen la firma original (paths + body JSON).
+ *  - Se agregan helpers `downloadBlob` y `uploadForm` para flujos binarios
+ *    (descarga de plantilla XLSX / import multipart).
  */
 
 export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
@@ -85,11 +90,108 @@ async function request(path, { method = 'GET', body, headers, signal } = {}) {
   return parsed;
 }
 
+/**
+ * Extrae el nombre de archivo sugerido del header `Content-Disposition`.
+ * Soporta tanto `filename="..."` como `filename*=UTF-8''...`.
+ */
+function parseFilenameFromDisposition(disposition) {
+  if (!disposition) return null;
+  const utf8Match = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(disposition);
+  if (utf8Match && utf8Match[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim().replace(/^"|"$/g, ''));
+    } catch {
+      return utf8Match[1].trim().replace(/^"|"$/g, '');
+    }
+  }
+  const simpleMatch = /filename="?([^";]+)"?/i.exec(disposition);
+  if (simpleMatch && simpleMatch[1]) {
+    return simpleMatch[1].trim();
+  }
+  return null;
+}
+
+/**
+ * Descarga un blob desde el backend y dispara el diálogo de guardado
+ * en el navegador. Retorna `{ blob, filename }` por si el caller quiere
+ * manipular el archivo.
+ *
+ * @param {string} path          - Path relativo al API_BASE.
+ * @param {object} [options]
+ * @param {string} [options.fallbackFilename] - Nombre por defecto si el
+ *   servidor no envía `Content-Disposition`.
+ */
+async function downloadBlob(path, { fallbackFilename = 'download' } = {}) {
+  const token = getAuthToken();
+  const response = await fetch(buildUrl(path), {
+    method: 'GET',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    const parsed = await parseBody(response);
+    const message =
+      (parsed && typeof parsed === 'object' && (parsed.message || parsed.title)) ||
+      `HTTP ${response.status} en GET ${path}`;
+    throw new HttpError(message, { status: response.status, body: parsed });
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get('content-disposition');
+  const filename = parseFilenameFromDisposition(disposition) || fallbackFilename;
+
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  // Liberar el objeto en el siguiente tick para que Firefox alcance a disparar la descarga.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+
+  return { blob, filename };
+}
+
+/**
+ * Envía un `FormData` (multipart) por POST y devuelve el JSON parseado.
+ * No setea Content-Type manualmente: el navegador lo arma con el boundary.
+ *
+ * @param {string}   path
+ * @param {FormData} formData
+ */
+async function uploadForm(path, formData) {
+  const token = getAuthToken();
+  const response = await fetch(buildUrl(path), {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  const parsed = await parseBody(response);
+
+  if (!response.ok) {
+    const message =
+      (parsed && typeof parsed === 'object' && (parsed.message || parsed.title)) ||
+      `HTTP ${response.status} en POST ${path}`;
+    throw new HttpError(message, { status: response.status, body: parsed });
+  }
+
+  return parsed;
+}
+
 export const http = {
   get: (path, options) => request(path, { ...options, method: 'GET' }),
   post: (path, body, options) => request(path, { ...options, method: 'POST', body }),
   put: (path, body, options) => request(path, { ...options, method: 'PUT', body }),
   del: (path, options) => request(path, { ...options, method: 'DELETE' }),
+  downloadBlob,
+  uploadForm,
 };
 
 export default http;

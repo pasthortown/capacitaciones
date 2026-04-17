@@ -60,6 +60,10 @@ output/*
 .DS_Store
 Thumbs.db
 
+# ----- Claude Code local settings (may leak local paths) -----
+.claude/settings.local.json
+**/.claude/settings.local.json
+
 # ----- Otros -----
 *.tmp
 *.bak

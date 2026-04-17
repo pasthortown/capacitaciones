@@ -1,0 +1,65 @@
+/* Switch on/off. Toma colores del design system vía variables CSS. */
+
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3, 12px);
+  cursor: pointer;
+  user-select: none;
+}
+
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.track {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background-color: var(--color-border-main, #d1d5db);
+  border-radius: 999px;
+  transition: background-color 150ms ease-in-out;
+  flex-shrink: 0;
+}
+
+.trackOn {
+  background-color: var(--color-primary, #e4003a);
+}
+
+.trackDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 150ms ease-in-out;
+}
+
+.thumbOn {
+  transform: translateX(18px);
+}
+
+.input:focus-visible + .track {
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 228, 0, 58), 0.25);
+}
+
+.label {
+  font-size: var(--font-size-sm, 14px);
+  color: var(--color-text-primary, #111827);
+}

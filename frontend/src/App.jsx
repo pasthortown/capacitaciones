@@ -1,15 +1,23 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout.jsx';
 import HomePage from './pages/HomePage.jsx';
+import ModalidadesPage from './pages/catalogos/ModalidadesPage.jsx';
+import TiposActividadPage from './pages/catalogos/TiposActividadPage.jsx';
+import AreasPage from './pages/catalogos/AreasPage.jsx';
 
 /**
  * Rutas raíz de la aplicación.
  *
- * Placeholder de módulos pendientes (se implementarán en fases siguientes):
- *  - /catalogos      -> CRUD catálogos (Modalidad, TipoActividad, Área)
- *  - /configuracion  -> Configuración de numeración CAP-PC-REG-###
+ * Fase 1 entrega las pantallas de catálogos:
+ *   /catalogos/modalidades
+ *   /catalogos/tipos-actividad
+ *   /catalogos/areas
  *
- * `/` redirige al dashboard de capacitaciones (por ahora HomePage).
+ * `/catalogos` sin hijo redirige a `/catalogos/modalidades`.
+ *
+ * Placeholder de módulos pendientes (se implementarán en fases siguientes):
+ *  - /capacitaciones -> Dashboard de capacitaciones (fase 3).
+ *  - /configuracion  -> Numeración CAP-PC-REG-### (fase 2).
  */
 function PlaceholderPage({ titulo, descripcion }) {
   return (
@@ -39,15 +47,17 @@ export default function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<HomePage />} />
+
+        {/* Catálogos */}
         <Route
           path="/catalogos"
-          element={
-            <PlaceholderPage
-              titulo="Catálogos"
-              descripcion="Modalidad, Tipo de Actividad y Áreas."
-            />
-          }
+          element={<Navigate to="/catalogos/modalidades" replace />}
         />
+        <Route path="/catalogos/modalidades" element={<ModalidadesPage />} />
+        <Route path="/catalogos/tipos-actividad" element={<TiposActividadPage />} />
+        <Route path="/catalogos/areas" element={<AreasPage />} />
+
+        {/* Módulos pendientes */}
         <Route
           path="/capacitaciones"
           element={

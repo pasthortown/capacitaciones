@@ -1,0 +1,48 @@
+/* ============================================================
+   CAPACITACIONES — Tipografías oficiales
+   Fuentes canónicas del proyecto: se usan en la app y también
+   en los documentos generados por el servicio emisor_documentos.
+   Fuente original en /Tipografía/ del repositorio.
+   ============================================================ */
+
+/* ---------- Montserrat (texto corrido) ---------- */
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-Thin.ttf') format('truetype');               font-weight: 100; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-ThinItalic.ttf') format('truetype');         font-weight: 100; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-ExtraLight.ttf') format('truetype');         font-weight: 200; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-ExtraLightItalic.ttf') format('truetype');   font-weight: 200; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-Light.ttf') format('truetype');              font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-LightItalic.ttf') format('truetype');        font-weight: 300; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-Regular.ttf') format('truetype');            font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-Italic.ttf') format('truetype');             font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-Medium.ttf') format('truetype');             font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-MediumItalic.ttf') format('truetype');       font-weight: 500; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-SemiBold.ttf') format('truetype');           font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-SemiBoldItalic.ttf') format('truetype');     font-weight: 600; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-Bold.ttf') format('truetype');               font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-BoldItalic.ttf') format('truetype');         font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-ExtraBold.ttf') format('truetype');          font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-ExtraBoldItalic.ttf') format('truetype');    font-weight: 800; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-Black.ttf') format('truetype');              font-weight: 900; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat/Montserrat-BlackItalic.ttf') format('truetype');        font-weight: 900; font-style: italic; font-display: swap; }
+
+/* ---------- Uni Sans (títulos) ---------- */
+@font-face { font-family: 'Uni Sans'; src: url('/fonts/UniSans/UniSans-Thin.otf') format('opentype');           font-weight: 100; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Uni Sans'; src: url('/fonts/UniSans/UniSans-ThinItalic.otf') format('opentype');     font-weight: 100; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Uni Sans'; src: url('/fonts/UniSans/UniSans-Heavy.otf') format('opentype');          font-weight: 900; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Uni Sans'; src: url('/fonts/UniSans/UniSans-HeavyItalic.otf') format('opentype');    font-weight: 900; font-style: italic; font-display: swap; }
+
+/* ---------- Plus Jakarta Sans (display / auxiliar) ---------- */
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-ExtraLight.otf') format('opentype');         font-weight: 200; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-ExtraLightItalic.otf') format('opentype');   font-weight: 200; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-Light.otf') format('opentype');              font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-LightItalic.otf') format('opentype');        font-weight: 300; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-Regular.otf') format('opentype');            font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-Italic.otf') format('opentype');             font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-Medium.otf') format('opentype');             font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-MediumItalic.otf') format('opentype');       font-weight: 500; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-SemiBold.otf') format('opentype');           font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-SemiBoldItalic.otf') format('opentype');     font-weight: 600; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-Bold.otf') format('opentype');               font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-BoldItalic.otf') format('opentype');         font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-ExtraBold.otf') format('opentype');          font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans/PlusJakartaSans-ExtraBoldItalic.otf') format('opentype');    font-weight: 800; font-style: italic; font-display: swap; }

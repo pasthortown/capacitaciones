@@ -166,6 +166,20 @@ Capacitaciones/
 - Versionado semántico a partir de la primera release.
 - Ningún secreto en el repositorio.
 
+### 6.1 Tipografías oficiales
+
+Las fuentes canónicas del proyecto viven en `./Tipografía/` y son obligatorias **tanto en la aplicación web como en todo documento generado por el aplicativo** (certificados PDF, reportes, etc.). No se usan tipografías de sistema ni fuentes externas (Google Fonts, Adobe Fonts).
+
+| Rol                          | Familia                | Ubicación origen                  |
+| ---------------------------- | ---------------------- | --------------------------------- |
+| Títulos (h1..h6)             | **Uni Sans**           | `./Tipografía/Uni-Sans-Títulos/`  |
+| Texto corrido y UI           | **Montserrat**         | `./Tipografía/Montserrat-texto/`  |
+| Display / auxiliar           | **Plus Jakarta Sans**  | `./Tipografía/PlusJakartaSans/`   |
+
+**Distribución:**
+- **Frontend:** las fuentes están copiadas en `./frontend/public/fonts/{Montserrat,UniSans,PlusJakartaSans}/` con nombres ASCII-safe, y declaradas como `@font-face` en `./frontend/src/styles/fonts.css`. Los tokens `--font-family-primary`, `--font-family-heading` y `--font-family-display` se sobrescriben en `./frontend/src/styles/overrides.css`.
+- **`emisor_documentos`:** el servicio debe copiar las mismas fuentes a `./emisor_documentos/templates/fonts/` y embeberlas en el HTML del certificado via `@font-face` antes de que Puppeteer renderice. La fuente de verdad para ambas distribuciones es `./Tipografía/`.
+
 ## 7. Alcance funcional — Módulo Capacitaciones (v1)
 
 ### 7.1 Entidades de dominio
@@ -299,7 +313,7 @@ Capacitaciones/
 - **API HTTP:**
   - `POST /emitir/certificado` — body JSON con el payload del certificado (ver más abajo). Responde `201 Created` con `{ ruta: "/output/<archivo>.pdf" }`.
   - `GET /health` — healthcheck.
-- **Plantilla HTML:** archivo `templates/certificado.html` con tokens `{{asistente.nombres}}`, `{{capacitacion.tema}}`, `{{capacitacion.fecha}}`, `{{capacitacion.duracionHoras}}`, `{{capacitacion.tipoActividad}}`, `{{capacitacion.tipoCertificacion}}`, lista de firmantes (capacitador + responsables).
+- **Plantilla HTML:** archivo `templates/certificado.html` con tokens `{{asistente.nombres}}`, `{{capacitacion.tema}}`, `{{capacitacion.fecha}}`, `{{capacitacion.duracionHoras}}`, `{{capacitacion.tipoActividad}}`, `{{capacitacion.tipoCertificacion}}`, lista de firmantes (capacitador + responsables). **Tipografías obligatorias según sección 6.1** — embebidas vía `@font-face` apuntando a `./templates/fonts/`.
 - **Assets estáticos:** `templates/fondo.png` (logo DOS + borde) se inserta como background-image del `<body>`. Las firmas se incrustan como `<img src="data:image/png;base64,...">`.
 - **Volumen de salida:** `/output` dentro del contenedor, mapeado a `./output/` en el host y también montado en otros servicios que consuman los PDFs.
 
@@ -344,10 +358,12 @@ Dictado el [Fecha] con una duración de [Horas] horas.
 
 **Nombre de archivo PDF:** `{codigo}_{identificacion}.pdf` (ej. `CAP-PC-REG-001_1712345678.pdf`) dentro de `/output/`.
 
-**Assets de referencia pendientes de entrega del usuario:**
-- `certificado.png` — render visual objetivo (para calibrar posiciones y tipografías).
-- `fondo.png` — imagen de fondo usada por la plantilla HTML.
-- Ambos se colocarán en `./certificados/templates/` una vez entregados.
+**Assets de referencia entregados por el usuario (en la raíz del repo):**
+- `certificado.png` — render visual objetivo (calibración de posiciones y tipografías).
+- `fondo.png` — imagen de fondo usada por la plantilla HTML (logo DOS + borde).
+- `Formato certificado DOS.pdf` — especificación visual oficial.
+
+Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 
 ## 8. Estado actual
 

@@ -12,6 +12,7 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
@@ -23,6 +24,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Capacitaciones.Api\Capacitaciones.Api.csproj" />
+    <ProjectReference Include="..\..\src\Capacitaciones.Application\Capacitaciones.Application.csproj" />
+    <ProjectReference Include="..\..\src\Capacitaciones.Infrastructure\Capacitaciones.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

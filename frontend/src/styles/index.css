@@ -1,13 +1,16 @@
 /* ==========================================================================
    Capacitaciones - Entrada de estilos
-   Importa el design system ubicado en /style/ (fuera de /frontend).
-   Las rutas son relativas a este archivo: src/styles/index.css
-   -> ../../../style/*.css
+   Orden de import:
+     1) fonts.css      → @font-face (Montserrat, Uni Sans, Plus Jakarta Sans).
+     2) design system  → variables, base, utilidades, componentes.
+     3) overrides.css  → ajustes app-específicos (tokens de fuente).
    ========================================================================== */
+@import './fonts.css';
 @import '../../../style/variables.css';
 @import '../../../style/main.css';
 @import '../../../style/utilities.css';
 @import '../../../style/components.css';
+@import './overrides.css';
 
 /* Overrides / ajustes locales mínimos. No duplicar tokens del design system. */
 #root {
