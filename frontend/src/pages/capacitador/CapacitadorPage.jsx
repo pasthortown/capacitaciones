@@ -35,6 +35,7 @@ export default function CapacitadorPage() {
   const [error, setError] = useState('');
   const [data, setData] = useState(null);
   const [form, setForm] = useState({
+    capacitador: '',
     descripcion: '',
     firmaCapacitador: null,
     cargoCapacitador: '',
@@ -43,6 +44,7 @@ export default function CapacitadorPage() {
 
   const hydrateFromData = useCallback((dto) => {
     setForm({
+      capacitador: dto?.capacitador ?? '',
       descripcion: dto?.descripcion ?? '',
       firmaCapacitador: dto?.firmaCapacitador ?? null,
       cargoCapacitador: dto?.cargoCapacitador ?? '',
@@ -91,10 +93,18 @@ export default function CapacitadorPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (saving || !token) return;
+    const nombre = form.capacitador?.trim();
+    if (!nombre) {
+      const msg = 'El nombre del capacitador es obligatorio.';
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
     setSaving(true);
     setError('');
     try {
       const payload = {
+        capacitador: nombre,
         descripcion: form.descripcion?.trim() ? form.descripcion : null,
         firmaCapacitador: form.firmaCapacitador || null,
         cargoCapacitador: form.cargoCapacitador?.trim() ? form.cargoCapacitador : null,
@@ -215,6 +225,25 @@ export default function CapacitadorPage() {
         <section className={styles.card} aria-label="Datos del capacitador">
           <h2 className={styles.sectionTitle}>Mis datos</h2>
           <form onSubmit={handleSubmit} noValidate>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel} htmlFor="capacitador-nombre">
+                Nombre del capacitador
+              </label>
+              <input
+                id="capacitador-nombre"
+                type="text"
+                className="form-input"
+                value={form.capacitador}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, capacitador: e.target.value }))
+                }
+                placeholder="Ej. Luis Salazar"
+                disabled={saving}
+                required
+                maxLength={255}
+              />
+            </div>
+
             <div className={styles.formRow}>
               <label className={styles.formLabel} htmlFor="descripcion">
                 Descripción

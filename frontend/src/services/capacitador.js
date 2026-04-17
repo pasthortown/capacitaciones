@@ -87,11 +87,12 @@ export function getCapacitacion(token) {
 }
 
 /**
- * PUT /capacitador/capacitacion — actualiza descripción + firma + cargo + empresa.
- * Enviar siempre los 4 campos para evitar borrado accidental por omisión.
+ * PUT /capacitador/capacitacion — actualiza nombre del capacitador + descripción +
+ * firma + cargo + empresa. Enviar siempre los 5 campos para evitar borrado accidental
+ * por omisión (semántica replace del backend). `capacitador` es obligatorio (no null).
  *
  * @param {string} token
- * @param {{ descripcion?: string|null, firmaCapacitador?: string|null,
+ * @param {{ capacitador: string, descripcion?: string|null, firmaCapacitador?: string|null,
  *           cargoCapacitador?: string|null, empresaCapacitador?: string|null }} payload
  */
 export function updateCapacitacion(token, payload) {

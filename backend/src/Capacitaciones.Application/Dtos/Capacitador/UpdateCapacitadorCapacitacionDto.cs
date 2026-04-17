@@ -17,6 +17,13 @@ namespace Capacitaciones.Application.Dtos.Capacitador;
 /// </summary>
 public class UpdateCapacitadorCapacitacionDto
 {
+    /// <summary>
+    /// Nombre del capacitador — obligatorio. El capacitador puede corregir errores que el
+    /// admin haya cometido al crearlo. Si se envía <c>null</c> o cadena vacía el caso de uso
+    /// rechaza la operación.
+    /// </summary>
+    public string? Capacitador { get; set; }
+
     public string? Descripcion { get; set; }
 
     /// <summary>Base64 de la firma (data URL aceptada). Se guarda tal cual.</summary>

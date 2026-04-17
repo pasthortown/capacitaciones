@@ -43,6 +43,15 @@ public class ActualizarCapacitadorCapacitacionUseCase
             throw new CapacitadorForbiddenException("La capacitación está inactiva.");
         }
 
+        // Nombre del capacitador: obligatorio. Se permite editarlo para corregir errores
+        // del admin (el capacitador desde su link firmado puede rectificar su propio nombre).
+        var capacitadorNombre = input.Capacitador?.Trim();
+        if (string.IsNullOrEmpty(capacitadorNombre))
+        {
+            throw new CapacitadorForbiddenException("El nombre del capacitador es obligatorio.");
+        }
+        entity.Capacitador = capacitadorNombre;
+
         // Replace semántica — si el cliente envía un valor, se aplica tal cual (con Trim).
         // Si queda vacío → null. Si envía null explícito → queda null.
         entity.Descripcion = NormalizeEmptyToNull(input.Descripcion);

@@ -1,0 +1,62 @@
+.wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.7fr) minmax(0, 0.7fr);
+  gap: var(--spacing-2);
+  align-items: stretch;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.caption {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.control {
+  width: 100%;
+  height: var(--input-height-md, 40px);
+  padding: 0 var(--spacing-4);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-paper);
+  border: 1px solid var(--color-border-main);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  appearance: none;
+}
+
+.control:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+}
+
+.select {
+  composes: control;
+  padding-right: var(--spacing-8, 32px);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='%236B7280'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-3) center;
+  background-size: 20px;
+}
+
+.date {
+  composes: control;
+}
+
+.hasError .control {
+  border-color: var(--color-danger, #dc2626);
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    grid-template-columns: 1fr;
+  }
+}

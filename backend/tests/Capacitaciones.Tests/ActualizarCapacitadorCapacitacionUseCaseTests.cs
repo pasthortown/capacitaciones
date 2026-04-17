@@ -46,12 +46,14 @@ public class ActualizarCapacitadorCapacitacionUseCaseTests
         var antesUtc = DateTime.UtcNow;
         var dto = await useCase.ExecuteAsync(entity.Id, new UpdateCapacitadorCapacitacionDto
         {
+            Capacitador = "Ana Corregida",
             Descripcion = "nueva descripcion",
             CargoCapacitador = "Nuevo Cargo",
             EmpresaCapacitador = "Nueva Empresa",
             FirmaCapacitador = "data:image/png;base64,ZZ=="
         });
 
+        Assert.Equal("Ana Corregida", entity.Capacitador);
         Assert.Equal("nueva descripcion", entity.Descripcion);
         Assert.Equal("Nuevo Cargo", entity.CargoCapacitador);
         Assert.Equal("Nueva Empresa", entity.EmpresaCapacitador);
@@ -76,6 +78,7 @@ public class ActualizarCapacitadorCapacitacionUseCaseTests
 
         await useCase.ExecuteAsync(entity.Id, new UpdateCapacitadorCapacitacionDto
         {
+            Capacitador = "Ana",        // obligatorio
             Descripcion = "   ",       // solo whitespace
             CargoCapacitador = "",      // string vacío
             EmpresaCapacitador = "\t\n", // whitespace mixto
@@ -97,11 +100,14 @@ public class ActualizarCapacitadorCapacitacionUseCaseTests
 
         await useCase.ExecuteAsync(entity.Id, new UpdateCapacitadorCapacitacionDto
         {
+            Capacitador = "  Ana  ",
             Descripcion = "  desc con espacios  ",
             CargoCapacitador = "  Coordinador ",
             EmpresaCapacitador = " DOS ",
             FirmaCapacitador = "  data:image/png;base64,AAA==  "
         });
+
+        Assert.Equal("Ana", entity.Capacitador);
 
         Assert.Equal("desc con espacios", entity.Descripcion);
         Assert.Equal("Coordinador", entity.CargoCapacitador);

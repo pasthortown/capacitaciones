@@ -3,6 +3,7 @@ import { ChevronUp, ChevronDown, Trash2, Plus, AlertTriangle } from 'lucide-reac
 import Modal from '../Modal/Modal.jsx';
 import TextField from '../Forms/TextField.jsx';
 import Spinner from '../Spinner/Spinner.jsx';
+import DateTimePicker from '../DateTimePicker/DateTimePicker.jsx';
 import { useToast } from '../Toast/useToast.js';
 import catalogosService from '../../services/catalogos.js';
 import responsablesService from '../../services/responsables.js';
@@ -429,17 +430,16 @@ export default function CapacitacionFormModal({
               <label className={styles.smallLabel} data-required="true" htmlFor="fecha-hora-inicio">
                 Fecha y hora de inicio
               </label>
-              <input
+              <DateTimePicker
                 id="fecha-hora-inicio"
-                type="datetime-local"
-                className={styles.select}
-                style={{ backgroundImage: 'none', paddingRight: 'var(--spacing-4)' }}
                 value={fechaHoraInicio}
-                onChange={(e) => {
-                  setFechaHoraInicio(e.target.value);
+                onChange={(v) => {
+                  setFechaHoraInicio(v);
                   if (errors.fechaHoraInicio)
                     setErrors((er) => ({ ...er, fechaHoraInicio: undefined }));
                 }}
+                minuteStep={30}
+                hasError={Boolean(errors.fechaHoraInicio)}
               />
               {errors.fechaHoraInicio && (
                 <div className={styles.errorText}>{errors.fechaHoraInicio}</div>
