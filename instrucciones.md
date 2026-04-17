@@ -69,7 +69,7 @@ Sistema de registro y gestión de capacitaciones. El equipo está compuesto por 
 | --------------- | --------------- | --------------- |
 | nginx (front)   | 192.168.56.10   | 80              |
 | backend (.NET)  | 192.168.56.11   | 8080            |
-| sqlserver       | 192.168.56.12   | 1433            |
+| sqlserver (Express) | 192.168.56.12 | 1433          |
 | sonarqube       | 192.168.56.13   | 9000            |
 | sonar-db (pg)   | 192.168.56.14   | 5432            |
 | owasp-zap       | 192.168.56.15   | 8090            |
@@ -80,7 +80,7 @@ Sistema de registro y gestión de capacitaciones. El equipo está compuesto por 
   - `nginx.conf` y `default.conf` — configuración del sitio, SPA fallback (`try_files $uri /index.html`), proxy `/api` → backend.
   - Volumen `/html` montado donde el agente Frontend coloca el build.
 - Carpeta `infra/backend/Dockerfile` — multistage build .NET 8.
-- Carpeta `infra/sqlserver/` — imagen oficial `mcr.microsoft.com/mssql/server:2022-latest`, volumen persistente para datos.
+- Carpeta `infra/sqlserver/` — imagen oficial `mcr.microsoft.com/mssql/server:2022-latest` con `MSSQL_PID=Express` (última versión en edición **Express**), volumen persistente para datos.
 - Carpeta `infra/sonarqube/` — compose parcial con PostgreSQL para Sonar.
 - Carpeta `infra/zap/` — configuración de escaneo OWASP ZAP.
 - Variables sensibles en `.env` (no versionado); plantilla `.env.example` sí versionada.
@@ -161,16 +161,19 @@ Capacitaciones/
 
 **Capacitacion**
 - `Id` (GUID)
-- `Codigo` — formato `CAP-PC-REG-##` (generado por contador, ver 7.4).
+- `Codigo` — formato `CAP-PC-REG-###` con **3 dígitos fijos** (generado por contador, ver 7.4).
 - `Tema` (string, requerido)
-- `CapacitadorId` → Capacitador (al menos nombre; se amplía si se requiere catálogo aparte)
+- `Capacitador` (**varchar(255), texto libre** — no es catálogo)
 - `ModalidadId` → Catálogo Modalidad
 - `TipoActividadId` → Catálogo TipoActividad
 - `FechaHoraInicio` (datetime)
-- `DuracionMinutos` (int) — *(unidad por confirmar)*
-- `Descripcion` (string, nullable) — la carga el capacitador vía link compartido
+- `DuracionMinutos` (int) — múltiplo de **30 min**. El UI captura horas y minutos con steps de 30.
+- `Descripcion` (string, nullable) — la carga el capacitador vía link firmado
 - `FirmaCapacitador` (blob/base64, nullable) — dibujada o cargada
-- `Finalizada` (bool, derivado o manual — por confirmar)
+- `Estado` (derivado, no persistido — calculado en backend a partir del reloj):
+  - `Inscripciones Abiertas` — desde su creación hasta `FechaHoraInicio`.
+  - `Iniciada` — entre `FechaHoraInicio` y `FechaHoraInicio + DuracionMinutos`.
+  - `Finalizada` — después de `FechaHoraInicio + DuracionMinutos`.
 
 **Catálogos administrables (todos con CRUD + import/export XLSX):**
 - `Modalidad` — seed: *Presencial, Virtual, Híbrida*
@@ -193,7 +196,7 @@ Capacitaciones/
    - Título: tema de la capacitación.
    - Línea 2: icono persona + nombre del capacitador.
    - Línea 3: fecha, hora inicio, duración, modalidad.
-   - Línea 4: N° de asistentes inscritos + estado (finalizada / pendiente).
+   - Línea 4: N° de asistentes inscritos + estado (`Inscripciones Abiertas` / `Iniciada` / `Finalizada`).
    - Lado derecho del card: acciones
      - **Link capacitador** (copia URL firmada para que el capacitador cargue descripción + firma).
      - **Asistentes** (abre vista de listado de inscritos).
@@ -231,13 +234,22 @@ Capacitaciones/
   - Cumplimiento exitoso del formulario (submit correcto).
 - **Email en inscripción:** el input visible capta solo el usuario; el dominio `@dos.com.ec` se concatena en backend. El UI muestra el sufijo como addon no editable.
 - **Firma:** componente reutilizable `SignaturePad` con dos modos: dibujar (canvas) o cargar archivo (PNG/JPG).
+- **Duración:** se ingresa como `horas` + `minutos` con **step de 30 minutos** (minutos válidos: `0` o `30`). Persistencia en `DuracionMinutos`.
 
-### 7.4 Generación de código `CAP-PC-REG-##`
+### 7.3.1 Autenticación y autorización
 
-- Se mantiene un contador persistente (`ConfiguracionNumeracion` o similar) con el próximo número a usar.
-- La pantalla de configuración permite fijar ese contador (solo si no rompe unicidad — validar que sea mayor al máximo actual, o permitir reset con confirmación).
-- Al crear capacitación, el backend toma y avanza el contador en una transacción para evitar colisiones.
-- *A confirmar:* padding de `##` (¿dos dígitos fijos o crece dinámicamente?).
+- **Panel administrativo (admin):** requiere **login**. Cubre gestión de catálogos, capacitaciones, configuración de numeración y listado de asistentes.
+- **Link del capacitador:** URL con token firmado (JWT o similar) — sin login. Permite cargar descripción y firma de la capacitación asignada.
+- **Link público de inscripción:** URL con token firmado — sin login. Permite a los asistentes registrarse.
+- Los tokens deben ser específicos por recurso (capacitación) y revocables.
+
+### 7.4 Generación de código `CAP-PC-REG-###`
+
+- Formato: prefijo fijo `CAP-PC-REG-` + **3 dígitos con ceros a la izquierda** (`001`…`999`).
+- Se mantiene un contador persistente (`ConfiguracionNumeracion`) con el próximo número a usar.
+- La pantalla de configuración permite fijar ese contador (validar que sea mayor al máximo actual, o permitir reset con confirmación explícita).
+- Al crear una capacitación, el backend toma y avanza el contador en una **transacción** para evitar colisiones.
+- Al llegar a `999`, el sistema deberá avisar (política de rollover a definir en futura versión).
 
 ### 7.5 Import/Export XLSX de catálogos
 
@@ -274,11 +286,13 @@ Capacitaciones/
 | 6    | Pasada de calidad y seguridad (Sonar + ZAP)                  | Security                 |
 | 7    | Versionado Git + primer push                                 | PM                       |
 
-## 10. Decisiones pendientes antes de Fase 1
+## 10. Decisiones tomadas (v1)
 
-1. **Unidad de duración:** ¿minutos u horas decimales? (sugerencia PM: minutos).
-2. **Padding del código:** `CAP-PC-REG-01` (2 dígitos fijos) vs `CAP-PC-REG-1` (crece). Sugerencia PM: 3 dígitos `001` para crecer sin romper el formato.
-3. **Autenticación:** ¿necesitamos login para el panel admin en esta v1 o queda abierto dentro de la red interna? Los links de capacitador y de inscripción sí serán tokens firmados sin login.
-4. **Capacitador:** ¿texto libre por ahora o se convierte en catálogo administrable (personas)?
-5. **"Finalizada":** ¿se marca manualmente o se infiere al pasar `FechaHoraInicio + Duracion`?
-6. **SQL Server edición:** Developer (gratis) para dev local — OK por defecto.
+| # | Tema               | Resolución                                                                                     |
+| - | ------------------ | ---------------------------------------------------------------------------------------------- |
+| 1 | Duración           | `DuracionMinutos` múltiplo de 30; UI con inputs de horas y minutos, step de 30.                |
+| 2 | Código             | `CAP-PC-REG-###` con 3 dígitos fijos (`001`…`999`).                                            |
+| 3 | Autenticación      | Login obligatorio para admin. Capacitador e inscripción pública por link con token firmado.    |
+| 4 | Capacitador        | Texto libre — `varchar(255)`. No es catálogo.                                                  |
+| 5 | Estado             | Derivado: `Inscripciones Abiertas` → `Iniciada` (al `FechaHoraInicio`) → `Finalizada` (al fin).|
+| 6 | SQL Server         | Imagen `mcr.microsoft.com/mssql/server:2022-latest` con `MSSQL_PID=Express`.                   |
