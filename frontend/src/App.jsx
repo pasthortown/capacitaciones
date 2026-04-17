@@ -2,8 +2,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import CapacitacionesPage from './pages/capacitaciones/CapacitacionesPage.jsx';
-import AsistentesPage from './pages/capacitaciones/AsistentesPage.jsx';
+import AsistentesPage from './pages/asistentes/AsistentesPage.jsx';
 import CapacitadorPage from './pages/capacitador/CapacitadorPage.jsx';
+import InscripcionPage from './pages/inscripcion/InscripcionPage.jsx';
 import ModalidadesPage from './pages/catalogos/ModalidadesPage.jsx';
 import TiposActividadPage from './pages/catalogos/TiposActividadPage.jsx';
 import AreasPage from './pages/catalogos/AreasPage.jsx';
@@ -54,6 +55,7 @@ export default function App() {
       {/* Públicas (sin sidebar / sin guard admin) */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/capacitador" element={<CapacitadorPage />} />
+      <Route path="/inscripcion" element={<InscripcionPage />} />
 
       {/* Protegidas */}
       <Route element={<ProtectedRoute />}>

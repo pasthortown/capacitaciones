@@ -1,0 +1,35 @@
+.badgeSpacer {
+  margin-left: var(--spacing-3, 12px);
+  display: inline-flex;
+  align-items: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--spacing-3, 12px);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  border-radius: var(--radius-full, 9999px);
+  white-space: nowrap;
+}
+
+.badgeOpen {
+  background-color: var(--color-info-bg, #DBEAFE);
+  color: var(--color-info-text, #1E40AF);
+}
+
+.badgeStarted {
+  background-color: var(--color-warning-bg, #FEF3C7);
+  color: var(--color-warning-text, #92400E);
+}
+
+.badgeFinished {
+  background-color: var(--color-success-bg, #DCFCE7);
+  color: var(--color-success-text, #166534);
+}
+
+.badgeInactive {
+  background-color: var(--color-bg-main, #f3f4f6);
+  color: var(--color-text-secondary, #6b7280);
+}

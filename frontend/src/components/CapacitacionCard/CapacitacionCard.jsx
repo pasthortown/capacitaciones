@@ -12,7 +12,10 @@ import {
 } from 'lucide-react';
 import { useToast } from '../Toast/useToast.js';
 import { formatFechaHora, formatDuracion } from '../../utils/formatters.js';
-import { generateLinkCapacitador } from '../../services/capacitaciones.js';
+import {
+  generateLinkCapacitador,
+  generateLinkInscripcion,
+} from '../../services/capacitaciones.js';
 import styles from './CapacitacionCard.module.css';
 
 /**
@@ -31,6 +34,7 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
   const toast = useToast();
 
   const [generandoLink, setGenerandoLink] = useState(false);
+  const [generandoInscripcion, setGenerandoInscripcion] = useState(false);
 
   const {
     id,
@@ -96,13 +100,22 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
   };
 
   const handleCopyInscripcionLink = async () => {
-    // TODO Fase 5: sustituir por URL firmada emitida por el backend.
-    const url = `${window.location.origin}/inscripcion/${id}`;
+    if (!id || generandoInscripcion) return;
+    setGenerandoInscripcion(true);
     try {
-      await copyToClipboard(url);
-      toast.success('Enlace copiado');
-    } catch {
-      toast.error('No se pudo copiar el enlace.');
+      const { url, expiresAt } = await generateLinkInscripcion(id);
+      const fullUrl = `${window.location.origin}${url}`;
+      await copyToClipboard(fullUrl);
+      const fecha = formatExpiresAt(expiresAt);
+      toast.success(
+        fecha
+          ? `Enlace de inscripción copiado (expira: ${fecha})`
+          : 'Enlace de inscripción copiado',
+      );
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo generar el enlace de inscripción.');
+    } finally {
+      setGenerandoInscripcion(false);
     }
   };
 
@@ -169,6 +182,7 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
             type="button"
             className={styles.iconBtn}
             onClick={handleCopyInscripcionLink}
+            disabled={generandoInscripcion}
             title="Copiar enlace de inscripción"
             aria-label="Copiar enlace de inscripción"
           >

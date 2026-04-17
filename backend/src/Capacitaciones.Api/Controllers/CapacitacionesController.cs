@@ -1,6 +1,7 @@
 using Capacitaciones.Application.Dtos.Capacitaciones;
 using Capacitaciones.Application.UseCases.Capacitaciones;
 using Capacitaciones.Application.UseCases.Capacitador;
+using Capacitaciones.Application.UseCases.Inscripcion;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -25,6 +26,7 @@ public class CapacitacionesController : ControllerBase
     private readonly EditarCapacitacionUseCase _editar;
     private readonly EliminarCapacitacionUseCase _eliminar;
     private readonly GenerarLinkCapacitadorUseCase _generarLinkCapacitador;
+    private readonly GenerarLinkInscripcionUseCase _generarLinkInscripcion;
 
     public CapacitacionesController(
         ListarCapacitacionesUseCase listar,
@@ -32,7 +34,8 @@ public class CapacitacionesController : ControllerBase
         CrearCapacitacionUseCase crear,
         EditarCapacitacionUseCase editar,
         EliminarCapacitacionUseCase eliminar,
-        GenerarLinkCapacitadorUseCase generarLinkCapacitador)
+        GenerarLinkCapacitadorUseCase generarLinkCapacitador,
+        GenerarLinkInscripcionUseCase generarLinkInscripcion)
     {
         _listar = listar;
         _obtener = obtener;
@@ -40,6 +43,7 @@ public class CapacitacionesController : ControllerBase
         _editar = editar;
         _eliminar = eliminar;
         _generarLinkCapacitador = generarLinkCapacitador;
+        _generarLinkInscripcion = generarLinkInscripcion;
     }
 
     [HttpGet]
@@ -137,11 +141,34 @@ public class CapacitacionesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Fase 5: genera un link firmado (JWT role=Inscripcion) para el formulario público de inscripción.
+    /// Cada invocación emite un token NUEVO que convive con los anteriores hasta expirar (no hay lista negra).
+    /// </summary>
+    [HttpPost("{id:guid}/link-inscripcion")]
+    public async Task<IActionResult> GenerarLinkInscripcion(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var dto = await _generarLinkInscripcion.ExecuteAsync(id, ct);
+            return Ok(dto);
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CapacitacionServiceException ex)
+        {
+            return ToProblem(ex);
+        }
+    }
+
     private static ObjectResult ToProblem(CapacitacionServiceException ex)
     {
         var status = ex.Codigo switch
         {
             "NOT_FOUND" => StatusCodes.Status404NotFound,
+            "CAPACITACION_INACTIVA" => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status400BadRequest
         };
         return new ObjectResult(new { error = ex.Codigo, message = ex.Message }) { StatusCode = status };

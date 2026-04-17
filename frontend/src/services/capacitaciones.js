@@ -83,6 +83,22 @@ export function generateLinkCapacitador(id) {
   return http.post(`${BASE}/${id}/link-capacitador`);
 }
 
+/**
+ * Genera (o regenera) el link firmado para la página pública de inscripción.
+ *
+ * POST /api/capacitaciones/{id}/link-inscripcion
+ *   → 200 { url, token, expiresAt }
+ *
+ * `url` es relativa (ej. `/inscripcion?token=...`). El caller la
+ * concatena con `window.location.origin` para obtener la URL completa.
+ *
+ * @param {string} id
+ * @returns {Promise<{ url: string, token: string, expiresAt: string }>}
+ */
+export function generateLinkInscripcion(id) {
+  return http.post(`${BASE}/${id}/link-inscripcion`);
+}
+
 export default {
   listCapacitaciones,
   getCapacitacion,
@@ -90,4 +106,5 @@ export default {
   updateCapacitacion,
   deleteCapacitacion,
   generateLinkCapacitador,
+  generateLinkInscripcion,
 };

@@ -33,4 +33,14 @@ public interface IJwtTokenGenerator
     /// TTL por defecto: 90 días (configurable vía <c>Jwt:CapacitadorTokenDias</c>).
     /// </summary>
     JwtTokenResult GenerateCapacitadorToken(Guid capacitacionId);
+
+    /// <summary>
+    /// Emite un JWT para el link público de inscripción (Fase 5).
+    /// Claims: <c>sub</c> = capacitacionId, <c>role</c> = "Inscripcion",
+    /// <c>scope</c> = "inscripcion", <c>cid</c> = capacitacionId.
+    /// TTL por defecto: 90 días (configurable vía <c>Jwt:InscripcionTokenDias</c>).
+    /// Se mantiene separado del token de capacitador para que las policies de autorización
+    /// sean excluyentes (un link de inscripción no puede llamar endpoints del capacitador).
+    /// </summary>
+    JwtTokenResult GenerateInscripcionToken(Guid capacitacionId);
 }

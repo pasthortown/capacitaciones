@@ -68,6 +68,26 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     /// </summary>
     public JwtTokenResult GenerateCapacitadorToken(Guid capacitacionId)
     {
+        var dias = _options.CapacitadorTokenDias > 0 ? _options.CapacitadorTokenDias : 90;
+        return GenerateResourceToken(capacitacionId, role: "Capacitador", scope: "capacitador", dias: dias);
+    }
+
+    /// <summary>
+    /// Emite un JWT para el link público de inscripción (Fase 5). Firma con el mismo secret/issuer/audience;
+    /// la policy "Inscripcion" distingue por el claim <c>role</c>.
+    /// </summary>
+    public JwtTokenResult GenerateInscripcionToken(Guid capacitacionId)
+    {
+        var dias = _options.InscripcionTokenDias > 0 ? _options.InscripcionTokenDias : 90;
+        return GenerateResourceToken(capacitacionId, role: "Inscripcion", scope: "inscripcion", dias: dias);
+    }
+
+    /// <summary>
+    /// Helper compartido por los tokens de capacitador/inscripción: ambos firman un recurso
+    /// (capacitacionId) con los claims <c>sub/cid</c> + <c>role</c> + <c>scope</c>.
+    /// </summary>
+    private JwtTokenResult GenerateResourceToken(Guid capacitacionId, string role, string scope, int dias)
+    {
         if (capacitacionId == Guid.Empty)
             throw new ArgumentException("capacitacionId requerido", nameof(capacitacionId));
 
@@ -77,7 +97,6 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         }
 
         var now = DateTime.UtcNow;
-        var dias = _options.CapacitadorTokenDias > 0 ? _options.CapacitadorTokenDias : 90;
         var expires = now.AddDays(dias);
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
@@ -87,8 +106,8 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, cid),
-            new(ClaimTypes.Role, "Capacitador"),
-            new("scope", "capacitador"),
+            new(ClaimTypes.Role, role),
+            new("scope", scope),
             new("cid", cid),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };

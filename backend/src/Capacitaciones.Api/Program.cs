@@ -1,11 +1,13 @@
 using System.Text;
 using Capacitaciones.Application.Ports;
 using Capacitaciones.Application.UseCases.Admin;
+using Capacitaciones.Application.UseCases.Asistentes;
 using Capacitaciones.Application.UseCases.Auth;
 using Capacitaciones.Application.UseCases.Capacitaciones;
 using Capacitaciones.Application.UseCases.Capacitador;
 using Capacitaciones.Application.UseCases.Catalogos;
 using Capacitaciones.Application.UseCases.Configuracion;
+using Capacitaciones.Application.UseCases.Inscripcion;
 using Capacitaciones.Domain.Entities;
 using Capacitaciones.Infrastructure.Adapters.Xlsx;
 using Capacitaciones.Infrastructure.Persistence;
@@ -128,6 +130,8 @@ builder.Services.AddAuthorization(o =>
     // Policy Fase 4: el token del capacitador trae claim role=Capacitador (emitido por
     // IJwtTokenGenerator.GenerateCapacitadorToken). El controller valida además el claim cid.
     o.AddPolicy("Capacitador", p => p.RequireRole("Capacitador"));
+    // Policy Fase 5: token del link público de inscripción (role=Inscripcion).
+    o.AddPolicy("Inscripcion", p => p.RequireRole("Inscripcion"));
 });
 
 // Repositorios (adaptadores EF Core).
@@ -137,6 +141,7 @@ builder.Services.AddScoped<IAreaRepository, AreaRepository>();
 builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
 builder.Services.AddScoped<IConfiguracionNumeracionRepository, ConfiguracionNumeracionRepository>();
 builder.Services.AddScoped<ICapacitacionRepository, CapacitacionRepository>();
+builder.Services.AddScoped<IAsistenteRepository, AsistenteRepository>();
 
 // También registramos el puerto genérico ICatalogoRepository<T> para que el CatalogoService<T>
 // pueda resolverlo directamente sin acoplarse a los puertos específicos.
@@ -168,6 +173,13 @@ builder.Services.AddScoped<EliminarCapacitacionUseCase>();
 builder.Services.AddScoped<GenerarLinkCapacitadorUseCase>();
 builder.Services.AddScoped<ObtenerCapacitacionCapacitadorUseCase>();
 builder.Services.AddScoped<ActualizarCapacitadorCapacitacionUseCase>();
+
+// Fase 5 — flujo público de inscripción + listado admin de asistentes + stub certificado.
+builder.Services.AddScoped<GenerarLinkInscripcionUseCase>();
+builder.Services.AddScoped<ObtenerInscripcionPublicaUseCase>();
+builder.Services.AddScoped<InscribirAsistenteUseCase>();
+builder.Services.AddScoped<ListarAsistentesUseCase>();
+builder.Services.AddScoped<DescargarCertificadoUseCase>();
 
 // Servicio de numeración (consumido en Fase 3).
 builder.Services.AddScoped<INumeracionService, NumeracionService>();

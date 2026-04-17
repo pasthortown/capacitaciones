@@ -21,4 +21,12 @@ public class JwtOptions
     /// Default: 90 días.
     /// </summary>
     public int CapacitadorTokenDias { get; set; } = 90;
+
+    /// <summary>
+    /// TTL (en días) del token de inscripción pública emitido por el admin (Fase 5).
+    /// Default: 90 días. Mismo valor por defecto que el de capacitador porque ambos links
+    /// se distribuyen a personas externas y suelen permanecer activos durante todo el ciclo
+    /// de la capacitación.
+    /// </summary>
+    public int InscripcionTokenDias { get; set; } = 90;
 }
