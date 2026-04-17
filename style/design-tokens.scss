@@ -1,0 +1,261 @@
+// ==========================================================================
+// MaxPoint BackOffice - SCSS Variables
+// Sistema de gestion KFC - Design System
+//
+// Archivo de variables SCSS/Sass para usar con preprocesadores
+// ==========================================================================
+
+// ========================================
+// COLORS - Primary
+// ========================================
+$color-primary: #E31837;
+$color-primary-light: #FF4D5E;
+$color-primary-dark: #B8132C;
+$color-primary-contrast: #FFFFFF;
+
+// ========================================
+// COLORS - Secondary
+// ========================================
+$color-secondary: #1A1A2E;
+$color-secondary-light: #2D3748;
+$color-secondary-dark: #0F0F1A;
+
+// ========================================
+// COLORS - Background
+// ========================================
+$color-bg-main: #F0EEF5;
+$color-bg-paper: #FFFFFF;
+$color-bg-sidebar: #FFFFFF;
+$color-bg-sidebar-hover: #F8F7FC;
+$color-bg-sidebar-active: #F5E6E8;
+
+// ========================================
+// COLORS - Text
+// ========================================
+$color-text-primary: #1A1A2E;
+$color-text-secondary: #6B7280;
+$color-text-disabled: #9CA3AF;
+$color-text-inverse: #FFFFFF;
+
+// ========================================
+// COLORS - Border
+// ========================================
+$color-border-light: #E5E7EB;
+$color-border-main: #D1D5DB;
+$color-border-dark: #9CA3AF;
+
+// ========================================
+// COLORS - Status
+// ========================================
+// Published / Publicado
+$color-status-published-bg: #DEF7EC;
+$color-status-published-text: #03543F;
+$color-status-published-border: #84E1BC;
+
+// Editing / Editando
+$color-status-editing-bg: #FEF3C7;
+$color-status-editing-text: #92400E;
+$color-status-editing-border: #FCD34D;
+
+// Draft / Borrador
+$color-status-draft-bg: #FFEDD5;
+$color-status-draft-text: #9A3412;
+$color-status-draft-border: #FDBA74;
+
+// Inactive / Inactivo
+$color-status-inactive-bg: #F3F4F6;
+$color-status-inactive-text: #4B5563;
+$color-status-inactive-border: #D1D5DB;
+
+// Blocked / Bloqueado
+$color-status-blocked-bg: #FEE2E2;
+$color-status-blocked-text: #991B1B;
+$color-status-blocked-border: #FCA5A5;
+
+// Active / Activo
+$color-status-active-bg: #D1FAE5;
+$color-status-active-text: #065F46;
+$color-status-active-border: #6EE7B7;
+
+// ========================================
+// COLORS - Semantic
+// ========================================
+$color-info: #3B82F6;
+$color-info-bg: #EFF6FF;
+$color-info-text: #1E40AF;
+$color-info-border: #93C5FD;
+
+$color-success: #10B981;
+$color-success-bg: #D1FAE5;
+$color-success-text: #065F46;
+
+$color-warning: #F59E0B;
+$color-warning-bg: #FEF3C7;
+$color-warning-text: #92400E;
+
+$color-error: #EF4444;
+$color-error-bg: #FEE2E2;
+$color-error-text: #991B1B;
+
+// ========================================
+// TYPOGRAPHY
+// ========================================
+$font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-family-mono: 'Fira Code', 'Consolas', monospace;
+
+// Font Sizes
+$font-size-xs: 0.75rem;    // 12px
+$font-size-sm: 0.875rem;   // 14px
+$font-size-base: 1rem;     // 16px
+$font-size-lg: 1.125rem;   // 18px
+$font-size-xl: 1.25rem;    // 20px
+$font-size-2xl: 1.5rem;    // 24px
+$font-size-3xl: 1.875rem;  // 30px
+$font-size-4xl: 2.25rem;   // 36px
+
+// Font Weights
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+// Line Heights
+$line-height-tight: 1.25;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.75;
+
+// ========================================
+// SPACING
+// ========================================
+$spacing-0: 0;
+$spacing-1: 0.25rem;   // 4px
+$spacing-2: 0.5rem;    // 8px
+$spacing-3: 0.75rem;   // 12px
+$spacing-4: 1rem;      // 16px
+$spacing-5: 1.25rem;   // 20px
+$spacing-6: 1.5rem;    // 24px
+$spacing-8: 2rem;      // 32px
+$spacing-10: 2.5rem;   // 40px
+$spacing-12: 3rem;     // 48px
+$spacing-16: 4rem;     // 64px
+$spacing-20: 5rem;     // 80px
+$spacing-24: 6rem;     // 96px
+
+// ========================================
+// BORDER RADIUS
+// ========================================
+$radius-none: 0;
+$radius-sm: 0.25rem;   // 4px
+$radius-md: 0.5rem;    // 8px
+$radius-lg: 0.75rem;   // 12px
+$radius-xl: 1rem;      // 16px
+$radius-2xl: 1.5rem;   // 24px
+$radius-full: 9999px;
+
+// ========================================
+// SHADOWS
+// ========================================
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+$shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+$shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+// ========================================
+// TRANSITIONS
+// ========================================
+$transition-fast: 150ms ease-in-out;
+$transition-normal: 250ms ease-in-out;
+$transition-slow: 350ms ease-in-out;
+
+// ========================================
+// BREAKPOINTS
+// ========================================
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-2xl: 1536px;
+
+// ========================================
+// Z-INDEX
+// ========================================
+$z-dropdown: 1000;
+$z-sticky: 1020;
+$z-fixed: 1030;
+$z-modal-backdrop: 1040;
+$z-modal: 1050;
+$z-popover: 1060;
+$z-tooltip: 1070;
+
+// ========================================
+// COMPONENT SIZES
+// ========================================
+// Sidebar
+$sidebar-width: 240px;
+$sidebar-width-collapsed: 64px;
+
+// Header
+$header-height: 64px;
+
+// Buttons
+$btn-height-sm: 32px;
+$btn-height-md: 40px;
+$btn-height-lg: 48px;
+
+// Inputs
+$input-height-sm: 32px;
+$input-height-md: 40px;
+$input-height-lg: 48px;
+
+// Table
+$table-row-height: 52px;
+$table-header-height: 48px;
+
+// ========================================
+// MAPS (for loops and functions)
+// ========================================
+$colors: (
+  'primary': $color-primary,
+  'secondary': $color-secondary,
+  'success': $color-success,
+  'warning': $color-warning,
+  'error': $color-error,
+  'info': $color-info
+);
+
+$spacings: (
+  0: $spacing-0,
+  1: $spacing-1,
+  2: $spacing-2,
+  3: $spacing-3,
+  4: $spacing-4,
+  5: $spacing-5,
+  6: $spacing-6,
+  8: $spacing-8,
+  10: $spacing-10,
+  12: $spacing-12,
+  16: $spacing-16,
+  20: $spacing-20,
+  24: $spacing-24
+);
+
+$font-sizes: (
+  'xs': $font-size-xs,
+  'sm': $font-size-sm,
+  'base': $font-size-base,
+  'lg': $font-size-lg,
+  'xl': $font-size-xl,
+  '2xl': $font-size-2xl,
+  '3xl': $font-size-3xl,
+  '4xl': $font-size-4xl
+);
+
+$breakpoints: (
+  'sm': $breakpoint-sm,
+  'md': $breakpoint-md,
+  'lg': $breakpoint-lg,
+  'xl': $breakpoint-xl,
+  '2xl': $breakpoint-2xl
+);

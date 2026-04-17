@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaxPoint BackOffice - Design System Example</title>
+
+  <!-- Google Fonts - Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="main.css">
+
+  <style>
+    /* Page specific styles */
+    .demo-content {
+      padding: var(--spacing-6);
+    }
+    .example-section {
+      margin-bottom: var(--spacing-8);
+      padding: var(--spacing-6);
+      background-color: var(--color-bg-paper);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-card);
+    }
+    .example-section__title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--spacing-4);
+      padding-bottom: var(--spacing-3);
+      border-bottom: 2px solid var(--color-primary);
+    }
+    .example-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: var(--spacing-3);
+    }
+    .color-swatch {
+      padding: var(--spacing-3);
+      border-radius: var(--radius-md);
+      text-align: center;
+      font-size: var(--font-size-xs);
+    }
+    .component-demo {
+      padding: var(--spacing-4);
+      background-color: var(--color-bg-main);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-4);
+    }
+    .component-demo:last-child {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Layout Container -->
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="layout__sidebar">
+      <nav class="sidebar">
+        <!-- Logo -->
+        <div class="sidebar__logo">
+          <svg width="140" height="50" viewBox="0 0 140 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- MaxPoint Logo -->
+            <text x="0" y="28" font-family="Inter, sans-serif" font-size="24" font-weight="700" fill="#1A1A2E">
+              Ma<tspan fill="#E31837">X</tspan>Point
+            </text>
+            <text x="0" y="44" font-family="Inter, sans-serif" font-size="12" font-weight="500" fill="#6B7280">
+              Grupo <tspan font-weight="700" fill="#E31837">KFC</tspan>
+            </text>
+          </svg>
+        </div>
+
+        <!-- HOME Section -->
+        <div class="sidebar__section">
+          <div class="sidebar__section-title">HOME</div>
+          <ul class="sidebar__nav">
+            <li class="sidebar__nav-item">
+              <a href="#" class="sidebar__nav-link">
+                <svg class="sidebar__nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                <span>Escritorio</span>
+                <svg style="margin-left: auto; width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- PRODUCTOS Section -->
+        <div class="sidebar__section">
+          <div class="sidebar__section-title">PRODUCTOS</div>
+          <ul class="sidebar__nav">
+            <li class="sidebar__nav-item">
+              <a href="#" class="sidebar__nav-link">
+                <svg class="sidebar__nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+                <span>Productos</span>
+                <svg style="margin-left: auto; width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </a>
+              <!-- Submenu -->
+              <ul class="sidebar__nav" style="padding-left: var(--spacing-8); margin-top: var(--spacing-1);">
+                <li class="sidebar__nav-item">
+                  <a href="#" class="sidebar__nav-link">Lista de productos</a>
+                </li>
+                <li class="sidebar__nav-item">
+                  <a href="#" class="sidebar__nav-link">Nuevo producto</a>
+                </li>
+              </ul>
+            </li>
+            <li class="sidebar__nav-item">
+              <a href="#" class="sidebar__nav-link">
+                <span>Upselling</span>
+              </a>
+            </li>
+            <li class="sidebar__nav-item">
+              <a href="#" class="sidebar__nav-link">
+                <span>Gestionar preguntas</span>
+              </a>
+            </li>
+            <li class="sidebar__nav-item">
+              <a href="#" class="sidebar__nav-link">
+                <span>Gestionar precios</span>
+              </a>
+            </li>
+            <li class="sidebar__nav-item">
+              <a href="#" class="sidebar__nav-link sidebar__nav-link--active">
+                <span>Programacion de precios</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Menu Section -->
+        <div class="sidebar__section">
+          <ul class="sidebar__nav">
+            <li class="sidebar__nav-item">
+              <a href="#" class="sidebar__nav-link">
+                <svg class="sidebar__nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                </svg>
+                <span>Menu</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Footer - Cerrar Sesion -->
+        <div class="sidebar__footer">
+          <a href="#" class="sidebar__nav-link sidebar__nav-link--logout">
+            <svg class="sidebar__nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            <span>Cerrar Sesion</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="layout__main">
+      <!-- Header -->
+      <header class="layout__header">
+        <div class="header">
+          <div class="header__left">
+            <button class="header__toggle" title="Toggle sidebar">
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+              </svg>
+            </button>
+            <div class="header__search">
+              <svg class="header__search-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <input type="text" class="header__search-input" placeholder="Buscar">
+            </div>
+          </div>
+          <div class="header__right">
+            <button class="header__notifications btn btn--icon btn--ghost">
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+            </button>
+            <div class="header__user">
+              <div class="header__user-avatar">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                  <circle cx="20" cy="20" r="20" fill="#FDE8E8"/>
+                  <path d="M20 21c3.315 0 6-2.685 6-6s-2.685-6-6-6-6 2.685-6 6 2.685 6 6 6zm0 3c-4.005 0-12 2.01-12 6v3h24v-3c0-3.99-7.995-6-12-6z" fill="#E31837"/>
+                </svg>
+              </div>
+              <div class="header__user-info">
+                <div class="header__user-name">Mauricio Sierra Cordova</div>
+                <div class="header__user-role">Administrador</div>
+              </div>
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="layout__content">
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb">
+          <div class="breadcrumb__item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+          </div>
+          <span class="breadcrumb__separator">/</span>
+          <div class="breadcrumb__item">
+            <a href="#" class="breadcrumb__link">Productos</a>
+          </div>
+          <span class="breadcrumb__separator">/</span>
+          <div class="breadcrumb__item">
+            <span class="breadcrumb__current">Lista de productos</span>
+          </div>
+        </nav>
+
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-header__title">Productos</h1>
+          </div>
+          <button class="btn btn--primary">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+            </svg>
+            Nuevo producto
+          </button>
+        </div>
+
+        <!-- Main Card with Table -->
+        <div class="card">
+          <div class="card__header">
+            <h3 class="card__title">Tabla de productos</h3>
+            <p class="card__subtitle">Mostrando 1 a 10 de 57 registros</p>
+          </div>
+          <div class="card__body">
+            <!-- Toolbar -->
+            <div class="toolbar">
+              <div class="toolbar__search">
+                <input type="text" class="form-input" placeholder="Buscar">
+              </div>
+              <div class="toolbar__filters">
+                <select class="form-input form-select" style="width: 150px;">
+                  <option>Sin filtros</option>
+                </select>
+                <select class="form-input form-select" style="width: 150px;">
+                  <option>Seleccionar</option>
+                </select>
+              </div>
+              <div class="toolbar__actions">
+                <button class="btn btn--secondary">
+                  Funciones
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </button>
+                <button class="btn btn--icon btn--ghost">
+                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div class="table-container">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 40px;">
+                      <input type="checkbox">
+                    </th>
+                    <th>Imagen</th>
+                    <th>Nombre del producto</th>
+                    <th>Estado</th>
+                    <th>Descripcion</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>
+                      <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                        <span style="font-size: 20px;">🍗</span>
+                      </div>
+                    </td>
+                    <td class="font-medium">Combo Nuggets</td>
+                    <td><span class="badge badge--published">Publicado</span></td>
+                    <td class="truncate text-secondary" style="max-width: 250px;">10 Nuggets + 1 Papa Pequena + 1 Gaseosa Pet 400ml + 1 Salsa</td>
+                    <td>
+                      <div class="table__actions">
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Editar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Duplicar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm btn--view-published" title="Ver">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="selected">
+                    <td><input type="checkbox" checked></td>
+                    <td>
+                      <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #FF6B6B 0%, #C92A2A 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                        <span style="font-size: 20px;">🍟</span>
+                      </div>
+                    </td>
+                    <td class="font-medium">Wow Bucket</td>
+                    <td><span class="badge badge--editing">Editando</span></td>
+                    <td class="truncate text-secondary" style="max-width: 250px;">6 Presas de Pollo + 3 Papas Pequenas</td>
+                    <td>
+                      <div class="table__actions">
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Editar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Duplicar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm btn--view-editing" title="Ver">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>
+                      <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #FFA94D 0%, #FF6B35 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                        <span style="font-size: 20px;">🍗</span>
+                      </div>
+                    </td>
+                    <td class="font-medium">10 Nuggets</td>
+                    <td><span class="badge badge--draft">Borrador</span></td>
+                    <td class="truncate text-secondary" style="max-width: 250px;">10 Piezas de Nuggets de Pollo</td>
+                    <td>
+                      <div class="table__actions">
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Editar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Duplicar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm btn--view-draft" title="Ver" style="opacity: 0.5;">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>
+                      <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #51CF66 0%, #2F9E44 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                        <span style="font-size: 20px;">🥗</span>
+                      </div>
+                    </td>
+                    <td class="font-medium">Mega Variedad Nuggets</td>
+                    <td><span class="badge badge--published">Publicado</span></td>
+                    <td class="truncate text-secondary" style="max-width: 250px;">6 Presas de Pollo + 10 Nuggets + 4 Strips (Tiras de pechuga)</td>
+                    <td>
+                      <div class="table__actions">
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Editar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Duplicar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm btn--view-published" title="Ver">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>
+                      <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #748FFC 0%, #4C6EF5 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                        <span style="font-size: 20px;">🍔</span>
+                      </div>
+                    </td>
+                    <td class="font-medium">Big Box Kentucky Sandwich</td>
+                    <td><span class="badge badge--published">Publicado</span></td>
+                    <td class="truncate text-secondary" style="max-width: 250px;">1 Kentucky Sandwich (1 Filete de pechuga de pollo apanado)</td>
+                    <td>
+                      <div class="table__actions">
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Editar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Duplicar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm btn--view-published" title="Ver">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>
+                      <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #F783AC 0%, #E64980 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                        <span style="font-size: 20px;">🍗</span>
+                      </div>
+                    </td>
+                    <td class="font-medium">Combo BBQ Crunch</td>
+                    <td><span class="badge badge--published">Publicado</span></td>
+                    <td class="truncate text-secondary" style="max-width: 250px;">Alimentos (Trio)</td>
+                    <td>
+                      <div class="table__actions">
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Editar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Duplicar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm btn--view-published" title="Ver">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>
+                      <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #868E96 0%, #495057 100%); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                        <span style="font-size: 20px;">🍗</span>
+                      </div>
+                    </td>
+                    <td class="font-medium">10 Nuggets</td>
+                    <td><span class="badge badge--inactive">Inactivo</span></td>
+                    <td class="truncate text-secondary" style="max-width: 250px;">10 Piezas de Nuggets de Pollo</td>
+                    <td>
+                      <div class="table__actions">
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Editar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm" title="Duplicar">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                          </svg>
+                        </button>
+                        <button class="btn btn--icon btn--ghost btn--sm btn--view-inactive" title="Ver" style="opacity: 0.5;">
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+              <div class="pagination__info">
+                <span>Mostrar</span>
+                <select class="pagination__select">
+                  <option>10</option>
+                  <option>25</option>
+                  <option>50</option>
+                </select>
+                <span>Registros</span>
+              </div>
+
+              <div class="pagination__pages">
+                <button class="pagination__btn">Inicio</button>
+                <button class="pagination__btn">Anterior</button>
+                <button class="pagination__btn pagination__btn--active">1</button>
+                <button class="pagination__btn">2</button>
+                <button class="pagination__btn">3</button>
+                <button class="pagination__btn">4</button>
+                <button class="pagination__btn">5</button>
+                <button class="pagination__btn">Proximo</button>
+                <button class="pagination__btn">Fin</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Separator -->
+        <hr style="margin: var(--spacing-10) 0; border: none; border-top: 2px dashed var(--color-border-main);">
+
+        <!-- Additional Components Demo -->
+        <h2 class="text-2xl font-bold mb-6">Componentes del Design System</h2>
+
+        <!-- Buttons -->
+        <section class="example-section">
+          <h2 class="example-section__title">Botones</h2>
+          <div class="component-demo">
+            <div class="d-flex gap-3 flex-wrap items-center">
+              <button class="btn btn--primary">Nuevo producto</button>
+              <button class="btn btn--secondary">Cancelar</button>
+              <button class="btn btn--outline-primary">Previsualizar</button>
+              <button class="btn btn--ghost">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Regresar
+              </button>
+              <button class="btn btn--primary">
+                Siguiente
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Badges -->
+        <section class="example-section">
+          <h2 class="example-section__title">Badges de Estado</h2>
+          <div class="d-flex gap-3 flex-wrap">
+            <span class="badge badge--published">Publicado</span>
+            <span class="badge badge--editing">Editando</span>
+            <span class="badge badge--draft">Borrador</span>
+            <span class="badge badge--inactive">Inactivo</span>
+            <span class="badge badge--blocked">Bloqueado</span>
+            <span class="badge badge--active">Activo</span>
+          </div>
+        </section>
+
+        <!-- Alerts -->
+        <section class="example-section">
+          <h2 class="example-section__title">Alertas</h2>
+          <div class="alert alert--info">
+            <svg class="alert__icon" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <div class="alert__content">
+              <div class="alert__title">Importante</div>
+              <div class="alert__message">Si un producto no esta presente en la lista, se debe a que aun no ha sido agregado a los menus de la clasificacion seleccionada. Por favor, anada el producto para que aparezca en la lista correspondiente.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Stepper -->
+        <section class="example-section">
+          <h2 class="example-section__title">Stepper</h2>
+          <div class="stepper">
+            <div class="stepper__step stepper__step--completed">
+              <div class="stepper__indicator">
+                <div class="stepper__indicator-inner">1</div>
+              </div>
+              <div class="stepper__content">
+                <div class="stepper__title">Información básica</div>
+                <div class="stepper__description">Información del producto</div>
+              </div>
+            </div>
+            <div class="stepper__connector">
+              <svg fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+              </svg>
+            </div>
+            <div class="stepper__step stepper__step--completed">
+              <div class="stepper__indicator">
+                <div class="stepper__indicator-inner">2</div>
+              </div>
+              <div class="stepper__content">
+                <div class="stepper__title">Precios</div>
+                <div class="stepper__description">Asigna precios por categorías</div>
+              </div>
+            </div>
+            <div class="stepper__connector">
+              <svg fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+              </svg>
+            </div>
+            <div class="stepper__step stepper__step--active">
+              <div class="stepper__indicator">
+                <div class="stepper__indicator-inner">3</div>
+              </div>
+              <div class="stepper__content">
+                <div class="stepper__title">Preguntas</div>
+                <div class="stepper__description">Asigna preguntas al producto</div>
+              </div>
+            </div>
+            <div class="stepper__connector">
+              <svg fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+              </svg>
+            </div>
+            <div class="stepper__step stepper__step--pending">
+              <div class="stepper__indicator">
+                <div class="stepper__indicator-inner">4</div>
+              </div>
+              <div class="stepper__content">
+                <div class="stepper__title">Resumen</div>
+                <div class="stepper__description">Resumen del producto creado</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alert Success -->
+          <div class="alert alert--success">
+            <div class="alert__icon">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              </svg>
+            </div>
+            <div class="alert__content">
+              <ul class="alert__list">
+                <li class="alert__item">El producto ha sido guardado exitosamente</li>
+                <li class="alert__item">El producto ha sido guardado exitosamente</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Alert Info -->
+          <div class="alert alert--info">
+            <div class="alert__icon">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+              </svg>
+            </div>
+            <div class="alert__content">
+              <ul class="alert__list">
+                <li class="alert__item">Puedes editar el PLU desde la configuración avanzada</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Alert Error -->
+          <div class="alert alert--error">
+            <div class="alert__icon">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+              </svg>
+            </div>
+            <div class="alert__content">
+              <ul class="alert__list">
+                <li class="alert__item">Error crítico al conectar con el servidor de precios</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- Formulario de Alta Section -->
+        <section class="example-section">
+          <h2 class="example-section__title">Formulario de Alta</h2>
+          <div class="card">
+            <div class="card__body">
+              <div class="form-group-header">
+                <h3 class="text-xl font-bold">Información básica</h3>
+                <button class="btn-help">?</button>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">PLU</label>
+                  <input type="text" class="form-control form-control--read-only" value="12345" readonly>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Nombre del producto *</label>
+                  <input type="text" class="form-control" value="Combo Nuggets">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Categoría *</label>
+                  <select class="form-control">
+                    <option>Combos</option>
+                    <option>Presas</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Estado</label>
+                  <select class="form-control">
+                    <option>Publicado</option>
+                    <option>Borrador</option>
+                    <option>Inactivo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row--single">
+                <div class="form-group">
+                  <label class="form-label">Descripción</label>
+                  <textarea class="form-control" style="height: 100px;">10 Nuggets + 1 Papa Pequeña + 1 Gaseosa Pet 400ml + 1 Salsa</textarea>
+                </div>
+              </div>
+
+              <div class="mt-8">
+                <div class="form-group-header">
+                  <label class="text-sm font-semibold">Imagen del producto</label>
+                  <button class="btn-help">?</button>
+                </div>
+                <div class="dropzone">
+                  <div class="dropzone__icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                  </div>
+                  <div class="dropzone__title">Sube tus archivos aquí</div>
+                  <div class="dropzone__text">Arrastra y suelta o haz clic para buscar en tu equipo</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions within the section to demonstrate alignment -->
+          <div class="form-actions mt-8">
+            <div class="form-actions__left">
+              <button class="btn btn--outline-primary">Cancelar</button>
+              <button class="btn btn--secondary">
+                Previsualizar
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </button>
+            </div>
+            <div class="form-actions__right">
+              <button class="btn btn--secondary">
+                Guardar borrador
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+                </svg>
+              </button>
+              <button class="btn btn--primary">
+                Siguiente
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Typography Section -->
+        <section class="example-section">
+          <h2 class="example-section__title">Tipografía</h2>
+          <div class="card">
+            <div class="card__body">
+              <div style="display: flex; flex-direction: column; gap: var(--spacing-6);">
+                <div>
+                  <h1 class="text-4xl font-bold">Encabezado 1 (4xl)</h1>
+                  <p class="text-secondary">Usado para títulos principales de página.</p>
+                </div>
+                <div>
+                  <h2 class="text-3xl font-semibold">Encabezado 2 (3xl)</h2>
+                  <p class="text-secondary">Usado para secciones importantes.</p>
+                </div>
+                <div>
+                  <h3 class="text-2xl font-semibold">Encabezado 3 (2xl)</h3>
+                  <p class="text-secondary">Usado para títulos de tarjetas.</p>
+                </div>
+                <div>
+                  <h4 class="text-xl font-medium">Encabezado 4 (xl)</h4>
+                  <p class="text-secondary">Usado para subsecciones.</p>
+                </div>
+                <hr style="border: 0; border-top: 1px solid var(--color-border); margin: var(--spacing-4) 0;">
+                <div>
+                  <p class="text-lg">Texto Grande (lg) - El veloz murciélago hindú comía feliz cardillo y escabeche.</p>
+                </div>
+                <div>
+                  <p class="text-base">Texto Base (base) - El veloz murciélago hindú comía feliz cardillo y escabeche.</p>
+                </div>
+                <div>
+                  <p class="text-sm">Texto Pequeño (sm) - El veloz murciélago hindú comía feliz cardillo y escabeche.</p>
+                </div>
+                <div>
+                  <p class="text-xs">Texto Extra Pequeño (xs) - El veloz murciélago hindú comía feliz cardillo y escabeche.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Drag & Drop Section -->
+        <section class="example-section">
+          <h2 class="example-section__title">Arrastrar y Soltar (Drag & Drop)</h2>
+          <div class="card">
+            <div class="card__body">
+              <div class="dropzone" id="demo-dropzone">
+                <div class="dropzone__icon">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                  </svg>
+                </div>
+                <div class="dropzone__title">Sube tus archivos aquí</div>
+                <div class="dropzone__text">Arrastra y suelta o haz clic para buscar en tu equipo</div>
+                <div class="text-xs text-muted mt-2">Formatos soportados: JPG, PNG, PDF (Máx. 5MB)</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Form Actions -->
+        <section class="example-section">
+          <h2 class="example-section__title">Acciones de Formulario</h2>
+          <div class="form-actions" style="border-top: none; padding-top: 0; margin-top: 0;">
+            <div class="form-actions__left">
+              <button class="btn btn--outline-primary">Cancelar</button>
+              <button class="btn btn--secondary">
+                Previsualizar
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </button>
+            </div>
+            <div class="form-actions__right">
+              <button class="btn btn--secondary">
+                Guardar borrador
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+                </svg>
+              </button>
+              <button class="btn btn--primary">
+                Siguiente
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

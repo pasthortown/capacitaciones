@@ -1,0 +1,188 @@
+{
+  "colors": {
+    "primary": {
+      "main": "#E31837",
+      "light": "#FF4D5E",
+      "dark": "#B8132C",
+      "contrast": "#FFFFFF"
+    },
+    "secondary": {
+      "main": "#1A1A2E",
+      "light": "#2D3748",
+      "dark": "#0F0F1A"
+    },
+    "background": {
+      "main": "#F0EEF5",
+      "paper": "#FFFFFF",
+      "sidebar": "#FFFFFF",
+      "sidebarHover": "#F8F7FC",
+      "sidebarActive": "#F5E6E8"
+    },
+    "text": {
+      "primary": "#1A1A2E",
+      "secondary": "#6B7280",
+      "disabled": "#9CA3AF",
+      "inverse": "#FFFFFF"
+    },
+    "border": {
+      "light": "#E5E7EB",
+      "main": "#D1D5DB",
+      "dark": "#9CA3AF"
+    },
+    "status": {
+      "published": {
+        "background": "#DEF7EC",
+        "text": "#03543F",
+        "border": "#84E1BC"
+      },
+      "editing": {
+        "background": "#FEF3C7",
+        "text": "#92400E",
+        "border": "#FCD34D"
+      },
+      "draft": {
+        "background": "#FFEDD5",
+        "text": "#9A3412",
+        "border": "#FDBA74"
+      },
+      "inactive": {
+        "background": "#F3F4F6",
+        "text": "#4B5563",
+        "border": "#D1D5DB"
+      },
+      "blocked": {
+        "background": "#FEE2E2",
+        "text": "#991B1B",
+        "border": "#FCA5A5"
+      },
+      "active": {
+        "background": "#D1FAE5",
+        "text": "#065F46",
+        "border": "#6EE7B7"
+      }
+    },
+    "info": {
+      "background": "#EFF6FF",
+      "text": "#1E40AF",
+      "border": "#93C5FD"
+    },
+    "success": {
+      "main": "#10B981",
+      "light": "#D1FAE5",
+      "dark": "#065F46"
+    },
+    "warning": {
+      "main": "#F59E0B",
+      "light": "#FEF3C7",
+      "dark": "#92400E"
+    },
+    "error": {
+      "main": "#EF4444",
+      "light": "#FEE2E2",
+      "dark": "#991B1B"
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "primary": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      "mono": "'Fira Code', 'Consolas', monospace"
+    },
+    "fontSize": {
+      "xs": "0.75rem",
+      "sm": "0.875rem",
+      "base": "1rem",
+      "lg": "1.125rem",
+      "xl": "1.25rem",
+      "2xl": "1.5rem",
+      "3xl": "1.875rem",
+      "4xl": "2.25rem"
+    },
+    "fontWeight": {
+      "normal": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    },
+    "lineHeight": {
+      "tight": 1.25,
+      "normal": 1.5,
+      "relaxed": 1.75
+    }
+  },
+  "spacing": {
+    "0": "0",
+    "1": "0.25rem",
+    "2": "0.5rem",
+    "3": "0.75rem",
+    "4": "1rem",
+    "5": "1.25rem",
+    "6": "1.5rem",
+    "8": "2rem",
+    "10": "2.5rem",
+    "12": "3rem",
+    "16": "4rem",
+    "20": "5rem",
+    "24": "6rem"
+  },
+  "borderRadius": {
+    "none": "0",
+    "sm": "0.25rem",
+    "md": "0.5rem",
+    "lg": "0.75rem",
+    "xl": "1rem",
+    "2xl": "1.5rem",
+    "full": "9999px"
+  },
+  "shadows": {
+    "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+    "md": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+    "lg": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+    "xl": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+    "card": "0 2px 8px rgba(0, 0, 0, 0.08)",
+    "dropdown": "0 4px 12px rgba(0, 0, 0, 0.15)"
+  },
+  "transitions": {
+    "fast": "150ms ease-in-out",
+    "normal": "250ms ease-in-out",
+    "slow": "350ms ease-in-out"
+  },
+  "breakpoints": {
+    "sm": "640px",
+    "md": "768px",
+    "lg": "1024px",
+    "xl": "1280px",
+    "2xl": "1536px"
+  },
+  "zIndex": {
+    "dropdown": 1000,
+    "sticky": 1020,
+    "fixed": 1030,
+    "modalBackdrop": 1040,
+    "modal": 1050,
+    "popover": 1060,
+    "tooltip": 1070
+  },
+  "components": {
+    "sidebar": {
+      "width": "240px",
+      "widthCollapsed": "64px"
+    },
+    "header": {
+      "height": "64px"
+    },
+    "button": {
+      "heightSm": "32px",
+      "heightMd": "40px",
+      "heightLg": "48px"
+    },
+    "input": {
+      "heightSm": "32px",
+      "heightMd": "40px",
+      "heightLg": "48px"
+    },
+    "table": {
+      "rowHeight": "52px",
+      "headerHeight": "48px"
+    }
+  }
+}

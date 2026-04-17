@@ -1,0 +1,26 @@
+/* ==========================================================================
+   MaxPoint BackOffice - Main Stylesheet
+   Sistema de gestion KFC - Design System
+
+   Este archivo importa todos los estilos del sistema de diseno.
+   Incluir este archivo en tu proyecto para obtener todos los estilos.
+   ========================================================================== */
+
+/* Variables CSS (Custom Properties) */
+@import url('./variables.css');
+
+/* Componentes */
+@import url('./components.css');
+
+/* Clases utilitarias */
+@import url('./utilities.css');
+
+/* ==========================================================================
+   Ejemplo de uso:
+
+   <link rel="stylesheet" href="styles/main.css">
+
+   O si usas un bundler:
+
+   import './styles/main.css';
+   ========================================================================== */

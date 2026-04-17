@@ -1,0 +1,61 @@
+# ----- Entorno / secretos -----
+.env
+.env.*
+!.env.example
+
+# ----- Node / Frontend -----
+node_modules/
+dist/
+build/
+.vite/
+coverage/
+.eslintcache
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ----- .NET / Backend -----
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+.vs/
+TestResults/
+*.nupkg
+*.snupkg
+artifacts/
+
+# ----- SQL Server datos locales -----
+infra/sqlserver/data/
+infra/sqlserver/log/
+infra/sqlserver/secrets/
+
+# ----- Sonar / ZAP -----
+infra/sonarqube/data/
+infra/sonarqube/logs/
+infra/sonarqube/extensions/
+infra/sonarqube/postgres/
+security/reports/
+.scannerwork/
+
+# ----- IDE / OS -----
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ----- Otros -----
+*.tmp
+*.bak
