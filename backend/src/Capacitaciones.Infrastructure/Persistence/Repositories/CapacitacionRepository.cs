@@ -40,11 +40,22 @@ public class CapacitacionRepository : ICapacitacionRepository
 
     public async Task<Capacitacion?> GetByIdWithResponsablesAsync(Guid id, CancellationToken ct = default)
     {
-        return await _db.Capacitaciones
+        var entity = await _db.Capacitaciones
             .Include(c => c.Modalidad)
             .Include(c => c.TipoActividad)
-            .Include(c => c.Responsables)
+            .Include(c => c.CapacitacionResponsables)
+                .ThenInclude(cr => cr.Responsable)
             .FirstOrDefaultAsync(c => c.Id == id, ct);
+
+        if (entity is not null)
+        {
+            // Ordenar la colección pivote por Orden ASC para que los consumidores no tengan que hacerlo.
+            entity.CapacitacionResponsables = entity.CapacitacionResponsables
+                .OrderBy(cr => cr.Orden)
+                .ToList();
+        }
+
+        return entity;
     }
 
     public async Task<string> AddAsync(
@@ -100,7 +111,7 @@ public class CapacitacionRepository : ICapacitacionRepository
 
     public async Task UpdateWithResponsablesAsync(
         Capacitacion entity,
-        IEnumerable<Responsable> nuevosResponsables,
+        IEnumerable<CapacitacionResponsable> nuevasRelaciones,
         CancellationToken ct = default)
     {
         var strategy = _db.Database.CreateExecutionStrategy();
@@ -115,27 +126,30 @@ public class CapacitacionRepository : ICapacitacionRepository
 
             try
             {
-                // Replace-all: borrar responsables existentes y agregar los nuevos.
-                var existentes = await _db.Responsables
-                    .Where(r => r.CapacitacionId == entity.Id)
+                // Replace-all en la pivote: borrar relaciones existentes y agregar las nuevas.
+                // El catálogo global de Responsable NO se toca — solo la pivote.
+                var existentes = await _db.CapacitacionResponsables
+                    .Where(cr => cr.CapacitacionId == entity.Id)
                     .ToListAsync(ct);
                 if (existentes.Count > 0)
                 {
-                    _db.Responsables.RemoveRange(existentes);
+                    _db.CapacitacionResponsables.RemoveRange(existentes);
                 }
 
-                // Persistir cambios de la capacitación.
+                // Persistir cambios escalares de la capacitación.
                 _db.Capacitaciones.Update(entity);
 
-                // Agregar nuevos responsables (con FK al mismo capacitacionId).
-                var lista = nuevosResponsables.ToList();
-                foreach (var r in lista)
+                var lista = nuevasRelaciones.ToList();
+                foreach (var cr in lista)
                 {
-                    r.CapacitacionId = entity.Id;
+                    cr.CapacitacionId = entity.Id;
+                    // Evitamos arrastrar navegaciones que pudieran causar inserts accidentales del catálogo.
+                    cr.Capacitacion = null;
+                    cr.Responsable = null;
                 }
                 if (lista.Count > 0)
                 {
-                    await _db.Responsables.AddRangeAsync(lista, ct);
+                    await _db.CapacitacionResponsables.AddRangeAsync(lista, ct);
                 }
 
                 await _db.SaveChangesAsync(ct);

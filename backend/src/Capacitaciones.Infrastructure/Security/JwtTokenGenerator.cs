@@ -69,7 +69,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     public JwtTokenResult GenerateCapacitadorToken(Guid capacitacionId)
     {
         var dias = _options.CapacitadorTokenDias > 0 ? _options.CapacitadorTokenDias : 90;
-        return GenerateResourceToken(capacitacionId, role: "Capacitador", scope: "capacitador", dias: dias);
+        return GenerateResourceToken(capacitacionId, role: "Capacitador", scope: "capacitador", idClaim: "cid", dias: dias);
     }
 
     /// <summary>
@@ -79,17 +79,29 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     public JwtTokenResult GenerateInscripcionToken(Guid capacitacionId)
     {
         var dias = _options.InscripcionTokenDias > 0 ? _options.InscripcionTokenDias : 90;
-        return GenerateResourceToken(capacitacionId, role: "Inscripcion", scope: "inscripcion", dias: dias);
+        return GenerateResourceToken(capacitacionId, role: "Inscripcion", scope: "inscripcion", idClaim: "cid", dias: dias);
     }
 
     /// <summary>
-    /// Helper compartido por los tokens de capacitador/inscripción: ambos firman un recurso
-    /// (capacitacionId) con los claims <c>sub/cid</c> + <c>role</c> + <c>scope</c>.
+    /// Emite un JWT para el link público del responsable. Firma con el mismo secret/issuer/audience;
+    /// la policy "Responsable" distingue por el claim <c>role</c>. El id del responsable viaja en <c>rid</c>
+    /// para no chocar con el <c>cid</c> que usan los tokens de capacitación.
     /// </summary>
-    private JwtTokenResult GenerateResourceToken(Guid capacitacionId, string role, string scope, int dias)
+    public JwtTokenResult GenerateResponsableToken(Guid responsableId)
     {
-        if (capacitacionId == Guid.Empty)
-            throw new ArgumentException("capacitacionId requerido", nameof(capacitacionId));
+        var dias = _options.ResponsableTokenDias > 0 ? _options.ResponsableTokenDias : 90;
+        return GenerateResourceToken(responsableId, role: "Responsable", scope: "responsable", idClaim: "rid", dias: dias);
+    }
+
+    /// <summary>
+    /// Helper compartido por los tokens de recursos públicos (capacitador/inscripción/responsable):
+    /// firman un recurso (<paramref name="resourceId"/>) con los claims <c>sub</c> + <c>role</c> +
+    /// <c>scope</c> + un claim específico (<paramref name="idClaim"/> = "cid" o "rid") que replica el id.
+    /// </summary>
+    private JwtTokenResult GenerateResourceToken(Guid resourceId, string role, string scope, string idClaim, int dias)
+    {
+        if (resourceId == Guid.Empty)
+            throw new ArgumentException("resourceId requerido", nameof(resourceId));
 
         if (string.IsNullOrWhiteSpace(_options.Secret))
         {
@@ -102,13 +114,13 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var cid = capacitacionId.ToString();
+        var id = resourceId.ToString();
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, cid),
+            new(JwtRegisteredClaimNames.Sub, id),
             new(ClaimTypes.Role, role),
             new("scope", scope),
-            new("cid", cid),
+            new(idClaim, id),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

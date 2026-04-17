@@ -29,27 +29,66 @@
   gap: var(--spacing-2);
 }
 
-.responsableRow {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--spacing-3);
-  padding: var(--spacing-4);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+.responsablesHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
   margin-bottom: var(--spacing-3);
-  background-color: var(--color-bg-main);
 }
 
-.responsableHeader {
+.responsableList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: var(--spacing-2);
 }
 
-.responsableTitle {
+.responsableItem {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg-main);
+}
+
+.responsableOrder {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--color-primary-subtle, rgba(37, 99, 235, 0.12));
+  color: var(--color-primary, #2563eb);
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-sm);
+}
+
+.responsableInfo {
+  min-width: 0;
+}
+
+.responsableName {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.responsableMeta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .responsableActions {
@@ -57,16 +96,75 @@
   gap: var(--spacing-1);
 }
 
-.responsableFields {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+.warningBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--color-warning-bg, #FEF3C7);
+  color: var(--color-warning-text, #92400E);
+  border-radius: var(--radius-full, 9999px);
+  cursor: help;
+}
+
+.pickerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.pickerItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-paper);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.pickerItem:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-bg-main);
+}
+
+.pickerItemMain {
+  min-width: 0;
+  flex: 1;
+}
+
+.pickerItemName {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.pickerItemMeta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.pickerEmpty {
+  padding: var(--spacing-4);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 @media (max-width: 860px) {
-  .responsableFields {
-    grid-template-columns: 1fr;
-  }
   .grid2 {
     grid-template-columns: 1fr;
   }

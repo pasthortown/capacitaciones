@@ -8,6 +8,7 @@ namespace Capacitaciones.Infrastructure.Persistence;
 /// Fase 1: catálogos administrables. Fase 2: AdminUser y ConfiguracionNumeracion.
 /// Fase 3: Capacitacion + Responsable (sub-colección).
 /// Fase 5: Asistente (inscripción pública por link firmado).
+/// Refactor Responsables: Responsable pasa a catálogo global + pivote N–N CapacitacionResponsable.
 /// </summary>
 public class AppDbContext : DbContext
 {
@@ -22,6 +23,7 @@ public class AppDbContext : DbContext
     public DbSet<ConfiguracionNumeracion> ConfiguracionNumeracion => Set<ConfiguracionNumeracion>();
     public DbSet<Capacitacion> Capacitaciones => Set<Capacitacion>();
     public DbSet<Responsable> Responsables => Set<Responsable>();
+    public DbSet<CapacitacionResponsable> CapacitacionResponsables => Set<CapacitacionResponsable>();
     public DbSet<Asistente> Asistentes => Set<Asistente>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

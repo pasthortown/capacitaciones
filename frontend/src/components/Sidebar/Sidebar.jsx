@@ -12,6 +12,7 @@ import {
   Building2,
   Hash,
   User,
+  UserCheck,
 } from 'lucide-react';
 import { useAuth } from '../../auth/useAuth.js';
 
@@ -39,6 +40,7 @@ export default function Sidebar() {
 
   const isCatalogoActive = location.pathname.startsWith('/catalogos');
   const isConfigActive = location.pathname.startsWith('/configuracion');
+  const isResponsablesActive = location.pathname.startsWith('/responsables');
   // "Capacitaciones" se resalta cuando la ruta empieza con /capacitaciones
   // y NO con /catalogos. Como son prefijos disjuntos en el router, basta con
   // comprobar el primero. Se incluye también el home `/` que redirige a
@@ -89,6 +91,21 @@ export default function Sidebar() {
             >
               <GraduationCap className="sidebar__nav-icon" />
               <span>Capacitaciones</span>
+            </NavLink>
+          </li>
+
+          {/* Responsables (catálogo global) */}
+          <li className="sidebar__nav-item">
+            <NavLink
+              to="/responsables"
+              className={() =>
+                `sidebar__nav-link${
+                  isResponsablesActive ? ' sidebar__nav-link--active' : ''
+                }`
+              }
+            >
+              <UserCheck className="sidebar__nav-icon" />
+              <span>Responsables</span>
             </NavLink>
           </li>
 

@@ -1,4 +1,3 @@
-using Capacitaciones.Application.Dtos.Capacitaciones;
 using Capacitaciones.Application.Ports;
 using Capacitaciones.Domain.Entities;
 
@@ -84,26 +83,47 @@ internal static class CapacitacionValidator
         }
     }
 
-    public static void ValidarResponsables(IEnumerable<CreateResponsableDto>? responsables)
+    /// <summary>
+    /// Valida los <c>responsableIds</c> del payload: ningún Guid.Empty y ningún id duplicado.
+    /// La existencia/actividad se valida en el UseCase (consulta al repo).
+    /// </summary>
+    public static void ValidarResponsableIds(IEnumerable<Guid>? responsableIds)
     {
-        if (responsables is null) return;
+        if (responsableIds is null) return;
 
-        var list = responsables.ToList();
-        var ordenes = new HashSet<int>();
-        foreach (var r in list)
+        var seen = new HashSet<Guid>();
+        foreach (var id in responsableIds)
         {
-            if (string.IsNullOrWhiteSpace(r.Nombres))
-                throw new CapacitacionServiceException("INVALID_RESPONSABLE", "Cada responsable debe tener 'nombres'.");
-            if (string.IsNullOrWhiteSpace(r.Cargo))
-                throw new CapacitacionServiceException("INVALID_RESPONSABLE", "Cada responsable debe tener 'cargo'.");
-            if (string.IsNullOrWhiteSpace(r.Empresa))
-                throw new CapacitacionServiceException("INVALID_RESPONSABLE", "Cada responsable debe tener 'empresa'.");
-            if (string.IsNullOrWhiteSpace(r.Firma))
-                throw new CapacitacionServiceException("INVALID_RESPONSABLE", "Cada responsable debe tener 'firma'.");
-            if (!ordenes.Add(r.Orden))
+            if (id == Guid.Empty)
+                throw new CapacitacionServiceException("INVALID_RESPONSABLE", "'responsableIds' contiene un id vacío.");
+            if (!seen.Add(id))
+            {
                 throw new CapacitacionServiceException(
-                    "INVALID_RESPONSABLE",
-                    $"'orden' duplicado en responsables: {r.Orden}. Debe ser único por capacitación.");
+                    "RESPONSABLE_DUPLICADO",
+                    $"El responsable con Id={id} aparece más de una vez en la lista.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Valida contra el catálogo que todos los ids existen y están activos. Lanza
+    /// <see cref="CapacitacionServiceException"/> con código <c>INVALID_RESPONSABLE</c> si no.
+    /// </summary>
+    public static async Task ValidarResponsablesActivosAsync(
+        IEnumerable<Guid>? responsableIds,
+        IResponsableRepository responsables,
+        CancellationToken ct)
+    {
+        if (responsableIds is null) return;
+        var ids = responsableIds.ToList();
+        if (ids.Count == 0) return;
+
+        var ok = await responsables.ExistenActivosAsync(ids, ct);
+        if (!ok)
+        {
+            throw new CapacitacionServiceException(
+                "INVALID_RESPONSABLE",
+                "Uno o más 'responsableIds' no existen o están inactivos.");
         }
     }
 }

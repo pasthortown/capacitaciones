@@ -2,8 +2,8 @@ namespace Capacitaciones.Application.Dtos.Capacitaciones;
 
 /// <summary>
 /// Payload para <c>PUT /api/capacitaciones/{id}</c>. Idéntico al create salvo
-/// por el campo <c>Codigo</c> (inmutable). La lista <c>Responsables</c> reemplaza
-/// por completo a la existente (estrategia replace-all).
+/// por el campo <c>Codigo</c> (inmutable). La lista <c>ResponsableIds</c> reemplaza
+/// por completo la relación N–N existente (estrategia replace-all sobre la pivote).
 /// </summary>
 public class UpdateCapacitacionDto
 {
@@ -23,5 +23,5 @@ public class UpdateCapacitacionDto
 
     public string? Descripcion { get; set; }
 
-    public List<CreateResponsableDto> Responsables { get; set; } = new();
+    public List<Guid> ResponsableIds { get; set; } = new();
 }

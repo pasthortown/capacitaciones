@@ -69,10 +69,7 @@ public class CapacitacionConfiguration : IEntityTypeConfiguration<Capacitacion>
             .HasForeignKey(c => c.TipoActividadId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Sub-colección: cascade delete — al borrar físicamente una capacitación se eliminan sus responsables.
-        builder.HasMany(c => c.Responsables)
-            .WithOne(r => r.Capacitacion)
-            .HasForeignKey(r => r.CapacitacionId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // La navegación a responsables ahora es N–N vía la pivote CapacitacionResponsable.
+        // Las FKs y el cascade delete se configuran en CapacitacionResponsableConfiguration.
     }
 }

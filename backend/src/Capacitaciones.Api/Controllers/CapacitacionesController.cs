@@ -169,6 +169,7 @@ public class CapacitacionesController : ControllerBase
         {
             "NOT_FOUND" => StatusCodes.Status404NotFound,
             "CAPACITACION_INACTIVA" => StatusCodes.Status409Conflict,
+            "RESPONSABLE_DUPLICADO" => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status400BadRequest
         };
         return new ObjectResult(new { error = ex.Codigo, message = ex.Message }) { StatusCode = status };

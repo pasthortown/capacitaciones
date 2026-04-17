@@ -46,6 +46,10 @@ public class Capacitacion
     public DateTime FechaCreacion { get; set; }
     public DateTime? FechaActualizacion { get; set; }
 
-    /// <summary>Responsables adicionales (firmantes del certificado) — 0..N.</summary>
-    public List<Responsable> Responsables { get; set; } = new();
+    /// <summary>
+    /// Relación N–N con el catálogo de responsables. Cada entrada trae su propio <c>Orden</c>
+    /// (0-based, único por capacitación). Acceder al responsable real vía
+    /// <c>CapacitacionResponsables[i].Responsable</c> (cargado con <c>ThenInclude</c>).
+    /// </summary>
+    public List<CapacitacionResponsable> CapacitacionResponsables { get; set; } = new();
 }

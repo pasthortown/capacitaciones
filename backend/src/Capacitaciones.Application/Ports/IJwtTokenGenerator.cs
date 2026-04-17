@@ -14,9 +14,9 @@ public class JwtTokenResult
 /// y firma con HMAC-SHA256 usando <c>Jwt:Secret</c>.
 ///
 /// Decisión Fase 4: se mantiene un solo puerto para emitir tanto el token de admin como
-/// el del capacitador — ambos se firman con el mismo secret/issuer/audience y solo
-/// difieren en los claims. Así el DI queda simple (un único <c>IJwtTokenGenerator</c>) y
-/// evitamos duplicar la configuración en otro puerto.
+/// los de recursos públicos (capacitador, inscripción, responsable) — todos firman con el
+/// mismo secret/issuer/audience y solo difieren en los claims. Así el DI queda simple y
+/// evitamos duplicar la configuración.
 /// </summary>
 public interface IJwtTokenGenerator
 {
@@ -43,4 +43,12 @@ public interface IJwtTokenGenerator
     /// sean excluyentes (un link de inscripción no puede llamar endpoints del capacitador).
     /// </summary>
     JwtTokenResult GenerateInscripcionToken(Guid capacitacionId);
+
+    /// <summary>
+    /// Emite un JWT para el link público del responsable (refactor Responsables a catálogo global).
+    /// Claims: <c>sub</c> = responsableId, <c>role</c> = "Responsable",
+    /// <c>scope</c> = "responsable", <c>rid</c> = responsableId.
+    /// TTL por defecto: 90 días (configurable vía <c>Jwt:ResponsableTokenDias</c>).
+    /// </summary>
+    JwtTokenResult GenerateResponsableToken(Guid responsableId);
 }

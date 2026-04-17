@@ -4,6 +4,10 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Capacitaciones.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configuración EF Core del catálogo global de responsables. La relación N–N con
+/// <see cref="Capacitacion"/> vive en <see cref="CapacitacionResponsableConfiguration"/>.
+/// </summary>
 public class ResponsableConfiguration : IEntityTypeConfiguration<Responsable>
 {
     public void Configure(EntityTypeBuilder<Responsable> builder)
@@ -23,17 +27,17 @@ public class ResponsableConfiguration : IEntityTypeConfiguration<Responsable>
             .HasMaxLength(255)
             .IsRequired();
 
-        // Firma: base64, sin límite (nvarchar(max)).
-        builder.Property(r => r.Firma)
-            .IsRequired();
+        // Firma: base64/dataURL. Opcional — el responsable la carga desde su link firmado.
+        builder.Property(r => r.Firma);
 
-        builder.Property(r => r.Orden)
-            .IsRequired();
+        builder.Property(r => r.Activo)
+            .IsRequired()
+            .HasDefaultValue(true);
 
-        // FK a Capacitacion: configurada desde CapacitacionConfiguration con cascade delete.
-        // Índice único (CapacitacionId, Orden) para garantizar orden único por capacitación.
-        builder.HasIndex(r => new { r.CapacitacionId, r.Orden })
-            .IsUnique()
-            .HasDatabaseName("UX_Responsable_Capacitacion_Orden");
+        builder.Property(r => r.FechaCreacion)
+            .IsRequired()
+            .HasDefaultValueSql("SYSUTCDATETIME()");
+
+        builder.Property(r => r.FechaActualizacion);
     }
 }

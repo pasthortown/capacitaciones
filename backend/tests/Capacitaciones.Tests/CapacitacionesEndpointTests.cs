@@ -9,8 +9,9 @@ namespace Capacitaciones.Tests;
 
 /// <summary>
 /// Tests de integración del módulo de Capacitaciones (Fase 3).
-/// Cubren: creación secuencial con código atómico, validaciones, update (replace-all),
-/// delete lógico, filtro de estado y la nueva validación de siguienteNumero vs max emitido.
+/// Cubren: creación secuencial con código atómico, validaciones, update (replace-all de la pivote
+/// N–N a responsables), delete lógico y la validación de siguienteNumero vs max emitido.
+/// Los responsables se preseedean en el catálogo global antes de referenciarlos en los payloads.
 /// </summary>
 public class CapacitacionesEndpointTests : IClassFixture<InMemoryWebAppFactory>
 {
@@ -18,6 +19,10 @@ public class CapacitacionesEndpointTests : IClassFixture<InMemoryWebAppFactory>
 
     private static readonly Guid SeededModalidadId = new("11111111-1111-1111-1111-111111111001");
     private static readonly Guid SeededTipoActividadId = new("22222222-2222-2222-2222-222222222001");
+
+    // Responsables globales preseedeados (catálogo N–N).
+    private static readonly Guid SeededResponsable1Id = new("33333333-3333-3333-3333-333333333001");
+    private static readonly Guid SeededResponsable2Id = new("33333333-3333-3333-3333-333333333002");
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -32,13 +37,19 @@ public class CapacitacionesEndpointTests : IClassFixture<InMemoryWebAppFactory>
 
     /// <summary>
     /// InMemory no ejecuta migraciones ni aplica HasData por completo; para que los FKs válidos
-    /// en los tests funcionen, aseguramos manualmente que existan la modalidad y el tipo usados.
+    /// en los tests funcionen, aseguramos manualmente que existan la modalidad, el tipo y los
+    /// responsables del catálogo global usados.
     /// </summary>
     private void EnsureCatalogosSeeded()
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        SeedIfMissing(db);
+        db.SaveChanges();
+    }
 
+    private static void SeedIfMissing(AppDbContext db)
+    {
         if (!db.Modalidades.Any(m => m.Id == SeededModalidadId))
         {
             db.Modalidades.Add(new Capacitaciones.Domain.Entities.Modalidad
@@ -59,13 +70,39 @@ public class CapacitacionesEndpointTests : IClassFixture<InMemoryWebAppFactory>
                 FechaCreacion = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             });
         }
-        db.SaveChanges();
+        if (!db.Responsables.Any(r => r.Id == SeededResponsable1Id))
+        {
+            db.Responsables.Add(new Capacitaciones.Domain.Entities.Responsable
+            {
+                Id = SeededResponsable1Id,
+                Nombres = "Responsable Uno",
+                Cargo = "Coordinador",
+                Empresa = "DOS",
+                Firma = "data:image/png;base64,AAAA",
+                Activo = true,
+                FechaCreacion = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            });
+        }
+        if (!db.Responsables.Any(r => r.Id == SeededResponsable2Id))
+        {
+            db.Responsables.Add(new Capacitaciones.Domain.Entities.Responsable
+            {
+                Id = SeededResponsable2Id,
+                Nombres = "Responsable Dos",
+                Cargo = "Líder",
+                Empresa = "DOS",
+                Firma = "data:image/png;base64,BBBB",
+                Activo = true,
+                FechaCreacion = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            });
+        }
     }
 
     private static object BuildCreatePayload(
         string tema = "Tema de prueba",
         int duracionMinutos = 60,
-        DateTime? fechaHoraInicio = null)
+        DateTime? fechaHoraInicio = null,
+        Guid[]? responsableIds = null)
     {
         return new
         {
@@ -79,17 +116,7 @@ public class CapacitacionesEndpointTests : IClassFixture<InMemoryWebAppFactory>
             fechaHoraInicio = fechaHoraInicio ?? DateTime.UtcNow.AddDays(7),
             duracionMinutos,
             descripcion = (string?)null,
-            responsables = new[]
-            {
-                new
-                {
-                    nombres = "Responsable Uno",
-                    cargo = "Coordinador",
-                    empresa = "DOS",
-                    firma = "data:image/png;base64,AAAA",
-                    orden = 0
-                }
-            }
+            responsableIds = responsableIds ?? new[] { SeededResponsable1Id }
         };
     }
 
@@ -108,6 +135,8 @@ public class CapacitacionesEndpointTests : IClassFixture<InMemoryWebAppFactory>
         Assert.Equal("CAP-PC-REG-001", dto!.Codigo);
         Assert.Equal("Inscripciones Abiertas", dto.Estado);
         Assert.Single(dto.Responsables);
+        Assert.Equal(SeededResponsable1Id, dto.Responsables[0].Id);
+        Assert.Equal(0, dto.Responsables[0].Orden);
     }
 
     [Fact]
@@ -182,11 +211,8 @@ public class CapacitacionesEndpointTests : IClassFixture<InMemoryWebAppFactory>
             fechaHoraInicio = creada.FechaHoraInicio,
             duracionMinutos = creada.DuracionMinutos,
             descripcion = "Nueva descripcion",
-            responsables = new[]
-            {
-                new { nombres = "Nuevo A", cargo = "CA", empresa = "EA", firma = "data:image/png;base64,ZZ", orden = 0 },
-                new { nombres = "Nuevo B", cargo = "CB", empresa = "EB", firma = "data:image/png;base64,YY", orden = 1 }
-            }
+            // Invertimos el orden: primero el 2 (orden 0), luego el 1 (orden 1).
+            responsableIds = new[] { SeededResponsable2Id, SeededResponsable1Id }
         };
 
         var response = await client.PutAsJsonAsync($"/api/capacitaciones/{creada.Id}", updatePayload);
@@ -194,15 +220,48 @@ public class CapacitacionesEndpointTests : IClassFixture<InMemoryWebAppFactory>
 
         var dto = await response.Content.ReadFromJsonAsync<CapacitacionPayload>(JsonOpts);
         Assert.Equal(2, dto!.Responsables.Count);
-        Assert.Contains(dto.Responsables, r => r.Nombres == "Nuevo A" && r.Orden == 0);
-        Assert.Contains(dto.Responsables, r => r.Nombres == "Nuevo B" && r.Orden == 1);
+        Assert.Equal(SeededResponsable2Id, dto.Responsables[0].Id);
+        Assert.Equal(0, dto.Responsables[0].Orden);
+        Assert.Equal(SeededResponsable1Id, dto.Responsables[1].Id);
+        Assert.Equal(1, dto.Responsables[1].Orden);
         Assert.Equal("Aprobacion", dto.TipoCertificacion);
 
-        // Confirmamos en BD: solo deben existir 2 responsables para la capacitación.
+        // Confirmamos en BD: solo deben existir 2 entradas pivote para la capacitación;
+        // el catálogo global NO fue modificado (sigue con los 2 responsables preseedeados).
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var count = await db.Responsables.CountAsync(r => r.CapacitacionId == creada.Id);
+        var count = await db.CapacitacionResponsables.CountAsync(cr => cr.CapacitacionId == creada.Id);
         Assert.Equal(2, count);
+        Assert.True(await db.Responsables.AnyAsync(r => r.Id == SeededResponsable1Id));
+        Assert.True(await db.Responsables.AnyAsync(r => r.Id == SeededResponsable2Id));
+    }
+
+    [Fact]
+    public async Task Crear_ConIdInexistente_Returns400()
+    {
+        using var factory = new InMemoryWebAppFactory();
+        await SeedCatalogos(factory);
+        var client = await factory.CreateAuthenticatedClientAsync();
+
+        var response = await client.PostAsJsonAsync("/api/capacitaciones",
+            BuildCreatePayload(responsableIds: new[] { Guid.NewGuid() }));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Crear_ConIdsDuplicados_Returns409()
+    {
+        using var factory = new InMemoryWebAppFactory();
+        await SeedCatalogos(factory);
+        var client = await factory.CreateAuthenticatedClientAsync();
+
+        var response = await client.PostAsJsonAsync("/api/capacitaciones",
+            BuildCreatePayload(responsableIds: new[] { SeededResponsable1Id, SeededResponsable1Id }));
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("RESPONSABLE_DUPLICADO", body);
     }
 
     [Fact]
@@ -254,26 +313,7 @@ public class CapacitacionesEndpointTests : IClassFixture<InMemoryWebAppFactory>
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        if (!db.Modalidades.Any(m => m.Id == SeededModalidadId))
-        {
-            db.Modalidades.Add(new Capacitaciones.Domain.Entities.Modalidad
-            {
-                Id = SeededModalidadId,
-                Nombre = "Presencial",
-                Activo = true,
-                FechaCreacion = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-            });
-        }
-        if (!db.TiposActividad.Any(t => t.Id == SeededTipoActividadId))
-        {
-            db.TiposActividad.Add(new Capacitaciones.Domain.Entities.TipoActividad
-            {
-                Id = SeededTipoActividadId,
-                Nombre = "Charla",
-                Activo = true,
-                FechaCreacion = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-            });
-        }
+        SeedIfMissing(db);
         db.SaveChanges();
         return Task.CompletedTask;
     }
@@ -302,7 +342,7 @@ public class CapacitacionesEndpointTests : IClassFixture<InMemoryWebAppFactory>
         public string Nombres { get; set; } = string.Empty;
         public string Cargo { get; set; } = string.Empty;
         public string Empresa { get; set; } = string.Empty;
-        public string Firma { get; set; } = string.Empty;
+        public string? Firma { get; set; }
         public int Orden { get; set; }
     }
 }

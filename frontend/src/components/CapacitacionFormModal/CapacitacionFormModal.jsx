@@ -1,11 +1,11 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronUp, ChevronDown, Trash2, Plus, AlertTriangle } from 'lucide-react';
 import Modal from '../Modal/Modal.jsx';
 import TextField from '../Forms/TextField.jsx';
-import SignaturePad from '../SignaturePad/SignaturePad.jsx';
 import Spinner from '../Spinner/Spinner.jsx';
 import { useToast } from '../Toast/useToast.js';
 import catalogosService from '../../services/catalogos.js';
+import responsablesService from '../../services/responsables.js';
 import {
   createCapacitacion,
   updateCapacitacion,
@@ -15,6 +15,12 @@ import styles from './CapacitacionFormModal.module.css';
 
 /**
  * Modal de creación / edición de capacitación.
+ *
+ * Responsables:
+ *  - Son un catálogo global (ver services/responsables.js). Este modal sólo los
+ *    **selecciona** y los **ordena** (↑, ↓, eliminar). El payload ahora lleva
+ *    `responsableIds: Guid[]` — el orden del array = `orden` final en el
+ *    certificado. El admin crea/edita/borra responsables en `/responsables`.
  *
  * Props:
  *   - isOpen
@@ -32,7 +38,6 @@ export default function CapacitacionFormModal({
   onSaved,
 }) {
   const toast = useToast();
-  const reactId = useId();
 
   // Form state --------------------------------------------------------------
   const [tema, setTema] = useState('');
@@ -46,14 +51,18 @@ export default function CapacitacionFormModal({
   const [duracionHoras, setDuracionHoras] = useState(1);
   const [duracionExtraMin, setDuracionExtraMin] = useState(0); // 0 | 30
   const [descripcion, setDescripcion] = useState('');
-  const [responsables, setResponsables] = useState([]);
+  const [responsableIds, setResponsableIds] = useState([]); // ordered array
 
   // Catálogos --------------------------------------------------------------
   const [modalidades, setModalidades] = useState([]);
   const [tiposActividad, setTiposActividad] = useState([]);
+  const [catalogoResponsables, setCatalogoResponsables] = useState([]);
   const [loadingCatalogos, setLoadingCatalogos] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Sub-modal selector de responsable --------------------------------------
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Errores por campo ------------------------------------------------------
   const [errors, setErrors] = useState({});
@@ -74,11 +83,13 @@ export default function CapacitacionFormModal({
     Promise.all([
       catalogosService.list('modalidades', { includeInactive: false }),
       catalogosService.list('tipos-actividad', { includeInactive: false }),
+      responsablesService.list(false),
     ])
-      .then(([mods, tipos]) => {
+      .then(([mods, tipos, resps]) => {
         if (cancelled) return;
         setModalidades(Array.isArray(mods) ? mods : []);
         setTiposActividad(Array.isArray(tipos) ? tipos : []);
+        setCatalogoResponsables(Array.isArray(resps) ? resps : []);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -109,7 +120,7 @@ export default function CapacitacionFormModal({
       setDuracionHoras(1);
       setDuracionExtraMin(0);
       setDescripcion('');
-      setResponsables([]);
+      setResponsableIds([]);
       return;
     }
     // Modo edit: carga detalle del backend
@@ -130,19 +141,13 @@ export default function CapacitacionFormModal({
         setDuracionHoras(Math.floor(mins / 60));
         setDuracionExtraMin(mins % 60 === 30 ? 30 : 0);
         setDescripcion(detail.descripcion || '');
-        setResponsables(
+        setResponsableIds(
           Array.isArray(detail.responsables)
             ? detail.responsables
                 .slice()
                 .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
-                .map((r, idx) => ({
-                  _key: r.id || `r-${idx}-${Date.now()}`,
-                  nombres: r.nombres || '',
-                  cargo: r.cargo || '',
-                  empresa: r.empresa || '',
-                  firma: r.firma || null,
-                  orden: idx + 1,
-                }))
+                .map((r) => r.id)
+                .filter(Boolean)
             : [],
         );
       })
@@ -165,44 +170,37 @@ export default function CapacitacionFormModal({
     return horas * 60 + extra;
   }, [duracionHoras, duracionExtraMin]);
 
-  const addResponsable = () => {
-    setResponsables((prev) => [
-      ...prev,
-      {
-        _key: `r-new-${reactId}-${prev.length}-${Date.now()}`,
-        nombres: '',
-        cargo: '',
-        empresa: '',
-        firma: null,
-        orden: prev.length + 1,
-      },
-    ]);
+  const responsablesById = useMemo(() => {
+    const m = new Map();
+    (catalogoResponsables || []).forEach((r) => m.set(r.id, r));
+    return m;
+  }, [catalogoResponsables]);
+
+  const availableToAdd = useMemo(() => {
+    const selected = new Set(responsableIds);
+    return (catalogoResponsables || []).filter((r) => !selected.has(r.id));
+  }, [catalogoResponsables, responsableIds]);
+
+  const addResponsable = (id) => {
+    if (!id) return;
+    setResponsableIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setPickerOpen(false);
   };
 
-  const updateResponsable = (key, patch) => {
-    setResponsables((prev) =>
-      prev.map((r) => (r._key === key ? { ...r, ...patch } : r)),
-    );
+  const removeResponsable = (id) => {
+    setResponsableIds((prev) => prev.filter((x) => x !== id));
   };
 
-  const removeResponsable = (key) => {
-    setResponsables((prev) =>
-      prev
-        .filter((r) => r._key !== key)
-        .map((r, idx) => ({ ...r, orden: idx + 1 })),
-    );
-  };
-
-  const moveResponsable = (key, direction) => {
-    setResponsables((prev) => {
-      const idx = prev.findIndex((r) => r._key === key);
+  const moveResponsable = (id, direction) => {
+    setResponsableIds((prev) => {
+      const idx = prev.indexOf(id);
       if (idx < 0) return prev;
       const target = direction === 'up' ? idx - 1 : idx + 1;
       if (target < 0 || target >= prev.length) return prev;
       const next = prev.slice();
       const [moved] = next.splice(idx, 1);
       next.splice(target, 0, moved);
-      return next.map((r, i) => ({ ...r, orden: i + 1 }));
+      return next;
     });
   };
 
@@ -219,19 +217,6 @@ export default function CapacitacionFormModal({
       next.duracion = 'La duración debe ser mayor a 0.';
     } else if (duracionMinutos % 30 !== 0) {
       next.duracion = 'La duración debe ser múltiplo de 30 minutos.';
-    }
-    const respErrors = responsables
-      .map((r, idx) => {
-        const rErr = {};
-        if (!r.nombres.trim()) rErr.nombres = 'Requerido';
-        if (!r.cargo.trim()) rErr.cargo = 'Requerido';
-        if (!r.empresa.trim()) rErr.empresa = 'Requerido';
-        if (!r.firma) rErr.firma = 'La firma es obligatoria';
-        return { idx, rErr };
-      })
-      .filter((x) => Object.keys(x.rErr).length > 0);
-    if (respErrors.length > 0) {
-      next.responsables = respErrors;
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -253,13 +238,7 @@ export default function CapacitacionFormModal({
       fechaHoraInicio: localInputToIso(fechaHoraInicio),
       duracionMinutos,
       descripcion: descripcion.trim() || null,
-      responsables: responsables.map((r, idx) => ({
-        nombres: r.nombres.trim(),
-        cargo: r.cargo.trim(),
-        empresa: r.empresa.trim(),
-        firma: r.firma,
-        orden: idx + 1,
-      })),
+      responsableIds: responsableIds.slice(),
     };
     setSubmitting(true);
     try {
@@ -284,12 +263,6 @@ export default function CapacitacionFormModal({
     if (submitting) return;
     onClose?.();
   };
-
-  const respErrorsByIdx = useMemo(() => {
-    const map = new Map();
-    (errors.responsables || []).forEach((e) => map.set(e.idx, e.rErr));
-    return map;
-  }, [errors.responsables]);
 
   return (
     <Modal
@@ -538,34 +511,73 @@ export default function CapacitacionFormModal({
 
           {/* Responsables ---------------------------------------------- */}
           <div className={styles.sectionTitle}>
-            <span>Responsables adicionales</span>
+            <span>Responsables</span>
             <button
               type="button"
               className="btn btn--secondary btn--sm"
-              onClick={addResponsable}
+              onClick={() => setPickerOpen(true)}
+              disabled={loadingCatalogos || availableToAdd.length === 0}
+              title={
+                availableToAdd.length === 0
+                  ? 'No hay más responsables disponibles en el catálogo.'
+                  : 'Agregar responsable'
+              }
             >
               <Plus width={14} height={14} />
               <span>Agregar responsable</span>
             </button>
           </div>
 
-          {responsables.length === 0 ? (
+          <div className={styles.responsablesHint}>
+            El capacitador siempre firma el certificado. Los responsables
+            seleccionados aquí firmarán en el orden listado. Adminístralos en{' '}
+            <strong>Responsables</strong> (catálogo).
+          </div>
+
+          {responsableIds.length === 0 ? (
             <div className={styles.emptyResponsables}>
-              El capacitador siempre firma el certificado. Puedes agregar responsables
-              adicionales que también firmarán.
+              Sin responsables adicionales.
             </div>
           ) : (
-            responsables.map((r, idx) => {
-              const rErr = respErrorsByIdx.get(idx) || {};
-              return (
-                <div key={r._key} className={styles.responsableRow}>
-                  <div className={styles.responsableHeader}>
-                    <span className={styles.responsableTitle}>Responsable #{idx + 1}</span>
+            <ul className={styles.responsableList}>
+              {responsableIds.map((id, idx) => {
+                const r = responsablesById.get(id);
+                const missingSignature = r && r.tieneFirma === false;
+                const isUnknown = !r; // seleccionado pero no en el catálogo cargado (inactivo?)
+                return (
+                  <li key={id} className={styles.responsableItem}>
+                    <div className={styles.responsableOrder}>{idx + 1}</div>
+                    <div className={styles.responsableInfo}>
+                      <div className={styles.responsableName}>
+                        {r?.nombres || 'Responsable desconocido'}
+                        {missingSignature && (
+                          <span
+                            className={styles.warningBadge}
+                            title="Este responsable no ha cargado su firma — se requerirá para emitir certificados"
+                          >
+                            <AlertTriangle width={12} height={12} />
+                            <span>Sin firma</span>
+                          </span>
+                        )}
+                        {isUnknown && (
+                          <span
+                            className={styles.warningBadge}
+                            title="Este responsable ya no está activo en el catálogo. Considera quitarlo."
+                          >
+                            <AlertTriangle width={12} height={12} />
+                            <span>Inactivo</span>
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.responsableMeta}>
+                        {(r?.cargo || '—')}{' · '}{(r?.empresa || '—')}
+                      </div>
+                    </div>
                     <div className={styles.responsableActions}>
                       <button
                         type="button"
                         className={styles.iconBtn}
-                        onClick={() => moveResponsable(r._key, 'up')}
+                        onClick={() => moveResponsable(id, 'up')}
                         disabled={idx === 0}
                         title="Mover arriba"
                         aria-label="Mover arriba"
@@ -575,8 +587,8 @@ export default function CapacitacionFormModal({
                       <button
                         type="button"
                         className={styles.iconBtn}
-                        onClick={() => moveResponsable(r._key, 'down')}
-                        disabled={idx === responsables.length - 1}
+                        onClick={() => moveResponsable(id, 'down')}
+                        disabled={idx === responsableIds.length - 1}
                         title="Mover abajo"
                         aria-label="Mover abajo"
                       >
@@ -585,66 +597,74 @@ export default function CapacitacionFormModal({
                       <button
                         type="button"
                         className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                        onClick={() => removeResponsable(r._key)}
-                        title="Eliminar"
-                        aria-label="Eliminar responsable"
+                        onClick={() => removeResponsable(id)}
+                        title="Quitar"
+                        aria-label="Quitar responsable"
                       >
                         <Trash2 width={16} height={16} />
                       </button>
                     </div>
-                  </div>
-
-                  <div className={styles.responsableFields}>
-                    <TextField
-                      label="Nombres"
-                      name={`resp-nombres-${idx}`}
-                      value={r.nombres}
-                      onChange={(v) => updateResponsable(r._key, { nombres: v })}
-                      required
-                      maxLength={255}
-                      error={rErr.nombres}
-                    />
-                    <TextField
-                      label="Cargo"
-                      name={`resp-cargo-${idx}`}
-                      value={r.cargo}
-                      onChange={(v) => updateResponsable(r._key, { cargo: v })}
-                      required
-                      maxLength={255}
-                      error={rErr.cargo}
-                    />
-                    <TextField
-                      label="Empresa"
-                      name={`resp-empresa-${idx}`}
-                      value={r.empresa}
-                      onChange={(v) => updateResponsable(r._key, { empresa: v })}
-                      required
-                      maxLength={255}
-                      error={rErr.empresa}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={styles.smallLabel} data-required="true">
-                      Firma
-                    </label>
-                    <SignaturePad
-                      value={r.firma}
-                      onChange={(dataUrl) => updateResponsable(r._key, { firma: dataUrl })}
-                      width={360}
-                      height={140}
-                    />
-                    {rErr.firma && <div className={styles.errorText}>{rErr.firma}</div>}
-                  </div>
-                </div>
-              );
-            })
+                  </li>
+                );
+              })}
+            </ul>
           )}
 
-          {/* Submit oculto para permitir envío con Enter (aunque preferimos botón) */}
+          {/* Submit oculto para permitir envío con Enter */}
           <button type="submit" style={{ display: 'none' }} aria-hidden="true" />
         </form>
       )}
+
+      {/* Sub-modal: selector de responsable del catálogo */}
+      <Modal
+        isOpen={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        title="Seleccionar responsable"
+        footer={
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={() => setPickerOpen(false)}
+          >
+            Cerrar
+          </button>
+        }
+      >
+        {availableToAdd.length === 0 ? (
+          <div className={styles.pickerEmpty}>
+            No hay más responsables disponibles. Crea uno nuevo en la pantalla{' '}
+            <strong>Responsables</strong>.
+          </div>
+        ) : (
+          <ul className={styles.pickerList}>
+            {availableToAdd.map((r) => (
+              <li key={r.id}>
+                <button
+                  type="button"
+                  className={styles.pickerItem}
+                  onClick={() => addResponsable(r.id)}
+                >
+                  <div className={styles.pickerItemMain}>
+                    <div className={styles.pickerItemName}>{r.nombres}</div>
+                    <div className={styles.pickerItemMeta}>
+                      {r.cargo || '—'}{' · '}{r.empresa || '—'}
+                    </div>
+                  </div>
+                  {r.tieneFirma === false && (
+                    <span
+                      className={styles.warningBadge}
+                      title="Este responsable no ha cargado su firma"
+                    >
+                      <AlertTriangle width={12} height={12} />
+                      <span>Sin firma</span>
+                    </span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Modal>
     </Modal>
   );
 }

@@ -230,6 +230,28 @@ namespace Capacitaciones.Infrastructure.Persistence.Migrations
                     b.ToTable("Capacitacion", "dbo");
                 });
 
+            modelBuilder.Entity("Capacitaciones.Domain.Entities.CapacitacionResponsable", b =>
+                {
+                    b.Property<Guid>("CapacitacionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ResponsableId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Orden")
+                        .HasColumnType("int");
+
+                    b.HasKey("CapacitacionId", "ResponsableId");
+
+                    b.HasIndex("ResponsableId");
+
+                    b.HasIndex("CapacitacionId", "Orden")
+                        .IsUnique()
+                        .HasDatabaseName("UX_CapacitacionResponsable_Capacitacion_Orden");
+
+                    b.ToTable("CapacitacionResponsable", "dbo");
+                });
+
             modelBuilder.Entity("Capacitaciones.Domain.Entities.ConfiguracionNumeracion", b =>
                 {
                     b.Property<int>("Id")
@@ -315,8 +337,10 @@ namespace Capacitaciones.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("CapacitacionId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<bool>("Activo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Cargo")
                         .IsRequired()
@@ -328,8 +352,15 @@ namespace Capacitaciones.Infrastructure.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<DateTime?>("FechaActualizacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
                     b.Property<string>("Firma")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Nombres")
@@ -337,14 +368,7 @@ namespace Capacitaciones.Infrastructure.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<int>("Orden")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("CapacitacionId", "Orden")
-                        .IsUnique()
-                        .HasDatabaseName("UX_Responsable_Capacitacion_Orden");
 
                     b.ToTable("Responsable", "dbo");
                 });
@@ -464,20 +488,28 @@ namespace Capacitaciones.Infrastructure.Persistence.Migrations
                     b.Navigation("TipoActividad");
                 });
 
-            modelBuilder.Entity("Capacitaciones.Domain.Entities.Responsable", b =>
+            modelBuilder.Entity("Capacitaciones.Domain.Entities.CapacitacionResponsable", b =>
                 {
                     b.HasOne("Capacitaciones.Domain.Entities.Capacitacion", "Capacitacion")
-                        .WithMany("Responsables")
+                        .WithMany("CapacitacionResponsables")
                         .HasForeignKey("CapacitacionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Capacitaciones.Domain.Entities.Responsable", "Responsable")
+                        .WithMany()
+                        .HasForeignKey("ResponsableId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Capacitacion");
+
+                    b.Navigation("Responsable");
                 });
 
             modelBuilder.Entity("Capacitaciones.Domain.Entities.Capacitacion", b =>
                 {
-                    b.Navigation("Responsables");
+                    b.Navigation("CapacitacionResponsables");
                 });
 #pragma warning restore 612, 618
         }

@@ -5,24 +5,27 @@ using Capacitaciones.Domain.Entities;
 namespace Capacitaciones.Application.UseCases.Capacitaciones;
 
 /// <summary>
-/// Caso de uso: editar capacitación. El <c>Codigo</c> es inmutable. La lista de
-/// responsables se reemplaza por completo (estrategia replace-all) dentro de una
-/// misma transacción.
+/// Caso de uso: editar capacitación. El <c>Codigo</c> es inmutable. La lista de relaciones
+/// con responsables (pivote N–N) se reemplaza por completo (estrategia replace-all) dentro
+/// de una misma transacción. El catálogo global de <see cref="Responsable"/> no se toca.
 /// </summary>
 public class EditarCapacitacionUseCase
 {
     private readonly ICapacitacionRepository _repo;
     private readonly IModalidadRepository _modalidades;
     private readonly ITipoActividadRepository _tiposActividad;
+    private readonly IResponsableRepository _responsables;
 
     public EditarCapacitacionUseCase(
         ICapacitacionRepository repo,
         IModalidadRepository modalidades,
-        ITipoActividadRepository tiposActividad)
+        ITipoActividadRepository tiposActividad,
+        IResponsableRepository responsables)
     {
         _repo = repo;
         _modalidades = modalidades;
         _tiposActividad = tiposActividad;
+        _responsables = responsables;
     }
 
     public async Task<CapacitacionDetailDto> ExecuteAsync(Guid id, UpdateCapacitacionDto input, CancellationToken ct = default)
@@ -45,7 +48,8 @@ public class EditarCapacitacionUseCase
         await CapacitacionValidator.ValidarCatalogosAsync(
             input.ModalidadId, input.TipoActividadId, _modalidades, _tiposActividad, ct);
 
-        CapacitacionValidator.ValidarResponsables(input.Responsables);
+        CapacitacionValidator.ValidarResponsableIds(input.ResponsableIds);
+        await CapacitacionValidator.ValidarResponsablesActivosAsync(input.ResponsableIds, _responsables, ct);
 
         entity.Tema = input.Tema.Trim();
         entity.Capacitador = input.Capacitador.Trim();
@@ -60,20 +64,16 @@ public class EditarCapacitacionUseCase
         entity.DuracionMinutos = input.DuracionMinutos;
         entity.FechaActualizacion = DateTime.UtcNow;
 
-        var nuevos = (input.Responsables ?? new List<CreateResponsableDto>())
-            .Select(r => new Responsable
+        var nuevasRelaciones = (input.ResponsableIds ?? new List<Guid>())
+            .Select((rid, index) => new CapacitacionResponsable
             {
-                Id = Guid.NewGuid(),
                 CapacitacionId = entity.Id,
-                Nombres = r.Nombres.Trim(),
-                Cargo = r.Cargo.Trim(),
-                Empresa = r.Empresa.Trim(),
-                Firma = r.Firma,
-                Orden = r.Orden
+                ResponsableId = rid,
+                Orden = index
             })
             .ToList();
 
-        await _repo.UpdateWithResponsablesAsync(entity, nuevos, ct);
+        await _repo.UpdateWithResponsablesAsync(entity, nuevasRelaciones, ct);
 
         var recargada = await _repo.GetByIdWithResponsablesAsync(entity.Id, ct)
             ?? throw new InvalidOperationException("No se pudo recuperar la capacitación tras actualizar.");

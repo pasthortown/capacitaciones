@@ -32,12 +32,13 @@ public interface ICapacitacionRepository
         CancellationToken ct = default);
 
     /// <summary>
-    /// Actualiza una capacitación reemplazando por completo su lista de responsables
-    /// (borra los existentes y agrega los nuevos dentro de una misma transacción).
+    /// Actualiza una capacitación reemplazando por completo sus relaciones con responsables
+    /// (borra las entradas pivote existentes y agrega las nuevas dentro de una misma transacción).
+    /// El catálogo global de <see cref="Responsable"/> NO se toca — solo la pivote.
     /// </summary>
     Task UpdateWithResponsablesAsync(
         Capacitacion entity,
-        IEnumerable<Responsable> nuevosResponsables,
+        IEnumerable<CapacitacionResponsable> nuevasRelaciones,
         CancellationToken ct = default);
 
     /// <summary>

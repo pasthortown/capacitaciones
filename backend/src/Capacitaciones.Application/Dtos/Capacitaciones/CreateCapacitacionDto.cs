@@ -4,6 +4,8 @@ namespace Capacitaciones.Application.Dtos.Capacitaciones;
 /// Payload para <c>POST /api/capacitaciones</c>. El <c>Codigo</c> se asigna en el backend.
 /// <c>TipoCertificacion</c> se recibe como string para permitir el parseo explícito
 /// (<c>Participacion</c> | <c>Aprobacion</c>).
+/// <c>ResponsableIds</c> son ids del catálogo global de responsables en el orden deseado
+/// (posición 0-based en la lista = orden del firmante en el certificado).
 /// </summary>
 public class CreateCapacitacionDto
 {
@@ -22,5 +24,5 @@ public class CreateCapacitacionDto
 
     public string? Descripcion { get; set; }
 
-    public List<CreateResponsableDto> Responsables { get; set; } = new();
+    public List<Guid> ResponsableIds { get; set; } = new();
 }

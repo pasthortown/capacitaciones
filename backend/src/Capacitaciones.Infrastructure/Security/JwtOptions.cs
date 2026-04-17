@@ -29,4 +29,11 @@ public class JwtOptions
     /// de la capacitación.
     /// </summary>
     public int InscripcionTokenDias { get; set; } = 90;
+
+    /// <summary>
+    /// TTL (en días) del token del responsable emitido por el admin para que el responsable
+    /// complete/actualice su perfil (nombre, cargo, empresa, firma) desde un link público.
+    /// Default: 90 días (mismo criterio que los otros tokens de recurso público).
+    /// </summary>
+    public int ResponsableTokenDias { get; set; } = 90;
 }

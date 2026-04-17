@@ -8,6 +8,8 @@ using Capacitaciones.Application.UseCases.Capacitador;
 using Capacitaciones.Application.UseCases.Catalogos;
 using Capacitaciones.Application.UseCases.Configuracion;
 using Capacitaciones.Application.UseCases.Inscripcion;
+using Capacitaciones.Application.UseCases.Responsable;
+using Capacitaciones.Application.UseCases.Responsables;
 using Capacitaciones.Domain.Entities;
 using Capacitaciones.Infrastructure.Adapters.Xlsx;
 using Capacitaciones.Infrastructure.Persistence;
@@ -132,6 +134,9 @@ builder.Services.AddAuthorization(o =>
     o.AddPolicy("Capacitador", p => p.RequireRole("Capacitador"));
     // Policy Fase 5: token del link público de inscripción (role=Inscripcion).
     o.AddPolicy("Inscripcion", p => p.RequireRole("Inscripcion"));
+    // Policy Refactor Responsables: token del link público del responsable (role=Responsable).
+    // El controller valida además el claim rid.
+    o.AddPolicy("Responsable", p => p.RequireRole("Responsable"));
 });
 
 // Repositorios (adaptadores EF Core).
@@ -141,6 +146,7 @@ builder.Services.AddScoped<IAreaRepository, AreaRepository>();
 builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
 builder.Services.AddScoped<IConfiguracionNumeracionRepository, ConfiguracionNumeracionRepository>();
 builder.Services.AddScoped<ICapacitacionRepository, CapacitacionRepository>();
+builder.Services.AddScoped<IResponsableRepository, ResponsableRepository>();
 builder.Services.AddScoped<IAsistenteRepository, AsistenteRepository>();
 
 // También registramos el puerto genérico ICatalogoRepository<T> para que el CatalogoService<T>
@@ -180,6 +186,16 @@ builder.Services.AddScoped<ObtenerInscripcionPublicaUseCase>();
 builder.Services.AddScoped<InscribirAsistenteUseCase>();
 builder.Services.AddScoped<ListarAsistentesUseCase>();
 builder.Services.AddScoped<DescargarCertificadoUseCase>();
+
+// Refactor Responsables — catálogo global + link firmado para página pública.
+builder.Services.AddScoped<ListarResponsablesUseCase>();
+builder.Services.AddScoped<ObtenerResponsableUseCase>();
+builder.Services.AddScoped<CrearResponsableUseCase>();
+builder.Services.AddScoped<EditarResponsableUseCase>();
+builder.Services.AddScoped<EliminarResponsableUseCase>();
+builder.Services.AddScoped<GenerarLinkResponsableUseCase>();
+builder.Services.AddScoped<ObtenerPerfilResponsableUseCase>();
+builder.Services.AddScoped<ActualizarPerfilResponsableUseCase>();
 
 // Servicio de numeración (consumido en Fase 3).
 builder.Services.AddScoped<INumeracionService, NumeracionService>();

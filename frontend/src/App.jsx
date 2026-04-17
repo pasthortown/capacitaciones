@@ -5,6 +5,8 @@ import CapacitacionesPage from './pages/capacitaciones/CapacitacionesPage.jsx';
 import AsistentesPage from './pages/asistentes/AsistentesPage.jsx';
 import CapacitadorPage from './pages/capacitador/CapacitadorPage.jsx';
 import InscripcionPage from './pages/inscripcion/InscripcionPage.jsx';
+import ResponsablePage from './pages/responsable/ResponsablePage.jsx';
+import ResponsablesPage from './pages/responsables/ResponsablesPage.jsx';
 import ModalidadesPage from './pages/catalogos/ModalidadesPage.jsx';
 import TiposActividadPage from './pages/catalogos/TiposActividadPage.jsx';
 import AreasPage from './pages/catalogos/AreasPage.jsx';
@@ -55,6 +57,7 @@ export default function App() {
       {/* Públicas (sin sidebar / sin guard admin) */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/capacitador" element={<CapacitadorPage />} />
+      <Route path="/responsable" element={<ResponsablePage />} />
       <Route path="/inscripcion" element={<InscripcionPage />} />
 
       {/* Protegidas */}
@@ -69,6 +72,9 @@ export default function App() {
             path="/capacitaciones/:id/asistentes"
             element={<AsistentesPage />}
           />
+
+          {/* Responsables (catálogo global) */}
+          <Route path="/responsables" element={<ResponsablesPage />} />
 
           {/* Catálogos */}
           <Route

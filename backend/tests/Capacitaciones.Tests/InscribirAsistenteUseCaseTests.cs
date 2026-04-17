@@ -198,7 +198,7 @@ public class InscribirAsistenteUseCaseTests
         public Task<string> AddAsync(Capacitacion entity, Func<CancellationToken, Task<string>> codeFactory, CancellationToken ct = default)
             => throw new NotImplementedException();
 
-        public Task UpdateWithResponsablesAsync(Capacitacion entity, IEnumerable<Responsable> nuevosResponsables, CancellationToken ct = default)
+        public Task UpdateWithResponsablesAsync(Capacitacion entity, IEnumerable<CapacitacionResponsable> nuevasRelaciones, CancellationToken ct = default)
             => throw new NotImplementedException();
 
         public Task UpdateAsync(Capacitacion entity, CancellationToken ct = default)

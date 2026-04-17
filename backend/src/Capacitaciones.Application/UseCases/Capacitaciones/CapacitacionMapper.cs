@@ -45,16 +45,16 @@ internal static class CapacitacionMapper
         Activo = c.Activo,
         FechaCreacion = c.FechaCreacion,
         FechaActualizacion = c.FechaActualizacion,
-        Responsables = c.Responsables
-            .OrderBy(r => r.Orden)
-            .Select(r => new ResponsableDto
+        Responsables = c.CapacitacionResponsables
+            .OrderBy(cr => cr.Orden)
+            .Select(cr => new ResponsableDto
             {
-                Id = r.Id,
-                Nombres = r.Nombres,
-                Cargo = r.Cargo,
-                Empresa = r.Empresa,
-                Firma = r.Firma,
-                Orden = r.Orden
+                Id = cr.ResponsableId,
+                Nombres = cr.Responsable?.Nombres ?? string.Empty,
+                Cargo = cr.Responsable?.Cargo ?? string.Empty,
+                Empresa = cr.Responsable?.Empresa ?? string.Empty,
+                Firma = cr.Responsable?.Firma,
+                Orden = cr.Orden
             })
             .ToList()
     };

@@ -7,25 +7,28 @@ namespace Capacitaciones.Application.UseCases.Capacitaciones;
 /// <summary>
 /// Caso de uso: crear capacitación. El código se asigna atómicamente vía
 /// <see cref="INumeracionService.ClaimNextCodeAsync"/> y la inserción de la capacitación
-/// + responsables se hace dentro de la misma transacción (manejada por el repositorio
-/// con <c>IExecutionStrategy</c> para retry de SQL Server).
+/// + entradas pivote a responsables se hace dentro de la misma transacción (manejada por el
+/// repositorio con <c>IExecutionStrategy</c> para retry de SQL Server).
 /// </summary>
 public class CrearCapacitacionUseCase
 {
     private readonly ICapacitacionRepository _repo;
     private readonly IModalidadRepository _modalidades;
     private readonly ITipoActividadRepository _tiposActividad;
+    private readonly IResponsableRepository _responsables;
     private readonly INumeracionService _numeracion;
 
     public CrearCapacitacionUseCase(
         ICapacitacionRepository repo,
         IModalidadRepository modalidades,
         ITipoActividadRepository tiposActividad,
+        IResponsableRepository responsables,
         INumeracionService numeracion)
     {
         _repo = repo;
         _modalidades = modalidades;
         _tiposActividad = tiposActividad;
+        _responsables = responsables;
         _numeracion = numeracion;
     }
 
@@ -46,7 +49,8 @@ public class CrearCapacitacionUseCase
         await CapacitacionValidator.ValidarCatalogosAsync(
             input.ModalidadId, input.TipoActividadId, _modalidades, _tiposActividad, ct);
 
-        CapacitacionValidator.ValidarResponsables(input.Responsables);
+        CapacitacionValidator.ValidarResponsableIds(input.ResponsableIds);
+        await CapacitacionValidator.ValidarResponsablesActivosAsync(input.ResponsableIds, _responsables, ct);
 
         var now = DateTime.UtcNow;
         var entity = new Capacitacion
@@ -68,17 +72,7 @@ public class CrearCapacitacionUseCase
             Activo = true,
             FechaCreacion = now,
             FechaActualizacion = null,
-            Responsables = (input.Responsables ?? new List<CreateResponsableDto>())
-                .Select(r => new Responsable
-                {
-                    Id = Guid.NewGuid(),
-                    Nombres = r.Nombres.Trim(),
-                    Cargo = r.Cargo.Trim(),
-                    Empresa = r.Empresa.Trim(),
-                    Firma = r.Firma,
-                    Orden = r.Orden
-                })
-                .ToList()
+            CapacitacionResponsables = BuildPivotRelations(input.ResponsableIds)
         };
 
         // El repositorio orquesta IExecutionStrategy + transacción y llama a nuestro factory
@@ -86,10 +80,23 @@ public class CrearCapacitacionUseCase
         // si falla el insert nunca se "queme" un número.
         await _repo.AddAsync(entity, async innerCt => await _numeracion.ClaimNextCodeAsync(innerCt), ct);
 
-        // Volvemos a cargar con navegaciones para poder devolver Modalidad.Nombre / TipoActividad.Nombre.
+        // Volvemos a cargar con navegaciones para poder devolver Modalidad.Nombre / TipoActividad.Nombre
+        // + los datos de cada responsable linkeado.
         var recargada = await _repo.GetByIdWithResponsablesAsync(entity.Id, ct)
             ?? throw new InvalidOperationException("No se pudo recuperar la capacitación recién creada.");
 
         return CapacitacionMapper.ToDetailDto(recargada);
+    }
+
+    private static List<CapacitacionResponsable> BuildPivotRelations(IEnumerable<Guid>? ids)
+    {
+        if (ids is null) return new();
+        return ids
+            .Select((id, index) => new CapacitacionResponsable
+            {
+                ResponsableId = id,
+                Orden = index
+            })
+            .ToList();
     }
 }
