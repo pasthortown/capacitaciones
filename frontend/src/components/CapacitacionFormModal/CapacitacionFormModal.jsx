@@ -1,0 +1,667 @@
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react';
+import Modal from '../Modal/Modal.jsx';
+import TextField from '../Forms/TextField.jsx';
+import SignaturePad from '../SignaturePad/SignaturePad.jsx';
+import Spinner from '../Spinner/Spinner.jsx';
+import { useToast } from '../Toast/useToast.js';
+import catalogosService from '../../services/catalogos.js';
+import {
+  createCapacitacion,
+  updateCapacitacion,
+  getCapacitacion,
+} from '../../services/capacitaciones.js';
+import styles from './CapacitacionFormModal.module.css';
+
+/**
+ * Modal de creación / edición de capacitación.
+ *
+ * Props:
+ *   - isOpen
+ *   - mode: 'create' | 'edit'
+ *   - initialValue: null | { id, ... } (en modo edit, `id` es suficiente —
+ *     el modal hará GET /capacitaciones/{id} para obtener el detalle completo).
+ *   - onClose()
+ *   - onSaved(updatedOrCreated)
+ */
+export default function CapacitacionFormModal({
+  isOpen,
+  mode = 'create',
+  initialValue = null,
+  onClose,
+  onSaved,
+}) {
+  const toast = useToast();
+  const reactId = useId();
+
+  // Form state --------------------------------------------------------------
+  const [tema, setTema] = useState('');
+  const [capacitador, setCapacitador] = useState('');
+  const [cargoCapacitador, setCargoCapacitador] = useState('');
+  const [empresaCapacitador, setEmpresaCapacitador] = useState('');
+  const [modalidadId, setModalidadId] = useState('');
+  const [tipoActividadId, setTipoActividadId] = useState('');
+  const [tipoCertificacion, setTipoCertificacion] = useState('Participacion');
+  const [fechaHoraInicio, setFechaHoraInicio] = useState(''); // "YYYY-MM-DDTHH:mm"
+  const [duracionHoras, setDuracionHoras] = useState(1);
+  const [duracionExtraMin, setDuracionExtraMin] = useState(0); // 0 | 30
+  const [descripcion, setDescripcion] = useState('');
+  const [responsables, setResponsables] = useState([]);
+
+  // Catálogos --------------------------------------------------------------
+  const [modalidades, setModalidades] = useState([]);
+  const [tiposActividad, setTiposActividad] = useState([]);
+  const [loadingCatalogos, setLoadingCatalogos] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Errores por campo ------------------------------------------------------
+  const [errors, setErrors] = useState({});
+
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Carga de catálogos cuando se abre el modal -----------------------------
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    setLoadingCatalogos(true);
+    Promise.all([
+      catalogosService.list('modalidades', { includeInactive: false }),
+      catalogosService.list('tipos-actividad', { includeInactive: false }),
+    ])
+      .then(([mods, tipos]) => {
+        if (cancelled) return;
+        setModalidades(Array.isArray(mods) ? mods : []);
+        setTiposActividad(Array.isArray(tipos) ? tipos : []);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        toast.error(err?.message || 'No se pudieron cargar los catálogos.');
+      })
+      .finally(() => {
+        if (!cancelled && mountedRef.current) setLoadingCatalogos(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, toast]);
+
+  // Reset / carga del detalle al abrir -------------------------------------
+  useEffect(() => {
+    if (!isOpen) return;
+    setErrors({});
+    if (mode === 'create' || !initialValue?.id) {
+      // Reset a valores por defecto
+      setTema('');
+      setCapacitador('');
+      setCargoCapacitador('');
+      setEmpresaCapacitador('');
+      setModalidadId('');
+      setTipoActividadId('');
+      setTipoCertificacion('Participacion');
+      setFechaHoraInicio('');
+      setDuracionHoras(1);
+      setDuracionExtraMin(0);
+      setDescripcion('');
+      setResponsables([]);
+      return;
+    }
+    // Modo edit: carga detalle del backend
+    let cancelled = false;
+    setLoadingDetail(true);
+    getCapacitacion(initialValue.id)
+      .then((detail) => {
+        if (cancelled) return;
+        setTema(detail.tema || '');
+        setCapacitador(detail.capacitador || '');
+        setCargoCapacitador(detail.cargoCapacitador || '');
+        setEmpresaCapacitador(detail.empresaCapacitador || '');
+        setModalidadId(detail.modalidad?.id || '');
+        setTipoActividadId(detail.tipoActividad?.id || '');
+        setTipoCertificacion(detail.tipoCertificacion || 'Participacion');
+        setFechaHoraInicio(isoToLocalInput(detail.fechaHoraInicio));
+        const mins = Number(detail.duracionMinutos || 0);
+        setDuracionHoras(Math.floor(mins / 60));
+        setDuracionExtraMin(mins % 60 === 30 ? 30 : 0);
+        setDescripcion(detail.descripcion || '');
+        setResponsables(
+          Array.isArray(detail.responsables)
+            ? detail.responsables
+                .slice()
+                .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+                .map((r, idx) => ({
+                  _key: r.id || `r-${idx}-${Date.now()}`,
+                  nombres: r.nombres || '',
+                  cargo: r.cargo || '',
+                  empresa: r.empresa || '',
+                  firma: r.firma || null,
+                  orden: idx + 1,
+                }))
+            : [],
+        );
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        toast.error(err?.message || 'No se pudo cargar la capacitación.');
+      })
+      .finally(() => {
+        if (!cancelled && mountedRef.current) setLoadingDetail(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, mode, initialValue, toast]);
+
+  // Helpers ----------------------------------------------------------------
+  const duracionMinutos = useMemo(() => {
+    const horas = Math.max(0, Number(duracionHoras) || 0);
+    const extra = duracionExtraMin === 30 ? 30 : 0;
+    return horas * 60 + extra;
+  }, [duracionHoras, duracionExtraMin]);
+
+  const addResponsable = () => {
+    setResponsables((prev) => [
+      ...prev,
+      {
+        _key: `r-new-${reactId}-${prev.length}-${Date.now()}`,
+        nombres: '',
+        cargo: '',
+        empresa: '',
+        firma: null,
+        orden: prev.length + 1,
+      },
+    ]);
+  };
+
+  const updateResponsable = (key, patch) => {
+    setResponsables((prev) =>
+      prev.map((r) => (r._key === key ? { ...r, ...patch } : r)),
+    );
+  };
+
+  const removeResponsable = (key) => {
+    setResponsables((prev) =>
+      prev
+        .filter((r) => r._key !== key)
+        .map((r, idx) => ({ ...r, orden: idx + 1 })),
+    );
+  };
+
+  const moveResponsable = (key, direction) => {
+    setResponsables((prev) => {
+      const idx = prev.findIndex((r) => r._key === key);
+      if (idx < 0) return prev;
+      const target = direction === 'up' ? idx - 1 : idx + 1;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = prev.slice();
+      const [moved] = next.splice(idx, 1);
+      next.splice(target, 0, moved);
+      return next.map((r, i) => ({ ...r, orden: i + 1 }));
+    });
+  };
+
+  // Validación -------------------------------------------------------------
+  const validate = () => {
+    const next = {};
+    if (!tema.trim()) next.tema = 'El tema es obligatorio.';
+    else if (tema.length > 500) next.tema = 'Máximo 500 caracteres.';
+    if (!capacitador.trim()) next.capacitador = 'El capacitador es obligatorio.';
+    if (!modalidadId) next.modalidadId = 'Selecciona una modalidad.';
+    if (!tipoActividadId) next.tipoActividadId = 'Selecciona un tipo de actividad.';
+    if (!fechaHoraInicio) next.fechaHoraInicio = 'Ingresa fecha y hora.';
+    if (duracionMinutos <= 0) {
+      next.duracion = 'La duración debe ser mayor a 0.';
+    } else if (duracionMinutos % 30 !== 0) {
+      next.duracion = 'La duración debe ser múltiplo de 30 minutos.';
+    }
+    const respErrors = responsables
+      .map((r, idx) => {
+        const rErr = {};
+        if (!r.nombres.trim()) rErr.nombres = 'Requerido';
+        if (!r.cargo.trim()) rErr.cargo = 'Requerido';
+        if (!r.empresa.trim()) rErr.empresa = 'Requerido';
+        if (!r.firma) rErr.firma = 'La firma es obligatoria';
+        return { idx, rErr };
+      })
+      .filter((x) => Object.keys(x.rErr).length > 0);
+    if (respErrors.length > 0) {
+      next.responsables = respErrors;
+    }
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  // Submit -----------------------------------------------------------------
+  const handleSubmit = async (event) => {
+    event?.preventDefault?.();
+    if (submitting) return;
+    if (!validate()) return;
+    const payload = {
+      tema: tema.trim(),
+      capacitador: capacitador.trim(),
+      cargoCapacitador: cargoCapacitador.trim() || null,
+      empresaCapacitador: empresaCapacitador.trim() || null,
+      modalidadId,
+      tipoActividadId,
+      tipoCertificacion,
+      fechaHoraInicio: localInputToIso(fechaHoraInicio),
+      duracionMinutos,
+      descripcion: descripcion.trim() || null,
+      responsables: responsables.map((r, idx) => ({
+        nombres: r.nombres.trim(),
+        cargo: r.cargo.trim(),
+        empresa: r.empresa.trim(),
+        firma: r.firma,
+        orden: idx + 1,
+      })),
+    };
+    setSubmitting(true);
+    try {
+      let result;
+      if (mode === 'edit' && initialValue?.id) {
+        result = await updateCapacitacion(initialValue.id, payload);
+        toast.success('Capacitación actualizada.');
+      } else {
+        result = await createCapacitacion(payload);
+        toast.success('Capacitación creada.');
+      }
+      onSaved?.(result);
+      onClose?.();
+    } catch (err) {
+      toast.error(err?.message || 'No se pudo guardar la capacitación.');
+    } finally {
+      if (mountedRef.current) setSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (submitting) return;
+    onClose?.();
+  };
+
+  const respErrorsByIdx = useMemo(() => {
+    const map = new Map();
+    (errors.responsables || []).forEach((e) => map.set(e.idx, e.rErr));
+    return map;
+  }, [errors.responsables]);
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      className={styles.wideModal}
+      title={mode === 'edit' ? 'Editar capacitación' : 'Nueva capacitación'}
+      footer={
+        <>
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={handleClose}
+            disabled={submitting}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={handleSubmit}
+            disabled={submitting || loadingDetail}
+          >
+            {submitting ? 'Guardando...' : 'Guardar'}
+          </button>
+        </>
+      }
+    >
+      {loadingDetail ? (
+        <div style={{ padding: 24, textAlign: 'center' }}>
+          <Spinner size={32} label="Cargando capacitación..." />
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} noValidate>
+          <div className={styles.grid2}>
+            <div className={styles.fullSpan}>
+              <TextField
+                label="Tema"
+                name="tema"
+                value={tema}
+                onChange={(v) => {
+                  setTema(v);
+                  if (errors.tema) setErrors((e) => ({ ...e, tema: undefined }));
+                }}
+                required
+                maxLength={500}
+                error={errors.tema}
+              />
+            </div>
+
+            <TextField
+              label="Capacitador"
+              name="capacitador"
+              value={capacitador}
+              onChange={(v) => {
+                setCapacitador(v);
+                if (errors.capacitador) setErrors((e) => ({ ...e, capacitador: undefined }));
+              }}
+              required
+              maxLength={255}
+              error={errors.capacitador}
+            />
+
+            <TextField
+              label="Cargo del capacitador"
+              name="cargoCapacitador"
+              value={cargoCapacitador}
+              onChange={setCargoCapacitador}
+              maxLength={255}
+            />
+
+            <TextField
+              label="Empresa del capacitador"
+              name="empresaCapacitador"
+              value={empresaCapacitador}
+              onChange={setEmpresaCapacitador}
+              maxLength={255}
+            />
+
+            {/* Modalidad */}
+            <div>
+              <label className={styles.smallLabel} data-required="true" htmlFor="modalidad-select">
+                Modalidad
+              </label>
+              <select
+                id="modalidad-select"
+                className={styles.select}
+                value={modalidadId}
+                onChange={(e) => {
+                  setModalidadId(e.target.value);
+                  if (errors.modalidadId) setErrors((er) => ({ ...er, modalidadId: undefined }));
+                }}
+                disabled={loadingCatalogos}
+              >
+                <option value="">Seleccionar...</option>
+                {modalidades.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nombre}
+                  </option>
+                ))}
+              </select>
+              {errors.modalidadId && <div className={styles.errorText}>{errors.modalidadId}</div>}
+            </div>
+
+            {/* Tipo de actividad */}
+            <div>
+              <label className={styles.smallLabel} data-required="true" htmlFor="tipo-actividad-select">
+                Tipo de actividad
+              </label>
+              <select
+                id="tipo-actividad-select"
+                className={styles.select}
+                value={tipoActividadId}
+                onChange={(e) => {
+                  setTipoActividadId(e.target.value);
+                  if (errors.tipoActividadId)
+                    setErrors((er) => ({ ...er, tipoActividadId: undefined }));
+                }}
+                disabled={loadingCatalogos}
+              >
+                <option value="">Seleccionar...</option>
+                {tiposActividad.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nombre}
+                  </option>
+                ))}
+              </select>
+              {errors.tipoActividadId && (
+                <div className={styles.errorText}>{errors.tipoActividadId}</div>
+              )}
+            </div>
+
+            {/* Tipo de certificación */}
+            <div>
+              <label className={styles.smallLabel} data-required="true">
+                Tipo de certificación
+              </label>
+              <div className={styles.radioGroup}>
+                <label className={styles.radioItem}>
+                  <input
+                    type="radio"
+                    name="tipoCertificacion"
+                    value="Participacion"
+                    checked={tipoCertificacion === 'Participacion'}
+                    onChange={() => setTipoCertificacion('Participacion')}
+                  />
+                  Participación
+                </label>
+                <label className={styles.radioItem}>
+                  <input
+                    type="radio"
+                    name="tipoCertificacion"
+                    value="Aprobacion"
+                    checked={tipoCertificacion === 'Aprobacion'}
+                    onChange={() => setTipoCertificacion('Aprobacion')}
+                  />
+                  Aprobación
+                </label>
+              </div>
+            </div>
+
+            {/* Fecha y hora de inicio */}
+            <div>
+              <label className={styles.smallLabel} data-required="true" htmlFor="fecha-hora-inicio">
+                Fecha y hora de inicio
+              </label>
+              <input
+                id="fecha-hora-inicio"
+                type="datetime-local"
+                className={styles.select}
+                style={{ backgroundImage: 'none', paddingRight: 'var(--spacing-4)' }}
+                value={fechaHoraInicio}
+                onChange={(e) => {
+                  setFechaHoraInicio(e.target.value);
+                  if (errors.fechaHoraInicio)
+                    setErrors((er) => ({ ...er, fechaHoraInicio: undefined }));
+                }}
+              />
+              {errors.fechaHoraInicio && (
+                <div className={styles.errorText}>{errors.fechaHoraInicio}</div>
+              )}
+            </div>
+
+            {/* Duración */}
+            <div>
+              <label className={styles.smallLabel} data-required="true">
+                Duración
+              </label>
+              <div className={styles.duracionGrid}>
+                <div>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    className={styles.select}
+                    style={{ backgroundImage: 'none', paddingRight: 'var(--spacing-4)' }}
+                    value={duracionHoras}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const n = raw === '' ? 0 : Math.max(0, parseInt(raw, 10) || 0);
+                      setDuracionHoras(n);
+                      if (errors.duracion) setErrors((er) => ({ ...er, duracion: undefined }));
+                    }}
+                    aria-label="Horas"
+                    placeholder="Horas"
+                  />
+                  <div className={styles.errorText} style={{ color: 'var(--color-text-secondary)' }}>
+                    Horas
+                  </div>
+                </div>
+                <div>
+                  <select
+                    className={styles.select}
+                    value={String(duracionExtraMin)}
+                    onChange={(e) => {
+                      setDuracionExtraMin(Number(e.target.value));
+                      if (errors.duracion) setErrors((er) => ({ ...er, duracion: undefined }));
+                    }}
+                    aria-label="Minutos"
+                  >
+                    <option value="0">00 min</option>
+                    <option value="30">30 min</option>
+                  </select>
+                  <div className={styles.errorText} style={{ color: 'var(--color-text-secondary)' }}>
+                    Minutos
+                  </div>
+                </div>
+              </div>
+              {errors.duracion && <div className={styles.errorText}>{errors.duracion}</div>}
+            </div>
+
+            {/* Descripción */}
+            <div className={styles.fullSpan}>
+              <label className={styles.smallLabel} htmlFor="descripcion">
+                Descripción
+              </label>
+              <textarea
+                id="descripcion"
+                className={styles.textarea}
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                placeholder="Opcional. La puede llenar el capacitador desde el link firmado."
+              />
+            </div>
+          </div>
+
+          {/* Responsables ---------------------------------------------- */}
+          <div className={styles.sectionTitle}>
+            <span>Responsables adicionales</span>
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={addResponsable}
+            >
+              <Plus width={14} height={14} />
+              <span>Agregar responsable</span>
+            </button>
+          </div>
+
+          {responsables.length === 0 ? (
+            <div className={styles.emptyResponsables}>
+              El capacitador siempre firma el certificado. Puedes agregar responsables
+              adicionales que también firmarán.
+            </div>
+          ) : (
+            responsables.map((r, idx) => {
+              const rErr = respErrorsByIdx.get(idx) || {};
+              return (
+                <div key={r._key} className={styles.responsableRow}>
+                  <div className={styles.responsableHeader}>
+                    <span className={styles.responsableTitle}>Responsable #{idx + 1}</span>
+                    <div className={styles.responsableActions}>
+                      <button
+                        type="button"
+                        className={styles.iconBtn}
+                        onClick={() => moveResponsable(r._key, 'up')}
+                        disabled={idx === 0}
+                        title="Mover arriba"
+                        aria-label="Mover arriba"
+                      >
+                        <ChevronUp width={16} height={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.iconBtn}
+                        onClick={() => moveResponsable(r._key, 'down')}
+                        disabled={idx === responsables.length - 1}
+                        title="Mover abajo"
+                        aria-label="Mover abajo"
+                      >
+                        <ChevronDown width={16} height={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                        onClick={() => removeResponsable(r._key)}
+                        title="Eliminar"
+                        aria-label="Eliminar responsable"
+                      >
+                        <Trash2 width={16} height={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.responsableFields}>
+                    <TextField
+                      label="Nombres"
+                      name={`resp-nombres-${idx}`}
+                      value={r.nombres}
+                      onChange={(v) => updateResponsable(r._key, { nombres: v })}
+                      required
+                      maxLength={255}
+                      error={rErr.nombres}
+                    />
+                    <TextField
+                      label="Cargo"
+                      name={`resp-cargo-${idx}`}
+                      value={r.cargo}
+                      onChange={(v) => updateResponsable(r._key, { cargo: v })}
+                      required
+                      maxLength={255}
+                      error={rErr.cargo}
+                    />
+                    <TextField
+                      label="Empresa"
+                      name={`resp-empresa-${idx}`}
+                      value={r.empresa}
+                      onChange={(v) => updateResponsable(r._key, { empresa: v })}
+                      required
+                      maxLength={255}
+                      error={rErr.empresa}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={styles.smallLabel} data-required="true">
+                      Firma
+                    </label>
+                    <SignaturePad
+                      value={r.firma}
+                      onChange={(dataUrl) => updateResponsable(r._key, { firma: dataUrl })}
+                      width={360}
+                      height={140}
+                    />
+                    {rErr.firma && <div className={styles.errorText}>{rErr.firma}</div>}
+                  </div>
+                </div>
+              );
+            })
+          )}
+
+          {/* Submit oculto para permitir envío con Enter (aunque preferimos botón) */}
+          <button type="submit" style={{ display: 'none' }} aria-hidden="true" />
+        </form>
+      )}
+    </Modal>
+  );
+}
+
+/** Convierte ISO → valor aceptado por `<input type="datetime-local">` (sin segundos). */
+function isoToLocalInput(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Convierte valor de `<input type="datetime-local">` a ISO con offset local. */
+function localInputToIso(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}

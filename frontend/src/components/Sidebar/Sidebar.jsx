@@ -39,6 +39,13 @@ export default function Sidebar() {
 
   const isCatalogoActive = location.pathname.startsWith('/catalogos');
   const isConfigActive = location.pathname.startsWith('/configuracion');
+  // "Capacitaciones" se resalta cuando la ruta empieza con /capacitaciones
+  // y NO con /catalogos. Como son prefijos disjuntos en el router, basta con
+  // comprobar el primero. Se incluye también el home `/` que redirige a
+  // /capacitaciones (por si la ruta no se resolvió aún).
+  const isCapacitacionesActive =
+    location.pathname === '/' ||
+    location.pathname.startsWith('/capacitaciones');
 
   const [catalogosOpen, setCatalogosOpen] = useState(isCatalogoActive);
   const [configOpen, setConfigOpen] = useState(isConfigActive);
@@ -72,7 +79,14 @@ export default function Sidebar() {
         <div className="sidebar__section-title">PRINCIPAL</div>
         <ul className="sidebar__nav">
           <li className="sidebar__nav-item">
-            <NavLink to="/" end className={navLinkClass}>
+            <NavLink
+              to="/capacitaciones"
+              className={() =>
+                `sidebar__nav-link${
+                  isCapacitacionesActive ? ' sidebar__nav-link--active' : ''
+                }`
+              }
+            >
               <GraduationCap className="sidebar__nav-icon" />
               <span>Capacitaciones</span>
             </NavLink>

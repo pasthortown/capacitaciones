@@ -2,6 +2,7 @@ using System.Text;
 using Capacitaciones.Application.Ports;
 using Capacitaciones.Application.UseCases.Admin;
 using Capacitaciones.Application.UseCases.Auth;
+using Capacitaciones.Application.UseCases.Capacitaciones;
 using Capacitaciones.Application.UseCases.Catalogos;
 using Capacitaciones.Application.UseCases.Configuracion;
 using Capacitaciones.Domain.Entities;
@@ -131,6 +132,7 @@ builder.Services.AddScoped<ITipoActividadRepository, TipoActividadRepository>();
 builder.Services.AddScoped<IAreaRepository, AreaRepository>();
 builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
 builder.Services.AddScoped<IConfiguracionNumeracionRepository, ConfiguracionNumeracionRepository>();
+builder.Services.AddScoped<ICapacitacionRepository, CapacitacionRepository>();
 
 // También registramos el puerto genérico ICatalogoRepository<T> para que el CatalogoService<T>
 // pueda resolverlo directamente sin acoplarse a los puertos específicos.
@@ -152,6 +154,11 @@ builder.Services.AddScoped<ListarAdminsUseCase>();
 builder.Services.AddScoped<EliminarAdminUseCase>();
 builder.Services.AddScoped<ObtenerNumeracionUseCase>();
 builder.Services.AddScoped<ActualizarNumeracionUseCase>();
+builder.Services.AddScoped<ListarCapacitacionesUseCase>();
+builder.Services.AddScoped<ObtenerCapacitacionUseCase>();
+builder.Services.AddScoped<CrearCapacitacionUseCase>();
+builder.Services.AddScoped<EditarCapacitacionUseCase>();
+builder.Services.AddScoped<EliminarCapacitacionUseCase>();
 
 // Servicio de numeración (consumido en Fase 3).
 builder.Services.AddScoped<INumeracionService, NumeracionService>();

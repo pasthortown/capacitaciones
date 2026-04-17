@@ -23,8 +23,10 @@ import { X } from 'lucide-react';
  * @param {string}   props.title    - Título mostrado en el header.
  * @param {React.ReactNode} props.children - Contenido del body.
  * @param {React.ReactNode} [props.footer] - Botones del footer (opcional).
+ * @param {string}   [props.className] - Clase adicional para el contenedor .modal
+ *   (útil para anchos mayores, ej. formularios a dos columnas).
  */
-export default function Modal({ isOpen, onClose, title, children, footer }) {
+export default function Modal({ isOpen, onClose, title, children, footer, className }) {
   const dialogRef = useRef(null);
 
   // ESC -> onClose. Sólo activo cuando isOpen.
@@ -58,7 +60,7 @@ export default function Modal({ isOpen, onClose, title, children, footer }) {
 
       <div
         ref={dialogRef}
-        className="modal modal--open"
+        className={['modal', 'modal--open', className].filter(Boolean).join(' ')}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"

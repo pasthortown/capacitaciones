@@ -1,7 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout.jsx';
-import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import CapacitacionesPage from './pages/capacitaciones/CapacitacionesPage.jsx';
+import AsistentesPage from './pages/capacitaciones/AsistentesPage.jsx';
 import ModalidadesPage from './pages/catalogos/ModalidadesPage.jsx';
 import TiposActividadPage from './pages/catalogos/TiposActividadPage.jsx';
 import AreasPage from './pages/catalogos/AreasPage.jsx';
@@ -11,17 +12,17 @@ import ProtectedRoute from './auth/ProtectedRoute.jsx';
 /**
  * Rutas raíz de la aplicación.
  *
- * Fase 2:
- *  - `/login` es pública (sin layout admin).
- *  - Todo lo demás vive detrás de `<ProtectedRoute>` que envuelve al `AppLayout`.
+ * Fase 3:
+ *  - `/` redirige a `/capacitaciones` (el dashboard de cards es el Home real).
+ *  - `HomePage.jsx` se conserva para uso futuro (dashboard ampliado).
  *
  * Rutas protegidas:
- *   /                        → HomePage
- *   /catalogos/modalidades   → Modalidades
- *   /catalogos/tipos-actividad → Tipos de actividad
- *   /catalogos/areas         → Áreas
- *   /configuracion           → Numeración CAP-PC-REG-###
- *   /capacitaciones          → Placeholder (fase 3)
+ *   /capacitaciones              → Listado de capacitaciones (dashboard)
+ *   /capacitaciones/:id/asistentes → Placeholder Fase 5
+ *   /catalogos/modalidades       → Modalidades
+ *   /catalogos/tipos-actividad   → Tipos de actividad
+ *   /catalogos/areas             → Áreas
+ *   /configuracion/numeracion    → Configuración del contador
  */
 function PlaceholderPage({ titulo, descripcion }) {
   return (
@@ -55,7 +56,15 @@ export default function App() {
       {/* Protegidas */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route index element={<HomePage />} />
+          {/* Home real → /capacitaciones */}
+          <Route index element={<Navigate to="/capacitaciones" replace />} />
+
+          {/* Capacitaciones */}
+          <Route path="/capacitaciones" element={<CapacitacionesPage />} />
+          <Route
+            path="/capacitaciones/:id/asistentes"
+            element={<AsistentesPage />}
+          />
 
           {/* Catálogos */}
           <Route
@@ -72,17 +81,6 @@ export default function App() {
             element={<Navigate to="/configuracion/numeracion" replace />}
           />
           <Route path="/configuracion/numeracion" element={<NumeracionPage />} />
-
-          {/* Pendiente fase 3 */}
-          <Route
-            path="/capacitaciones"
-            element={
-              <PlaceholderPage
-                titulo="Capacitaciones"
-                descripcion="Listado y gestión de capacitaciones."
-              />
-            }
-          />
 
           <Route
             path="*"

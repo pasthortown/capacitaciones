@@ -376,7 +376,7 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 - [x] Módulo Catálogos (Modalidad, TipoActividad, Área) — CRUD + XLSX.
 - [x] Login admin (JWT + BCrypt) + protección de endpoints admin.
 - [x] Pantalla Configuración de numeración (`/configuracion/numeracion`).
-- [ ] Módulo Capacitaciones — CRUD + grid de cards + gestión de responsables.
+- [x] Módulo Capacitaciones — CRUD + grid de cards + gestión de responsables + `SignaturePad`.
 - [ ] Página capacitador (link firmado, descripción + firma + cargo + empresa).
 - [ ] Página pública de inscripción + componente `SignaturePad`.
 - [ ] Listado de asistentes por capacitación + descarga de certificado.
@@ -390,7 +390,7 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 | 0    | ✅ Bootstrap: scaffolds front/back + compose + nginx                                      | Backend, Frontend, Infra      |
 | 1    | ✅ Catálogos (Modalidad, TipoActividad, Área) + import/export XLSX                        | Backend, Frontend             |
 | 2    | ✅ Login admin (JWT) + Configuración de numeración                                        | Backend, Frontend             |
-| 3    | CRUD Capacitaciones + grid de cards + gestión de responsables                             | Backend, Frontend             |
+| 3    | ✅ CRUD Capacitaciones + grid de cards + gestión de responsables + `SignaturePad`         | Backend, Frontend             |
 | 4    | Link capacitador (descripción + firma + cargo + empresa, token firmado)                   | Backend, Frontend             |
 | 5    | Página pública de inscripción + `SignaturePad` + listado de asistentes                    | Backend, Frontend             |
 | 6    | Servicio `emisor_documentos` + plantilla HTML + integración con backend (endpoint gen.)   | Infra, Backend                |
