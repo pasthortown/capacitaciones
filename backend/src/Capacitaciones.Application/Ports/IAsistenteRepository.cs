@@ -30,4 +30,16 @@ public interface IAsistenteRepository
 
     /// <summary>Obtiene un asistente por id, con <c>Capacitacion</c> y <c>Area</c> cargadas.</summary>
     Task<Asistente?> GetByIdAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>Cuenta asistentes inscritos en una capacitación.</summary>
+    Task<int> CountByCapacitacionAsync(Guid capacitacionId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Cuenta asistentes por capacitación para un conjunto de ids. Devuelve un diccionario
+    /// con el total por id (capacitaciones sin asistentes no aparecen — el caller usa 0 como default).
+    /// Una sola query agrupada evita N+1 en el listado admin.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, int>> CountByCapacitacionesAsync(
+        IEnumerable<Guid> capacitacionIds,
+        CancellationToken ct = default);
 }

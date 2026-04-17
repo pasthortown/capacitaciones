@@ -7,10 +7,12 @@ namespace Capacitaciones.Application.UseCases.Capacitaciones;
 public class ListarCapacitacionesUseCase
 {
     private readonly ICapacitacionRepository _repo;
+    private readonly IAsistenteRepository _asistentes;
 
-    public ListarCapacitacionesUseCase(ICapacitacionRepository repo)
+    public ListarCapacitacionesUseCase(ICapacitacionRepository repo, IAsistenteRepository asistentes)
     {
         _repo = repo;
+        _asistentes = asistentes;
     }
 
     public async Task<IReadOnlyList<CapacitacionListDto>> ExecuteAsync(
@@ -19,7 +21,12 @@ public class ListarCapacitacionesUseCase
         CancellationToken ct = default)
     {
         var items = await _repo.ListAsync(includeInactive, ct);
-        var dtos = items.Select(CapacitacionMapper.ToListDto);
+
+        // Conteos batch para evitar N+1 en el dashboard.
+        var conteos = await _asistentes.CountByCapacitacionesAsync(items.Select(c => c.Id), ct);
+
+        var dtos = items.Select(c =>
+            CapacitacionMapper.ToListDto(c, conteos.TryGetValue(c.Id, out var n) ? n : 0));
 
         if (!string.IsNullOrWhiteSpace(estadoFiltro))
         {

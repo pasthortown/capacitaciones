@@ -9,7 +9,7 @@ namespace Capacitaciones.Application.UseCases.Capacitaciones;
 /// </summary>
 internal static class CapacitacionMapper
 {
-    public static CapacitacionListDto ToListDto(Capacitacion c) => new()
+    public static CapacitacionListDto ToListDto(Capacitacion c, int totalAsistentes = 0) => new()
     {
         Id = c.Id,
         Codigo = c.Codigo,
@@ -21,11 +21,11 @@ internal static class CapacitacionMapper
         FechaHoraInicio = c.FechaHoraInicio,
         DuracionMinutos = c.DuracionMinutos,
         Estado = CapacitacionEstadoCalculator.Calcular(c),
-        TotalAsistentes = 0, // TODO Fase 5: contar filas de Asistente.
+        TotalAsistentes = totalAsistentes,
         Activo = c.Activo
     };
 
-    public static CapacitacionDetailDto ToDetailDto(Capacitacion c) => new()
+    public static CapacitacionDetailDto ToDetailDto(Capacitacion c, int totalAsistentes = 0) => new()
     {
         Id = c.Id,
         Codigo = c.Codigo,
@@ -41,7 +41,7 @@ internal static class CapacitacionMapper
         FechaHoraInicio = c.FechaHoraInicio,
         DuracionMinutos = c.DuracionMinutos,
         Estado = CapacitacionEstadoCalculator.Calcular(c),
-        TotalAsistentes = 0, // TODO Fase 5.
+        TotalAsistentes = totalAsistentes,
         Activo = c.Activo,
         FechaCreacion = c.FechaCreacion,
         FechaActualizacion = c.FechaActualizacion,

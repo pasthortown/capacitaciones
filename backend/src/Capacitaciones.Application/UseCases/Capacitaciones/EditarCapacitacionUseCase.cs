@@ -15,17 +15,20 @@ public class EditarCapacitacionUseCase
     private readonly IModalidadRepository _modalidades;
     private readonly ITipoActividadRepository _tiposActividad;
     private readonly IResponsableRepository _responsables;
+    private readonly IAsistenteRepository _asistentes;
 
     public EditarCapacitacionUseCase(
         ICapacitacionRepository repo,
         IModalidadRepository modalidades,
         ITipoActividadRepository tiposActividad,
-        IResponsableRepository responsables)
+        IResponsableRepository responsables,
+        IAsistenteRepository asistentes)
     {
         _repo = repo;
         _modalidades = modalidades;
         _tiposActividad = tiposActividad;
         _responsables = responsables;
+        _asistentes = asistentes;
     }
 
     public async Task<CapacitacionDetailDto> ExecuteAsync(Guid id, UpdateCapacitacionDto input, CancellationToken ct = default)
@@ -78,6 +81,7 @@ public class EditarCapacitacionUseCase
         var recargada = await _repo.GetByIdWithResponsablesAsync(entity.Id, ct)
             ?? throw new InvalidOperationException("No se pudo recuperar la capacitación tras actualizar.");
 
-        return CapacitacionMapper.ToDetailDto(recargada);
+        var total = await _asistentes.CountByCapacitacionAsync(recargada.Id, ct);
+        return CapacitacionMapper.ToDetailDto(recargada, total);
     }
 }

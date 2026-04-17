@@ -81,4 +81,28 @@ public class AsistenteRepository : IAsistenteRepository
             .Include(a => a.Capacitacion)
             .FirstOrDefaultAsync(a => a.Id == id, ct);
     }
+
+    public Task<int> CountByCapacitacionAsync(Guid capacitacionId, CancellationToken ct = default)
+    {
+        return _db.Asistentes
+            .AsNoTracking()
+            .CountAsync(a => a.CapacitacionId == capacitacionId, ct);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, int>> CountByCapacitacionesAsync(
+        IEnumerable<Guid> capacitacionIds,
+        CancellationToken ct = default)
+    {
+        var ids = capacitacionIds?.Distinct().ToList() ?? new List<Guid>();
+        if (ids.Count == 0) return new Dictionary<Guid, int>();
+
+        var agrupados = await _db.Asistentes
+            .AsNoTracking()
+            .Where(a => ids.Contains(a.CapacitacionId))
+            .GroupBy(a => a.CapacitacionId)
+            .Select(g => new { CapacitacionId = g.Key, Total = g.Count() })
+            .ToListAsync(ct);
+
+        return agrupados.ToDictionary(x => x.CapacitacionId, x => x.Total);
+    }
 }

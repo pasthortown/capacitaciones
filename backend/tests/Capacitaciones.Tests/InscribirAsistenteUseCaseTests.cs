@@ -271,5 +271,20 @@ public class InscribirAsistenteUseCaseTests
 
         public Task<Asistente?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => Task.FromResult(Added.FirstOrDefault(a => a.Id == id));
+
+        public Task<int> CountByCapacitacionAsync(Guid capacitacionId, CancellationToken ct = default)
+            => Task.FromResult(Added.Count(a => a.CapacitacionId == capacitacionId));
+
+        public Task<IReadOnlyDictionary<Guid, int>> CountByCapacitacionesAsync(
+            IEnumerable<Guid> capacitacionIds,
+            CancellationToken ct = default)
+        {
+            var set = new HashSet<Guid>(capacitacionIds ?? Enumerable.Empty<Guid>());
+            var dict = (IReadOnlyDictionary<Guid, int>)Added
+                .Where(a => set.Contains(a.CapacitacionId))
+                .GroupBy(a => a.CapacitacionId)
+                .ToDictionary(g => g.Key, g => g.Count());
+            return Task.FromResult(dict);
+        }
     }
 }
