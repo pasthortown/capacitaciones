@@ -1,0 +1,50 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-6, 24px);
+  background: var(--color-bg-default, #f5f7fa);
+}
+
+.card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--color-bg-paper, #ffffff);
+  border-radius: var(--radius-xl, 12px);
+  box-shadow: var(--shadow-card, 0 4px 16px rgba(0, 0, 0, 0.08));
+  padding: var(--spacing-8, 32px) var(--spacing-7, 28px);
+}
+
+.brand {
+  text-align: center;
+  margin-bottom: var(--spacing-6, 24px);
+}
+
+.brandTitle {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-2xl, 1.5rem);
+  color: var(--color-text-primary, #111827);
+  margin: 0 0 var(--spacing-1, 4px) 0;
+  letter-spacing: 0.02em;
+}
+
+.brandSubtitle {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary, #6b7280);
+  margin: 0;
+}
+
+.error {
+  margin: var(--spacing-3, 12px) 0;
+}
+
+.submit {
+  width: 100%;
+  margin-top: var(--spacing-4, 16px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2, 8px);
+}

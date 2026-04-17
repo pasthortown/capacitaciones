@@ -2,12 +2,13 @@ using Capacitaciones.Application.Dtos;
 using Capacitaciones.Application.Ports;
 using Capacitaciones.Application.UseCases.Catalogos;
 using Capacitaciones.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Capacitaciones.Api.Controllers;
 
-// TODO Fase 2: [Authorize(Policy = "Admin")]
 [ApiController]
+[Authorize(Policy = "Admin")]
 [Route("api/catalogos/areas")]
 public class AreasController : ControllerBase
 {

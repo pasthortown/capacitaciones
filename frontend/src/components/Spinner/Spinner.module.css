@@ -1,0 +1,23 @@
+.spinner {
+  display: inline-block;
+  border-style: solid;
+  border-color: var(--color-border-main, #d1d5db);
+  border-top-color: var(--color-primary, #2563eb);
+  border-radius: 50%;
+  animation: spinner-rotate 0.8s linear infinite;
+  box-sizing: border-box;
+}
+
+.fullscreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+}
+
+@keyframes spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}

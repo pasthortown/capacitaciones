@@ -373,8 +373,9 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 - [x] Scaffolding Backend (.NET 8 hexagonal) — Domain/Application/Infrastructure/Api + tests xUnit.
 - [x] Scaffolding Frontend (React + Vite + layout Sidebar/Body + Modal UX + `http.js`).
 - [x] `docker-compose.yml` + red `capacitaciones-net` + nginx confs + Dockerfile backend + `.env.example`.
-- [ ] Módulo Catálogos (Modalidad, TipoActividad, Área) — CRUD + XLSX.
-- [ ] Pantalla Configuración de numeración.
+- [x] Módulo Catálogos (Modalidad, TipoActividad, Área) — CRUD + XLSX.
+- [x] Login admin (JWT + BCrypt) + protección de endpoints admin.
+- [x] Pantalla Configuración de numeración (`/configuracion/numeracion`).
 - [ ] Módulo Capacitaciones — CRUD + grid de cards + gestión de responsables.
 - [ ] Página capacitador (link firmado, descripción + firma + cargo + empresa).
 - [ ] Página pública de inscripción + componente `SignaturePad`.
@@ -387,8 +388,8 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 | Fase | Objetivo                                                                                  | Agentes involucrados          |
 | ---- | ----------------------------------------------------------------------------------------- | ----------------------------- |
 | 0    | ✅ Bootstrap: scaffolds front/back + compose + nginx                                      | Backend, Frontend, Infra      |
-| 1    | Catálogos (Modalidad, TipoActividad, Área) + import/export XLSX                           | Backend, Frontend             |
-| 2    | Login admin (JWT) + Configuración de numeración                                           | Backend, Frontend             |
+| 1    | ✅ Catálogos (Modalidad, TipoActividad, Área) + import/export XLSX                        | Backend, Frontend             |
+| 2    | ✅ Login admin (JWT) + Configuración de numeración                                        | Backend, Frontend             |
 | 3    | CRUD Capacitaciones + grid de cards + gestión de responsables                             | Backend, Frontend             |
 | 4    | Link capacitador (descripción + firma + cargo + empresa, token firmado)                   | Backend, Frontend             |
 | 5    | Página pública de inscripción + `SignaturePad` + listado de asistentes                    | Backend, Frontend             |

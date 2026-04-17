@@ -4,7 +4,7 @@ namespace Capacitaciones.Tests;
 
 /// <summary>
 /// Test de humo: el endpoint GET /api/catalogos/modalidades responde 200 OK
-/// usando un DbContext EF InMemory (sin SQL Server).
+/// cuando la llamada lleva un token JWT válido (Fase 2 protege el endpoint con policy "Admin").
 /// </summary>
 public class ModalidadesEndpointTests : IClassFixture<InMemoryWebAppFactory>
 {
@@ -16,9 +16,9 @@ public class ModalidadesEndpointTests : IClassFixture<InMemoryWebAppFactory>
     }
 
     [Fact]
-    public async Task GetModalidades_ReturnsOk()
+    public async Task GetModalidades_AutenticadoComoAdmin_ReturnsOk()
     {
-        var client = _factory.CreateClient();
+        var client = await _factory.CreateAuthenticatedClientAsync();
         var response = await client.GetAsync("/api/catalogos/modalidades");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

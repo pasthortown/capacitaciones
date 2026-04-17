@@ -1,23 +1,27 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout.jsx';
 import HomePage from './pages/HomePage.jsx';
+import LoginPage from './pages/LoginPage.jsx';
 import ModalidadesPage from './pages/catalogos/ModalidadesPage.jsx';
 import TiposActividadPage from './pages/catalogos/TiposActividadPage.jsx';
 import AreasPage from './pages/catalogos/AreasPage.jsx';
+import NumeracionPage from './pages/configuracion/NumeracionPage.jsx';
+import ProtectedRoute from './auth/ProtectedRoute.jsx';
 
 /**
  * Rutas raíz de la aplicación.
  *
- * Fase 1 entrega las pantallas de catálogos:
- *   /catalogos/modalidades
- *   /catalogos/tipos-actividad
- *   /catalogos/areas
+ * Fase 2:
+ *  - `/login` es pública (sin layout admin).
+ *  - Todo lo demás vive detrás de `<ProtectedRoute>` que envuelve al `AppLayout`.
  *
- * `/catalogos` sin hijo redirige a `/catalogos/modalidades`.
- *
- * Placeholder de módulos pendientes (se implementarán en fases siguientes):
- *  - /capacitaciones -> Dashboard de capacitaciones (fase 3).
- *  - /configuracion  -> Numeración CAP-PC-REG-### (fase 2).
+ * Rutas protegidas:
+ *   /                        → HomePage
+ *   /catalogos/modalidades   → Modalidades
+ *   /catalogos/tipos-actividad → Tipos de actividad
+ *   /catalogos/areas         → Áreas
+ *   /configuracion           → Numeración CAP-PC-REG-###
+ *   /capacitaciones          → Placeholder (fase 3)
  */
 function PlaceholderPage({ titulo, descripcion }) {
   return (
@@ -45,46 +49,51 @@ function PlaceholderPage({ titulo, descripcion }) {
 export default function App() {
   return (
     <Routes>
-      <Route element={<AppLayout />}>
-        <Route index element={<HomePage />} />
+      {/* Pública */}
+      <Route path="/login" element={<LoginPage />} />
 
-        {/* Catálogos */}
-        <Route
-          path="/catalogos"
-          element={<Navigate to="/catalogos/modalidades" replace />}
-        />
-        <Route path="/catalogos/modalidades" element={<ModalidadesPage />} />
-        <Route path="/catalogos/tipos-actividad" element={<TiposActividadPage />} />
-        <Route path="/catalogos/areas" element={<AreasPage />} />
+      {/* Protegidas */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<HomePage />} />
 
-        {/* Módulos pendientes */}
-        <Route
-          path="/capacitaciones"
-          element={
-            <PlaceholderPage
-              titulo="Capacitaciones"
-              descripcion="Listado y gestión de capacitaciones."
-            />
-          }
-        />
-        <Route
-          path="/configuracion"
-          element={
-            <PlaceholderPage
-              titulo="Configuración"
-              descripcion="Numeración CAP-PC-REG-### y parámetros del sistema."
-            />
-          }
-        />
-        <Route
-          path="*"
-          element={
-            <PlaceholderPage
-              titulo="Página no encontrada"
-              descripcion="La ruta solicitada no existe."
-            />
-          }
-        />
+          {/* Catálogos */}
+          <Route
+            path="/catalogos"
+            element={<Navigate to="/catalogos/modalidades" replace />}
+          />
+          <Route path="/catalogos/modalidades" element={<ModalidadesPage />} />
+          <Route path="/catalogos/tipos-actividad" element={<TiposActividadPage />} />
+          <Route path="/catalogos/areas" element={<AreasPage />} />
+
+          {/* Configuración */}
+          <Route
+            path="/configuracion"
+            element={<Navigate to="/configuracion/numeracion" replace />}
+          />
+          <Route path="/configuracion/numeracion" element={<NumeracionPage />} />
+
+          {/* Pendiente fase 3 */}
+          <Route
+            path="/capacitaciones"
+            element={
+              <PlaceholderPage
+                titulo="Capacitaciones"
+                descripcion="Listado y gestión de capacitaciones."
+              />
+            }
+          />
+
+          <Route
+            path="*"
+            element={
+              <PlaceholderPage
+                titulo="Página no encontrada"
+                descripcion="La ruta solicitada no existe."
+              />
+            }
+          />
+        </Route>
       </Route>
     </Routes>
   );

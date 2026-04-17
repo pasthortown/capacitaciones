@@ -5,10 +5,13 @@
  * - Base URL: `VITE_API_BASE` si está definida, sino `/api`
  *   (ambos casos funcionan: dev server usa proxy, nginx en prod hace lo mismo).
  * - JSON por defecto.
- * - Soporte futuro para JWT: lee el token desde localStorage bajo
- *   `AUTH_STORAGE_KEY` y lo adjunta como `Authorization: Bearer <token>`.
- *   El login se implementará en una fase posterior; por ahora simplemente
- *   si existe el token lo envía.
+ * - JWT: lee el token desde localStorage bajo `AUTH_STORAGE_KEY` y lo
+ *   adjunta como `Authorization: Bearer <token>`.
+ * - Interceptor global de 401: cuando una request **autenticada** (es decir,
+ *   que llevaba token) responde 401, se dispara el evento `auth:expired` en
+ *   `window`. `AuthProvider` lo escucha para limpiar la sesión. Se usa un
+ *   CustomEvent en lugar de acoplar este módulo a React Router, para
+ *   mantenerlo framework-agnóstico.
  *
  * Retrocompat:
  *  - `http.get/post/put/del` mantienen la firma original (paths + body JSON).
@@ -37,6 +40,18 @@ function getAuthToken() {
   } catch {
     // SSR / storage bloqueado
     return null;
+  }
+}
+
+/**
+ * Notifica al resto de la app que el token dejó de ser válido.
+ * Se dispara solo para requests que iban autenticadas (llevaban Bearer).
+ * Un request sin token que recibe 401 no es una sesión expirada, es
+ * simplemente una ruta protegida — no tiene sentido "desloguear".
+ */
+function notifyAuthExpired() {
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new CustomEvent('auth:expired'));
   }
 }
 
@@ -81,6 +96,9 @@ async function request(path, { method = 'GET', body, headers, signal } = {}) {
   const parsed = await parseBody(response);
 
   if (!response.ok) {
+    if (response.status === 401 && token) {
+      notifyAuthExpired();
+    }
     const message =
       (parsed && typeof parsed === 'object' && (parsed.message || parsed.title)) ||
       `HTTP ${response.status} en ${method} ${path}`;
@@ -131,6 +149,9 @@ async function downloadBlob(path, { fallbackFilename = 'download' } = {}) {
   });
 
   if (!response.ok) {
+    if (response.status === 401 && token) {
+      notifyAuthExpired();
+    }
     const parsed = await parseBody(response);
     const message =
       (parsed && typeof parsed === 'object' && (parsed.message || parsed.title)) ||
@@ -176,6 +197,9 @@ async function uploadForm(path, formData) {
   const parsed = await parseBody(response);
 
   if (!response.ok) {
+    if (response.status === 401 && token) {
+      notifyAuthExpired();
+    }
     const message =
       (parsed && typeof parsed === 'object' && (parsed.message || parsed.title)) ||
       `HTTP ${response.status} en POST ${path}`;

@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Capacitaciones.Infrastructure.Persistence;
 
 /// <summary>
-/// DbContext raíz de la aplicación. Fase 1: solo catálogos administrables.
+/// DbContext raíz de la aplicación.
+/// Fase 1: catálogos administrables. Fase 2: AdminUser y ConfiguracionNumeracion.
 /// </summary>
 public class AppDbContext : DbContext
 {
@@ -15,6 +16,8 @@ public class AppDbContext : DbContext
     public DbSet<Modalidad> Modalidades => Set<Modalidad>();
     public DbSet<TipoActividad> TiposActividad => Set<TipoActividad>();
     public DbSet<Area> Areas => Set<Area>();
+    public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
+    public DbSet<ConfiguracionNumeracion> ConfiguracionNumeracion => Set<ConfiguracionNumeracion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
