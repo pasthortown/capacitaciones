@@ -67,12 +67,13 @@ Sistema de registro y gestión de capacitaciones. El equipo está compuesto por 
 
 | Servicio        | IP              | Puerto expuesto |
 | --------------- | --------------- | --------------- |
-| nginx (front)   | 192.168.56.10   | 80              |
-| backend (.NET)  | 192.168.56.11   | 8080            |
+| nginx (front)       | 192.168.56.10 | 80            |
+| backend (.NET)      | 192.168.56.11 | 8080          |
 | sqlserver (Express) | 192.168.56.12 | 1433          |
-| sonarqube       | 192.168.56.13   | 9000            |
-| sonar-db (pg)   | 192.168.56.14   | 5432            |
-| owasp-zap       | 192.168.56.15   | 8090            |
+| sonarqube           | 192.168.56.13 | 9000          |
+| sonar-db (pg)       | 192.168.56.14 | 5432          |
+| owasp-zap           | 192.168.56.15 | 8090          |
+| emisor_documentos   | 192.168.56.16 | 3000 (interno)|
 
 **Entregables:**
 - `docker-compose.yml` raíz que orqueste todos los servicios en `capacitaciones-net`.
@@ -139,9 +140,19 @@ Capacitaciones/
 │   ├── nginx/
 │   │   ├── nginx.conf
 │   │   └── default.conf
+│   ├── backend/
+│   │   └── Dockerfile
 │   ├── sqlserver/
 │   ├── sonarqube/
 │   └── zap/
+├── emisor_documentos/           # servicio Node + Puppeteer (HTML→PDF)
+│   ├── src/
+│   ├── templates/               # certificado.html, fondo.png, certificado.png
+│   ├── package.json
+│   └── Dockerfile
+├── output/                      # volumen compartido con PDFs generados (.gitignored)
+├── certificados/
+│   └── templates/               # assets de referencia y plantilla HTML versionada
 └── security/
     ├── sonar-project.properties
     └── reports/
@@ -163,17 +174,30 @@ Capacitaciones/
 - `Id` (GUID)
 - `Codigo` — formato `CAP-PC-REG-###` con **3 dígitos fijos** (generado por contador, ver 7.4).
 - `Tema` (string, requerido)
-- `Capacitador` (**varchar(255), texto libre** — no es catálogo)
+- `Capacitador` (**varchar(255), texto libre** — no es catálogo). Siempre figura como firmante en el certificado.
 - `ModalidadId` → Catálogo Modalidad
 - `TipoActividadId` → Catálogo TipoActividad
+- `TipoCertificacion` (enum) — `Participacion` | `Aprobacion`. Se refleja en el certificado.
 - `FechaHoraInicio` (datetime)
 - `DuracionMinutos` (int) — múltiplo de **30 min**. El UI captura horas y minutos con steps de 30.
 - `Descripcion` (string, nullable) — la carga el capacitador vía link firmado
 - `FirmaCapacitador` (blob/base64, nullable) — dibujada o cargada
+- `CargoCapacitador`, `EmpresaCapacitador` (varchar, nullable) — se capturan junto con la firma del capacitador y se imprimen bajo su firma en el certificado.
 - `Estado` (derivado, no persistido — calculado en backend a partir del reloj):
   - `Inscripciones Abiertas` — desde su creación hasta `FechaHoraInicio`.
   - `Iniciada` — entre `FechaHoraInicio` y `FechaHoraInicio + DuracionMinutos`.
   - `Finalizada` — después de `FechaHoraInicio + DuracionMinutos`.
+
+**Responsable** (firmantes adicionales del certificado — 0..N por capacitación)
+- `Id` (GUID)
+- `CapacitacionId` (FK)
+- `Nombres` (varchar(255), requerido)
+- `Cargo` (varchar(255), requerido)
+- `Empresa` (varchar(255), requerido)
+- `Firma` (blob/base64 — dibujada o cargada)
+- `Orden` (int) — posición en que aparecen en el certificado.
+
+> El **capacitador** siempre es el primer firmante (no se repite en la tabla `Responsable`). Los responsables adicionales se agregan desde la pantalla de edición de la capacitación.
 
 **Catálogos administrables (todos con CRUD + import/export XLSX):**
 - `Modalidad` — seed: *Presencial, Virtual, Híbrida*
@@ -224,6 +248,13 @@ Capacitaciones/
 
 6. **Listado de asistentes por capacitación**:
    - Tabla simple; se accede desde el card.
+   - Acción por fila: **descargar certificado** (solo disponible si la capacitación está `Finalizada`).
+
+7. **Gestión de responsables** (dentro del formulario de capacitación):
+   - Sub-sección en el modal de crear/editar capacitación.
+   - Listado editable (agregar / eliminar) con `Nombres`, `Cargo`, `Empresa`, `Firma`.
+   - Orden reorganizable (drag o flechas arriba/abajo).
+   - Al menos 0 responsables adicionales (el capacitador siempre firma).
 
 ### 7.3 Reglas UX transversales
 
@@ -253,38 +284,100 @@ Capacitaciones/
 
 ### 7.5 Import/Export XLSX de catálogos
 
-- Librería backend: `ClosedXML` o `EPPlus` (a definir por agente Backend).
+- Librería backend: **ClosedXML** (licencia MIT, más simple que EPPlus).
 - Endpoint `GET /catalogos/{tipo}/plantilla` → descarga plantilla vacía.
 - Endpoint `POST /catalogos/{tipo}/importar` → recibe archivo, valida fila por fila, reporta errores.
+
+### 7.6 Generación de certificados (servicio `emisor_documentos`)
+
+**Disparo:** cuando la capacitación alcanza estado `Finalizada`, el backend expone un endpoint admin `POST /capacitaciones/{id}/certificados/generar` que genera un certificado por cada asistente inscrito. El endpoint también se puede invocar manualmente para regenerar.
+
+**Servicio `emisor_documentos`** (nuevo contenedor Docker):
+- **Stack:** Node.js 20 + Puppeteer (HTML → PDF fiable y maduro).
+- **IP estática:** `192.168.56.16` en la red `capacitaciones-net`.
+- **Puerto interno:** `3000` (no expuesto al host; solo accesible desde el backend por red interna).
+- **API HTTP:**
+  - `POST /emitir/certificado` — body JSON con el payload del certificado (ver más abajo). Responde `201 Created` con `{ ruta: "/output/<archivo>.pdf" }`.
+  - `GET /health` — healthcheck.
+- **Plantilla HTML:** archivo `templates/certificado.html` con tokens `{{asistente.nombres}}`, `{{capacitacion.tema}}`, `{{capacitacion.fecha}}`, `{{capacitacion.duracionHoras}}`, `{{capacitacion.tipoActividad}}`, `{{capacitacion.tipoCertificacion}}`, lista de firmantes (capacitador + responsables).
+- **Assets estáticos:** `templates/fondo.png` (logo DOS + borde) se inserta como background-image del `<body>`. Las firmas se incrustan como `<img src="data:image/png;base64,...">`.
+- **Volumen de salida:** `/output` dentro del contenedor, mapeado a `./output/` en el host y también montado en otros servicios que consuman los PDFs.
+
+**Payload `POST /emitir/certificado`:**
+```json
+{
+  "capacitacion": {
+    "codigo": "CAP-PC-REG-001",
+    "tema": "...",
+    "tipoActividad": "Curso",
+    "tipoCertificacion": "Aprobacion",
+    "fechaInicio": "2026-05-10T09:00:00-05:00",
+    "duracionHoras": 8.0
+  },
+  "asistente": {
+    "nombres": "...",
+    "apellidos": "...",
+    "identificacion": "..."
+  },
+  "firmantes": [
+    { "nombres": "Capacitador", "cargo": "...", "empresa": "...", "firmaBase64": "..." },
+    { "nombres": "Responsable 1", "cargo": "...", "empresa": "...", "firmaBase64": "..." }
+  ]
+}
+```
+
+**Texto del certificado (según tipo de actividad):**
+```
+Certificado
+
+[TipoCertificacion: Participación | Aprobación]
+
+[Nombre completo del asistente]
+
+Ha completado con éxito [la charla | el workshop | la capacitación | el curso | el taller | el seminario] sobre [Tema].
+
+Dictado el [Fecha] con una duración de [Horas] horas.
+
+[Firmas en fila: capacitador primero, luego responsables en el orden definido]
+[Bajo cada firma: Nombre / Cargo / Empresa]
+```
+
+**Nombre de archivo PDF:** `{codigo}_{identificacion}.pdf` (ej. `CAP-PC-REG-001_1712345678.pdf`) dentro de `/output/`.
+
+**Assets de referencia pendientes de entrega del usuario:**
+- `certificado.png` — render visual objetivo (para calibrar posiciones y tipografías).
+- `fondo.png` — imagen de fondo usada por la plantilla HTML.
+- Ambos se colocarán en `./certificados/templates/` una vez entregados.
 
 ## 8. Estado actual
 
 - [x] Design system en `./style/` listo para consumo.
-- [x] `instrucciones.md` creado y alcance v1 registrado.
-- [ ] Scaffolding Backend (.NET 8 hexagonal) — Domain/Application/Infrastructure/Api.
-- [ ] Scaffolding Frontend (React + Vite + layout Sidebar/Body).
-- [ ] `docker-compose.yml` + red `capacitaciones-net` + nginx confs.
+- [x] `instrucciones.md` con alcance v1 (incluido certificados).
+- [x] Repo Git inicializado y publicado en `github.com/pasthortown/capacitaciones`.
+- [x] Scaffolding Backend (.NET 8 hexagonal) — Domain/Application/Infrastructure/Api + tests xUnit.
+- [x] Scaffolding Frontend (React + Vite + layout Sidebar/Body + Modal UX + `http.js`).
+- [x] `docker-compose.yml` + red `capacitaciones-net` + nginx confs + Dockerfile backend + `.env.example`.
 - [ ] Módulo Catálogos (Modalidad, TipoActividad, Área) — CRUD + XLSX.
 - [ ] Pantalla Configuración de numeración.
-- [ ] Módulo Capacitaciones — CRUD + grid de cards.
-- [ ] Página capacitador (link firmado).
+- [ ] Módulo Capacitaciones — CRUD + grid de cards + gestión de responsables.
+- [ ] Página capacitador (link firmado, descripción + firma + cargo + empresa).
 - [ ] Página pública de inscripción + componente `SignaturePad`.
-- [ ] Listado de asistentes por capacitación.
+- [ ] Listado de asistentes por capacitación + descarga de certificado.
+- [ ] Servicio `emisor_documentos` (Node + Puppeteer) + plantilla HTML del certificado.
 - [ ] Integración SonarQube + OWASP ZAP.
-- [ ] Inicialización de repositorio Git y primer push.
 
 ## 9. Plan de fases
 
-| Fase | Objetivo                                                     | Agentes involucrados     |
-| ---- | ------------------------------------------------------------ | ------------------------ |
-| 0    | Bootstrap: scaffolds front/back + compose + nginx            | Backend, Frontend, Infra |
-| 1    | Catálogos (Modalidad, TipoActividad, Área) + import/export   | Backend, Frontend        |
-| 2    | Configuración de numeración                                  | Backend, Frontend        |
-| 3    | CRUD Capacitaciones + grid de cards + modales                | Backend, Frontend        |
-| 4    | Link capacitador (descripción + firma)                       | Backend, Frontend        |
-| 5    | Página pública de inscripción + firma + asistentes           | Backend, Frontend        |
-| 6    | Pasada de calidad y seguridad (Sonar + ZAP)                  | Security                 |
-| 7    | Versionado Git + primer push                                 | PM                       |
+| Fase | Objetivo                                                                                  | Agentes involucrados          |
+| ---- | ----------------------------------------------------------------------------------------- | ----------------------------- |
+| 0    | ✅ Bootstrap: scaffolds front/back + compose + nginx                                      | Backend, Frontend, Infra      |
+| 1    | Catálogos (Modalidad, TipoActividad, Área) + import/export XLSX                           | Backend, Frontend             |
+| 2    | Login admin (JWT) + Configuración de numeración                                           | Backend, Frontend             |
+| 3    | CRUD Capacitaciones + grid de cards + gestión de responsables                             | Backend, Frontend             |
+| 4    | Link capacitador (descripción + firma + cargo + empresa, token firmado)                   | Backend, Frontend             |
+| 5    | Página pública de inscripción + `SignaturePad` + listado de asistentes                    | Backend, Frontend             |
+| 6    | Servicio `emisor_documentos` + plantilla HTML + integración con backend (endpoint gen.)   | Infra, Backend                |
+| 7    | Pasada de calidad y seguridad (Sonar + ZAP)                                               | Security                      |
 
 ## 10. Decisiones tomadas (v1)
 

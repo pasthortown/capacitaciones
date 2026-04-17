@@ -1,0 +1,20 @@
+/* ==========================================================================
+   Capacitaciones - Entrada de estilos
+   Importa el design system ubicado en /style/ (fuera de /frontend).
+   Las rutas son relativas a este archivo: src/styles/index.css
+   -> ../../../style/*.css
+   ========================================================================== */
+@import '../../../style/variables.css';
+@import '../../../style/main.css';
+@import '../../../style/utilities.css';
+@import '../../../style/components.css';
+
+/* Overrides / ajustes locales mínimos. No duplicar tokens del design system. */
+#root {
+  min-height: 100vh;
+}
+
+/* Estado vacío / placeholder para páginas aún no implementadas. */
+.placeholder-page {
+  padding: var(--spacing-6);
+}
