@@ -1299,6 +1299,8 @@ select.form-control option {
   visibility: hidden;
   transition: all var(--transition-normal);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal--open {
@@ -1343,6 +1345,8 @@ select.form-control option {
 .modal__body {
   padding: var(--spacing-6);
   overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .modal__footer {
@@ -1352,6 +1356,7 @@ select.form-control option {
   gap: var(--spacing-3);
   padding: var(--spacing-4) var(--spacing-6);
   border-top: 1px solid var(--color-border-light);
+  flex: 0 0 auto;
 }
 
 /* ========================================
