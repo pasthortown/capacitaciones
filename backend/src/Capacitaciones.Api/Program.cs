@@ -3,6 +3,7 @@ using Capacitaciones.Application.Ports;
 using Capacitaciones.Application.UseCases.Admin;
 using Capacitaciones.Application.UseCases.Auth;
 using Capacitaciones.Application.UseCases.Capacitaciones;
+using Capacitaciones.Application.UseCases.Capacitador;
 using Capacitaciones.Application.UseCases.Catalogos;
 using Capacitaciones.Application.UseCases.Configuracion;
 using Capacitaciones.Domain.Entities;
@@ -124,6 +125,9 @@ builder.Services
 builder.Services.AddAuthorization(o =>
 {
     o.AddPolicy("Admin", p => p.RequireRole("Admin"));
+    // Policy Fase 4: el token del capacitador trae claim role=Capacitador (emitido por
+    // IJwtTokenGenerator.GenerateCapacitadorToken). El controller valida además el claim cid.
+    o.AddPolicy("Capacitador", p => p.RequireRole("Capacitador"));
 });
 
 // Repositorios (adaptadores EF Core).
@@ -159,6 +163,11 @@ builder.Services.AddScoped<ObtenerCapacitacionUseCase>();
 builder.Services.AddScoped<CrearCapacitacionUseCase>();
 builder.Services.AddScoped<EditarCapacitacionUseCase>();
 builder.Services.AddScoped<EliminarCapacitacionUseCase>();
+
+// Fase 4 — flujo del capacitador (link firmado + GET/PUT sobre su propia capacitación).
+builder.Services.AddScoped<GenerarLinkCapacitadorUseCase>();
+builder.Services.AddScoped<ObtenerCapacitacionCapacitadorUseCase>();
+builder.Services.AddScoped<ActualizarCapacitadorCapacitacionUseCase>();
 
 // Servicio de numeración (consumido en Fase 3).
 builder.Services.AddScoped<INumeracionService, NumeracionService>();

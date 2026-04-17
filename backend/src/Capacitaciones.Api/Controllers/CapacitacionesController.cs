@@ -1,5 +1,6 @@
 using Capacitaciones.Application.Dtos.Capacitaciones;
 using Capacitaciones.Application.UseCases.Capacitaciones;
+using Capacitaciones.Application.UseCases.Capacitador;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,19 +24,22 @@ public class CapacitacionesController : ControllerBase
     private readonly CrearCapacitacionUseCase _crear;
     private readonly EditarCapacitacionUseCase _editar;
     private readonly EliminarCapacitacionUseCase _eliminar;
+    private readonly GenerarLinkCapacitadorUseCase _generarLinkCapacitador;
 
     public CapacitacionesController(
         ListarCapacitacionesUseCase listar,
         ObtenerCapacitacionUseCase obtener,
         CrearCapacitacionUseCase crear,
         EditarCapacitacionUseCase editar,
-        EliminarCapacitacionUseCase eliminar)
+        EliminarCapacitacionUseCase eliminar,
+        GenerarLinkCapacitadorUseCase generarLinkCapacitador)
     {
         _listar = listar;
         _obtener = obtener;
         _crear = crear;
         _editar = editar;
         _eliminar = eliminar;
+        _generarLinkCapacitador = generarLinkCapacitador;
     }
 
     [HttpGet]
@@ -106,6 +110,30 @@ public class CapacitacionesController : ControllerBase
         catch (CapacitacionNotFoundException)
         {
             return NotFound();
+        }
+    }
+
+    /// <summary>
+    /// Fase 4: genera un link firmado (JWT role=Capacitador) para entregarle al capacitador.
+    /// El body de la respuesta incluye la URL relativa y la fecha de expiración.
+    /// Cada invocación emite un token nuevo que convive con los anteriores hasta expirar
+    /// (no hay lista negra — ver nota en <c>GenerarLinkCapacitadorUseCase</c>).
+    /// </summary>
+    [HttpPost("{id:guid}/link-capacitador")]
+    public async Task<IActionResult> GenerarLinkCapacitador(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var dto = await _generarLinkCapacitador.ExecuteAsync(id, ct);
+            return Ok(dto);
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CapacitacionServiceException ex)
+        {
+            return ToProblem(ex);
         }
     }
 

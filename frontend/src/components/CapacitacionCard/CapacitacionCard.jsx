@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../Toast/useToast.js';
 import { formatFechaHora, formatDuracion } from '../../utils/formatters.js';
+import { generateLinkCapacitador } from '../../services/capacitaciones.js';
 import styles from './CapacitacionCard.module.css';
 
 /**
@@ -28,6 +30,8 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
   const navigate = useNavigate();
   const toast = useToast();
 
+  const [generandoLink, setGenerandoLink] = useState(false);
+
   const {
     id,
     codigo,
@@ -43,44 +47,63 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
 
   const esFinalizada = estado === 'Finalizada';
 
-  // TODO Fase 4: reemplazar este placeholder por la URL firmada real que
-  // provee el backend. Por ahora copiamos una URL local basada en el id.
-  const copyToClipboard = async (url, successMessage) => {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(url);
-      } else {
-        // Fallback para entornos sin Clipboard API.
-        const tmp = document.createElement('textarea');
-        tmp.value = url;
-        tmp.setAttribute('readonly', '');
-        tmp.style.position = 'absolute';
-        tmp.style.left = '-9999px';
-        document.body.appendChild(tmp);
-        tmp.select();
-        document.execCommand('copy');
-        document.body.removeChild(tmp);
-      }
-      toast.success(successMessage);
-    } catch {
-      toast.error('No se pudo copiar el enlace.');
+  const copyToClipboard = async (url) => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(url);
+      return;
     }
+    // Fallback para entornos sin Clipboard API (ej. http / iframes).
+    const tmp = document.createElement('textarea');
+    tmp.value = url;
+    tmp.setAttribute('readonly', '');
+    tmp.style.position = 'absolute';
+    tmp.style.left = '-9999px';
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand('copy');
+    document.body.removeChild(tmp);
   };
 
-  const handleCopyCapacitadorLink = () => {
-    // TODO Fase 4: sustituir por URL firmada emitida por el backend.
-    const url = `${window.location.origin}/capacitador/${id}`;
-    copyToClipboard(url, 'Enlace copiado');
+  const formatExpiresAt = (iso) => {
+    if (!iso) return '';
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return '';
+    return formatFechaHora(date);
+  };
+
+  const handleCopyCapacitadorLink = async () => {
+    if (!id || generandoLink) return;
+    setGenerandoLink(true);
+    try {
+      const { url, expiresAt } = await generateLinkCapacitador(id);
+      const fullUrl = `${window.location.origin}${url}`;
+      await copyToClipboard(fullUrl);
+      const fecha = formatExpiresAt(expiresAt);
+      toast.success(
+        fecha
+          ? `Enlace del capacitador copiado (expira: ${fecha})`
+          : 'Enlace del capacitador copiado',
+      );
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo generar el enlace del capacitador.');
+    } finally {
+      setGenerandoLink(false);
+    }
   };
 
   const handleOpenAsistentes = () => {
     navigate(`/capacitaciones/${id}/asistentes`);
   };
 
-  const handleCopyInscripcionLink = () => {
+  const handleCopyInscripcionLink = async () => {
     // TODO Fase 5: sustituir por URL firmada emitida por el backend.
     const url = `${window.location.origin}/inscripcion/${id}`;
-    copyToClipboard(url, 'Enlace copiado');
+    try {
+      await copyToClipboard(url);
+      toast.success('Enlace copiado');
+    } catch {
+      toast.error('No se pudo copiar el enlace.');
+    }
   };
 
   return (
@@ -127,6 +150,7 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
             type="button"
             className={styles.iconBtn}
             onClick={handleCopyCapacitadorLink}
+            disabled={generandoLink}
             title="Copiar enlace para el capacitador"
             aria-label="Copiar enlace para el capacitador"
           >

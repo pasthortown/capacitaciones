@@ -15,4 +15,10 @@ public class JwtOptions
 
     /// <summary>TTL del token en horas. Default: 8 horas (ver Fase 2 §Auth).</summary>
     public int ExpirationHours { get; set; } = 8;
+
+    /// <summary>
+    /// TTL (en días) del token de capacitador emitido por el admin en el link firmado (Fase 4).
+    /// Default: 90 días.
+    /// </summary>
+    public int CapacitadorTokenDias { get; set; } = 90;
 }

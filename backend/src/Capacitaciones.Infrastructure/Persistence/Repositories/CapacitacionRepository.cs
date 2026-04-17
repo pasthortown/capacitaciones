@@ -163,6 +163,19 @@ public class CapacitacionRepository : ICapacitacionRepository
         });
     }
 
+    public async Task UpdateAsync(Capacitacion entity, CancellationToken ct = default)
+    {
+        // Persiste escalares sin tocar la colección de responsables. La entidad puede venir
+        // ya tracked (desde GetByIdWithResponsablesAsync) — en ese caso SaveChangesAsync basta.
+        // Si vino detached, Update() asegura que EF la vea modificada.
+        var entry = _db.Entry(entity);
+        if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+        {
+            _db.Capacitaciones.Update(entity);
+        }
+        await _db.SaveChangesAsync(ct);
+    }
+
     public async Task DeleteLogicoAsync(Guid id, CancellationToken ct = default)
     {
         var entity = await _db.Capacitaciones.FirstOrDefaultAsync(c => c.Id == id, ct);

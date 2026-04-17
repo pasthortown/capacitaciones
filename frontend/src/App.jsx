@@ -3,6 +3,7 @@ import AppLayout from './layouts/AppLayout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import CapacitacionesPage from './pages/capacitaciones/CapacitacionesPage.jsx';
 import AsistentesPage from './pages/capacitaciones/AsistentesPage.jsx';
+import CapacitadorPage from './pages/capacitador/CapacitadorPage.jsx';
 import ModalidadesPage from './pages/catalogos/ModalidadesPage.jsx';
 import TiposActividadPage from './pages/catalogos/TiposActividadPage.jsx';
 import AreasPage from './pages/catalogos/AreasPage.jsx';
@@ -50,8 +51,9 @@ function PlaceholderPage({ titulo, descripcion }) {
 export default function App() {
   return (
     <Routes>
-      {/* Pública */}
+      {/* Públicas (sin sidebar / sin guard admin) */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/capacitador" element={<CapacitadorPage />} />
 
       {/* Protegidas */}
       <Route element={<ProtectedRoute />}>

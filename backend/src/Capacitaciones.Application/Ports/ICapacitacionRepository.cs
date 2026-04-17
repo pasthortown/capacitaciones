@@ -40,6 +40,13 @@ public interface ICapacitacionRepository
         IEnumerable<Responsable> nuevosResponsables,
         CancellationToken ct = default);
 
+    /// <summary>
+    /// Persiste los cambios escalares de una <see cref="Capacitacion"/> ya materializada
+    /// (tracked o detached) sin tocar su lista de <see cref="Responsable"/>. Usado por el
+    /// caso de uso del capacitador (Fase 4), que solo edita campos propios de la entidad.
+    /// </summary>
+    Task UpdateAsync(Capacitacion entity, CancellationToken ct = default);
+
     /// <summary>Eliminación lógica (Activo = false + FechaActualizacion).</summary>
     Task DeleteLogicoAsync(Guid id, CancellationToken ct = default);
 

@@ -67,10 +67,27 @@ export function deleteCapacitacion(id) {
   return http.del(`${BASE}/${id}`);
 }
 
+/**
+ * Genera (o regenera) el link firmado para la página del capacitador.
+ *
+ * POST /api/capacitaciones/{id}/link-capacitador
+ *   → 200 { url, token, expiresAt }
+ *
+ * `url` es relativa (ej. `/capacitador?token=...`). El caller la
+ * concatena con `window.location.origin` para obtener la URL completa.
+ *
+ * @param {string} id
+ * @returns {Promise<{ url: string, token: string, expiresAt: string }>}
+ */
+export function generateLinkCapacitador(id) {
+  return http.post(`${BASE}/${id}/link-capacitador`);
+}
+
 export default {
   listCapacitaciones,
   getCapacitacion,
   createCapacitacion,
   updateCapacitacion,
   deleteCapacitacion,
+  generateLinkCapacitador,
 };
