@@ -1,0 +1,17 @@
+{
+  "name": "emisor-documentos",
+  "version": "1.0.0",
+  "description": "Servicio HTTP que renderiza certificados PDF (HTML + Puppeteer) para el sistema de Capacitaciones.",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "puppeteer": "^22.15.0"
+  }
+}

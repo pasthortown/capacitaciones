@@ -1,32 +1,53 @@
+using Capacitaciones.Application.Dtos.Certificados;
 using Capacitaciones.Application.Ports;
 using Capacitaciones.Application.UseCases.Capacitaciones;
+using Capacitaciones.Application.UseCases.Certificados;
 
 namespace Capacitaciones.Application.UseCases.Asistentes;
 
 /// <summary>
-/// Stub Fase 5 del endpoint admin <c>GET /api/capacitaciones/{capacitacionId}/asistentes/{asistenteId}/certificado</c>.
+/// Fase 6 — descarga del certificado PDF de un asistente.
 ///
-/// Política:
-///   - Si la capacitación no está <c>Finalizada</c> → lanza <see cref="CapacitacionServiceException"/>
-///     código <c>CAPACITACION_NO_FINALIZADA</c> (409 Conflict).
-///   - Si está Finalizada → lanza <see cref="CertificadoNoDisponibleException"/> (501 Not Implemented).
-///     La integración real con <c>emisor_documentos</c> (Node + Puppeteer) se hará en Fase 6.
+/// Algoritmo:
+///   1. Valida que la capacitación exista y que el asistente le pertenezca (404 si no).
+///   2. Construye el nombre esperado del archivo: <c>{codigo}_{identificacion}.pdf</c>
+///      (sanitizados — solo alfanumérico + <c>-</c> + <c>_</c>).
+///   3. Si <c>{OutputDir}/{filename}</c> existe → abre el stream y lo devuelve (descarga directa).
+///   4. Si NO existe → invoca <see cref="GenerarCertificadoAsistenteUseCase"/> para producirlo
+///      contra el servicio emisor y luego abre el stream.
+///   5. Si tras generar sigue sin existir el archivo → <see cref="InvalidOperationException"/>
+///      (falla de contrato con el emisor o volumen no montado).
 ///
-/// IMPORTANTE: este use case NO llama a ningún servicio externo. Solo valida estado y devuelve la
-/// excepción correspondiente. El controller la traduce al HTTP apropiado.
+/// <para>
+/// El volumen compartido entre backend y emisor es <c>/output/</c> (mapeado en docker-compose
+/// a <c>./output/</c> del host). Si el volumen no está montado, la lectura del archivo lanzará
+/// <see cref="FileNotFoundException"/> tras la generación y se convertirá en
+/// <see cref="InvalidOperationException"/> (500) — es responsabilidad de Infra garantizar el mount.
+/// </para>
 /// </summary>
 public class DescargarCertificadoUseCase
 {
     private readonly ICapacitacionRepository _capacitaciones;
     private readonly IAsistenteRepository _asistentes;
+    private readonly GenerarCertificadoAsistenteUseCase _generar;
+    private readonly CertificadosOptions _options;
 
-    public DescargarCertificadoUseCase(ICapacitacionRepository capacitaciones, IAsistenteRepository asistentes)
+    public DescargarCertificadoUseCase(
+        ICapacitacionRepository capacitaciones,
+        IAsistenteRepository asistentes,
+        GenerarCertificadoAsistenteUseCase generar,
+        CertificadosOptions options)
     {
         _capacitaciones = capacitaciones;
         _asistentes = asistentes;
+        _generar = generar;
+        _options = options;
     }
 
-    public async Task ExecuteAsync(Guid capacitacionId, Guid asistenteId, CancellationToken ct = default)
+    public async Task<CertificadoDescargaDto> ExecuteAsync(
+        Guid capacitacionId,
+        Guid asistenteId,
+        CancellationToken ct = default)
     {
         var capacitacion = await _capacitaciones.GetByIdWithResponsablesAsync(capacitacionId, ct)
             ?? throw new CapacitacionNotFoundException(capacitacionId);
@@ -39,25 +60,64 @@ public class DescargarCertificadoUseCase
                 $"No existe un asistente con Id={asistenteId} para la capacitación {capacitacionId}.");
         }
 
-        if (CapacitacionEstadoCalculator.Calcular(capacitacion) != CapacitacionEstadoCalculator.Finalizada)
+        var filename = BuildFilename(capacitacion.Codigo, asistente.Identificacion);
+        var outputDir = string.IsNullOrWhiteSpace(_options.OutputDir) ? "/output" : _options.OutputDir;
+        var fullPath = Path.Combine(outputDir, filename);
+
+        if (!File.Exists(fullPath))
         {
-            throw new CapacitacionServiceException(
-                "CAPACITACION_NO_FINALIZADA",
-                "El certificado solo puede descargarse cuando la capacitación esté finalizada.");
+            // Primera descarga (o archivo borrado): disparamos la emisión y confiamos en que
+            // el emisor escribe en el volumen compartido antes de responder 201.
+            await _generar.ExecuteAsync(capacitacionId, asistenteId, ct);
         }
 
-        throw new CertificadoNoDisponibleException();
+        if (!File.Exists(fullPath))
+        {
+            throw new InvalidOperationException(
+                $"El certificado no fue encontrado en '{fullPath}' tras la emisión. " +
+                "Revisa que el volumen '/output' esté montado en el contenedor backend y que " +
+                "el emisor haya respondido 201 correctamente.");
+        }
+
+        var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return new CertificadoDescargaDto(stream, filename);
+    }
+
+    /// <summary>
+    /// Construye <c>{codigo}_{identificacion}.pdf</c> con ambos segmentos sanitizados:
+    /// cualquier carácter que no sea alfanumérico, <c>-</c> o <c>_</c> se descarta.
+    /// Evita path traversal y caracteres problemáticos para filesystems heterogéneos.
+    /// </summary>
+    public static string BuildFilename(string codigo, string identificacion)
+    {
+        var cSan = Sanitize(codigo);
+        var iSan = Sanitize(identificacion);
+        return $"{cSan}_{iSan}.pdf";
+    }
+
+    private static string Sanitize(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return string.Empty;
+        var buf = new System.Text.StringBuilder(s.Length);
+        foreach (var ch in s)
+        {
+            if (char.IsLetterOrDigit(ch) || ch == '-' || ch == '_')
+            {
+                buf.Append(ch);
+            }
+        }
+        return buf.ToString();
     }
 }
 
 /// <summary>
-/// Se lanza cuando la capacitación está <c>Finalizada</c> pero la integración con el emisor
-/// de certificados aún no está disponible (Fase 6). El controller la traduce a 501 Not Implemented.
+/// Opciones bindeadas desde la sección <c>Certificados</c> de <c>appsettings</c>.
+/// Controla el directorio de salida donde el emisor deposita los PDFs (volumen compartido).
 /// </summary>
-public class CertificadoNoDisponibleException : CapacitacionServiceException
+public class CertificadosOptions
 {
-    public CertificadoNoDisponibleException()
-        : base("CERTIFICADO_NO_DISPONIBLE", "Pendiente integración con emisor_documentos (Fase 6).")
-    {
-    }
+    public const string SectionName = "Certificados";
+
+    /// <summary>Directorio montado en el contenedor backend donde residen los PDFs emitidos.</summary>
+    public string OutputDir { get; set; } = "/output";
 }

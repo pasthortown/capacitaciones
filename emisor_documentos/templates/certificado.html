@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Certificado</title>
+  <style>
+    /* ===== Tipografías oficiales (§6.1 instrucciones.md) ===== */
+    @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-Thin.otf') format('opentype');       font-weight: 100; font-style: normal; }
+    @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-ThinItalic.otf') format('opentype'); font-weight: 100; font-style: italic; }
+    @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-Heavy.otf') format('opentype');      font-weight: 900; font-style: normal; }
+    @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-HeavyItalic.otf') format('opentype'); font-weight: 900; font-style: italic; }
+
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Light.ttf') format('truetype');    font-weight: 300; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Italic.ttf') format('truetype');  font-weight: 400; font-style: italic; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Medium.ttf') format('truetype');  font-weight: 500; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Bold.ttf') format('truetype');    font-weight: 700; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; }
+
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-Regular.otf') format('opentype'); font-weight: 400; font-style: normal; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-Italic.otf') format('opentype');  font-weight: 400; font-style: italic; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-SemiBold.otf') format('opentype'); font-weight: 600; font-style: normal; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-SemiBoldItalic.otf') format('opentype'); font-weight: 600; font-style: italic; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-Bold.otf') format('opentype');   font-weight: 700; font-style: normal; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-BoldItalic.otf') format('opentype'); font-weight: 700; font-style: italic; }
+
+    /* ===== Layout base ===== */
+    @page { size: A4 landscape; margin: 0; }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 297mm;
+      height: 210mm;
+    }
+
+    body {
+      font-family: 'Montserrat', Arial, sans-serif;
+      color: #333;
+      background-image: url('./fondo.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      position: relative;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      padding: 0 24mm;
+      text-align: center;
+    }
+
+    /* El fondo ya trae el texto "CERTIFICADO" en ~38-45% del alto.
+       El spacer empuja el contenido para que "DE PARTICIPACIÓN" aparezca
+       justo debajo de esa palabra pre-impresa. */
+    .spacer-top {
+      height: 88mm;
+    }
+
+    .subtitulo-certificado {
+      font-family: 'Uni Sans', Arial, sans-serif;
+      font-weight: 100;
+      font-size: 16pt;
+      letter-spacing: 4px;
+      color: #5a5a5a;
+      margin-top: 0;
+      margin-bottom: 20px;
+    }
+
+    .nombre-asistente {
+      font-family: 'Montserrat', Arial, sans-serif;
+      font-weight: 500;
+      font-size: 18pt;
+      color: #333;
+      letter-spacing: 1.5px;
+      margin-bottom: 18px;
+    }
+
+    .descripcion {
+      font-family: 'Montserrat', Arial, sans-serif;
+      font-weight: 400;
+      font-size: 13pt;
+      color: #4a4a4a;
+      margin-bottom: 14px;
+    }
+
+    .tema {
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+      font-weight: 700;
+      font-style: italic;
+      font-size: 24pt;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+    }
+
+    .fecha-duracion {
+      font-family: 'Montserrat', Arial, sans-serif;
+      font-weight: 400;
+      font-size: 13pt;
+      color: #4a4a4a;
+      margin-bottom: 28px;
+    }
+
+    .fecha-duracion strong {
+      font-weight: 600;
+      color: #333;
+    }
+
+    /* ===== Firmantes ===== */
+    .firmantes {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 24mm;
+      width: 100%;
+      margin-top: 10mm;
+    }
+
+    .firmante {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 55mm;
+      max-width: 70mm;
+      position: relative;
+    }
+
+    .firma-img {
+      display: block;
+      height: 60px;
+      max-width: 180px;
+      object-fit: contain;
+      margin-bottom: 2px;
+    }
+
+    .firma-placeholder {
+      height: 60px;
+      width: 180px;
+      display: block;
+    }
+
+    .firmante-linea {
+      width: 100%;
+      border-top: 1.5px solid #3a3a3a;
+      margin-bottom: 6px;
+    }
+
+    .firmante-nombre {
+      font-family: 'Montserrat', Arial, sans-serif;
+      font-weight: 700;
+      font-size: 11pt;
+      color: #222;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .firmante-cargo {
+      font-family: 'Montserrat', Arial, sans-serif;
+      font-weight: 400;
+      font-size: 10pt;
+      color: #333;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .firmante-empresa {
+      font-family: 'Montserrat', Arial, sans-serif;
+      font-weight: 400;
+      font-style: italic;
+      font-size: 10pt;
+      color: #555;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <!-- "CERTIFICADO" ya viene en el fondo; sólo se renderiza el subtítulo y el resto. -->
+    <div class="spacer-top"></div>
+    <div class="subtitulo-certificado">{{tipoCertificacion}}</div>
+
+    <div class="nombre-asistente">{{nombreCompleto}}</div>
+
+    <div class="descripcion">
+      Ha completado con éxito <strong>{{articuloSustantivo}}</strong> sobre
+    </div>
+
+    <div class="tema">{{tema}}</div>
+
+    <div class="fecha-duracion">
+      Dictado el <strong>{{fechaFormateada}}</strong> con una duración de <strong>{{duracionHoras}}</strong> horas.
+    </div>
+
+    {{firmantesHtml}}
+  </div>
+</body>
+</html>

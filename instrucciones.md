@@ -379,8 +379,8 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 - [x] Módulo Capacitaciones — CRUD + grid de cards + gestión de responsables + `SignaturePad`.
 - [x] Página capacitador (link firmado, descripción + firma + cargo + empresa).
 - [x] Página pública de inscripción + componente `SignaturePad`.
-- [x] Listado de asistentes por capacitación (descarga de certificado stub hasta Fase 6).
-- [ ] Servicio `emisor_documentos` (Node + Puppeteer) + plantilla HTML del certificado.
+- [x] Listado de asistentes por capacitación + descarga real de certificado.
+- [x] Servicio `emisor_documentos` (Node + Puppeteer) + plantilla HTML del certificado.
 - [ ] Integración SonarQube + OWASP ZAP.
 
 ## 9. Plan de fases
@@ -393,7 +393,7 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 | 3    | ✅ CRUD Capacitaciones + grid de cards + gestión de responsables + `SignaturePad`         | Backend, Frontend             |
 | 4    | ✅ Link capacitador (descripción + firma + cargo + empresa, token firmado)                | Backend, Frontend             |
 | 5    | ✅ Página pública de inscripción + `SignaturePad` + listado de asistentes                  | Backend, Frontend             |
-| 6    | Servicio `emisor_documentos` + plantilla HTML + integración con backend (endpoint gen.)   | Infra, Backend                |
+| 6    | ✅ Servicio `emisor_documentos` + plantilla HTML + integración con backend (endpoint gen.) | Infra, Backend                |
 | 7    | Pasada de calidad y seguridad (Sonar + ZAP)                                               | Security                      |
 
 ## 10. Decisiones tomadas (v1)

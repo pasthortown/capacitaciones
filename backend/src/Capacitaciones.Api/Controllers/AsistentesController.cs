@@ -1,12 +1,13 @@
 using Capacitaciones.Application.UseCases.Asistentes;
 using Capacitaciones.Application.UseCases.Capacitaciones;
+using Capacitaciones.Application.UseCases.Certificados;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Capacitaciones.Api.Controllers;
 
 /// <summary>
-/// Admin — listado de asistentes de una capacitación y descarga de certificado (stub Fase 5).
+/// Admin — listado de asistentes de una capacitación y descarga del certificado (Fase 6).
 /// </summary>
 [ApiController]
 [Authorize(Policy = "Admin")]
@@ -39,8 +40,8 @@ public class AsistentesController : ControllerBase
     }
 
     /// <summary>
-    /// Stub Fase 5: valida estado y devuelve 409 o 501 según corresponda. La integración
-    /// con <c>emisor_documentos</c> se implementa en Fase 6.
+    /// Fase 6: descarga el certificado del asistente. Si el PDF aún no fue emitido, se llama
+    /// al servicio <c>emisor_documentos</c> de forma implícita y luego se sirve el archivo.
     /// </summary>
     [HttpGet("{asistenteId:guid}/certificado")]
     public async Task<IActionResult> DescargarCertificado(
@@ -50,23 +51,32 @@ public class AsistentesController : ControllerBase
     {
         try
         {
-            await _descargarCertificado.ExecuteAsync(capacitacionId, asistenteId, ct);
-            // Si la implementación cambiara y no lanza excepción, es un caso no previsto en Fase 5.
-            return StatusCode(StatusCodes.Status501NotImplemented, new
-            {
-                error = "CERTIFICADO_NO_DISPONIBLE",
-                message = "Pendiente integración con emisor_documentos (Fase 6)."
-            });
+            var descarga = await _descargarCertificado.ExecuteAsync(capacitacionId, asistenteId, ct);
+
+            // FileStreamResult se encarga de cerrar el stream tras copiar al response.
+            return File(descarga.FileStream, descarga.ContentType, descarga.Filename);
         }
         catch (CapacitacionNotFoundException)
         {
             return NotFound();
         }
+        catch (CertificadoFirmasFaltantesException ex)
+        {
+            return new ObjectResult(new
+            {
+                error = ex.Codigo,
+                message = ex.Message,
+                faltantes = ex.Faltantes
+            })
+            {
+                StatusCode = StatusCodes.Status409Conflict
+            };
+        }
         catch (CertificadoNoDisponibleException ex)
         {
             return new ObjectResult(new { error = ex.Codigo, message = ex.Message })
             {
-                StatusCode = StatusCodes.Status501NotImplemented
+                StatusCode = StatusCodes.Status409Conflict
             };
         }
         catch (CapacitacionServiceException ex)
@@ -78,6 +88,18 @@ public class AsistentesController : ControllerBase
                 _ => StatusCodes.Status400BadRequest
             };
             return new ObjectResult(new { error = ex.Codigo, message = ex.Message }) { StatusCode = status };
+        }
+        catch (HttpRequestException ex)
+        {
+            // El emisor está caído o respondió con un status no exitoso.
+            return new ObjectResult(new
+            {
+                error = "SERVICIO_EMISOR_NO_DISPONIBLE",
+                message = $"No se pudo contactar al servicio emisor_documentos: {ex.Message}"
+            })
+            {
+                StatusCode = StatusCodes.Status503ServiceUnavailable
+            };
         }
     }
 }

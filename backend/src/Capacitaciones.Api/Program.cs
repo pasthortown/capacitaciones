@@ -6,6 +6,7 @@ using Capacitaciones.Application.UseCases.Auth;
 using Capacitaciones.Application.UseCases.Capacitaciones;
 using Capacitaciones.Application.UseCases.Capacitador;
 using Capacitaciones.Application.UseCases.Catalogos;
+using Capacitaciones.Application.UseCases.Certificados;
 using Capacitaciones.Application.UseCases.Configuracion;
 using Capacitaciones.Application.UseCases.Inscripcion;
 using Capacitaciones.Application.UseCases.Responsable;
@@ -16,6 +17,7 @@ using Capacitaciones.Infrastructure.Persistence;
 using Capacitaciones.Infrastructure.Persistence.Repositories;
 using Capacitaciones.Infrastructure.Persistence.Services;
 using Capacitaciones.Infrastructure.Security;
+using Capacitaciones.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -186,6 +188,39 @@ builder.Services.AddScoped<ObtenerInscripcionPublicaUseCase>();
 builder.Services.AddScoped<InscribirAsistenteUseCase>();
 builder.Services.AddScoped<ListarAsistentesUseCase>();
 builder.Services.AddScoped<DescargarCertificadoUseCase>();
+
+// Fase 6 — integración con servicio externo emisor_documentos (Node + Puppeteer).
+var emisorOptions = builder.Configuration.GetSection(EmisorDocumentosOptions.SectionName)
+    .Get<EmisorDocumentosOptions>() ?? new EmisorDocumentosOptions();
+if (string.IsNullOrWhiteSpace(emisorOptions.BaseUrl))
+{
+    emisorOptions.BaseUrl = "http://emisor_documentos:3000";
+}
+if (emisorOptions.TimeoutSeconds <= 0)
+{
+    emisorOptions.TimeoutSeconds = 120;
+}
+builder.Services.AddSingleton(emisorOptions);
+
+var certificadosOptions = builder.Configuration.GetSection(CertificadosOptions.SectionName)
+    .Get<CertificadosOptions>() ?? new CertificadosOptions();
+if (string.IsNullOrWhiteSpace(certificadosOptions.OutputDir))
+{
+    certificadosOptions.OutputDir = "/output";
+}
+builder.Services.AddSingleton(certificadosOptions);
+
+builder.Services.AddHttpClient<IEmisorDocumentosClient, EmisorDocumentosHttpClient>(client =>
+{
+    var baseUrl = emisorOptions.BaseUrl;
+    // Garantizamos el trailing slash para que la ruta relativa ("emitir/certificado") resuelva correcto.
+    if (!baseUrl.EndsWith('/')) baseUrl += "/";
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(emisorOptions.TimeoutSeconds);
+});
+
+builder.Services.AddScoped<GenerarCertificadoAsistenteUseCase>();
+builder.Services.AddScoped<GenerarCertificadosCapacitacionUseCase>();
 
 // Refactor Responsables — catálogo global + link firmado para página pública.
 builder.Services.AddScoped<ListarResponsablesUseCase>();

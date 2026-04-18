@@ -41,6 +41,7 @@ services:
     restart: unless-stopped
     depends_on:
       - sqlserver
+      - emisor_documentos
     ports:
       - "8080:8080"
     environment:
@@ -54,9 +55,29 @@ services:
       Jwt__Audience: ${JWT_AUDIENCE}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      EmisorDocumentos__BaseUrl: http://emisor_documentos:3000
+    volumes:
+      - ./output:/output
     networks:
       capacitaciones-net:
         ipv4_address: 192.168.56.11
+
+  emisor_documentos:
+    build:
+      context: ./emisor_documentos
+      dockerfile: Dockerfile
+    container_name: capacitaciones-emisor
+    restart: unless-stopped
+    environment:
+      TZ: America/Guayaquil
+      PORT: 3000
+      OUTPUT_DIR: /output
+      TEMPLATES_DIR: /app/templates
+    volumes:
+      - ./output:/output
+    networks:
+      capacitaciones-net:
+        ipv4_address: 192.168.56.16
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest

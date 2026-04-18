@@ -1,6 +1,7 @@
 using Capacitaciones.Application.Dtos.Capacitaciones;
 using Capacitaciones.Application.UseCases.Capacitaciones;
 using Capacitaciones.Application.UseCases.Capacitador;
+using Capacitaciones.Application.UseCases.Certificados;
 using Capacitaciones.Application.UseCases.Inscripcion;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,6 +28,7 @@ public class CapacitacionesController : ControllerBase
     private readonly EliminarCapacitacionUseCase _eliminar;
     private readonly GenerarLinkCapacitadorUseCase _generarLinkCapacitador;
     private readonly GenerarLinkInscripcionUseCase _generarLinkInscripcion;
+    private readonly GenerarCertificadosCapacitacionUseCase _generarCertificados;
 
     public CapacitacionesController(
         ListarCapacitacionesUseCase listar,
@@ -35,7 +37,8 @@ public class CapacitacionesController : ControllerBase
         EditarCapacitacionUseCase editar,
         EliminarCapacitacionUseCase eliminar,
         GenerarLinkCapacitadorUseCase generarLinkCapacitador,
-        GenerarLinkInscripcionUseCase generarLinkInscripcion)
+        GenerarLinkInscripcionUseCase generarLinkInscripcion,
+        GenerarCertificadosCapacitacionUseCase generarCertificados)
     {
         _listar = listar;
         _obtener = obtener;
@@ -44,6 +47,7 @@ public class CapacitacionesController : ControllerBase
         _eliminar = eliminar;
         _generarLinkCapacitador = generarLinkCapacitador;
         _generarLinkInscripcion = generarLinkInscripcion;
+        _generarCertificados = generarCertificados;
     }
 
     [HttpGet]
@@ -160,6 +164,33 @@ public class CapacitacionesController : ControllerBase
         catch (CapacitacionServiceException ex)
         {
             return ToProblem(ex);
+        }
+    }
+
+    /// <summary>
+    /// Fase 6: dispara la emisión masiva de certificados para todos los asistentes de la
+    /// capacitación. El endpoint es idempotente — puede invocarse múltiples veces para
+    /// regenerar. Devuelve <c>200 OK</c> con un resumen incluso si algunos fallan; el UI
+    /// muestra la lista de errores y permite reintentar por asistente.
+    /// </summary>
+    [HttpPost("{id:guid}/certificados/generar")]
+    public async Task<IActionResult> GenerarCertificados(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var resultado = await _generarCertificados.ExecuteAsync(id, ct);
+            return Ok(resultado);
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CertificadoNoDisponibleException ex)
+        {
+            return new ObjectResult(new { error = ex.Codigo, message = ex.Message })
+            {
+                StatusCode = StatusCodes.Status409Conflict
+            };
         }
     }
 

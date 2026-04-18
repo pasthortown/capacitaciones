@@ -4,6 +4,13 @@
   align-items: center;
 }
 
+.headerActions {
+  display: inline-flex;
+  gap: var(--spacing-2, 8px);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

@@ -1,13 +1,15 @@
 /**
  * Servicio admin para la gestión de Asistentes de una capacitación.
  *
- * Contrato API (ver instrucciones.md §7.2.5 y §7.2.6, fase 5):
+ * Contrato API (ver instrucciones.md §7.2.5 y §7.2.6):
  *   GET /api/capacitaciones/{capId}/asistentes
  *     -> 200 [{ id, nombres, apellidos, identificacion, email, area:{id,nombre}, fechaInscripcion }]
  *   GET /api/capacitaciones/{capId}/asistentes/{asistenteId}/certificado
- *     -> (Fase 6) 200 application/pdf
- *     -> (Fase 5 stub) 501 "pendiente" si backend aún no emite PDF, o
- *        409 si la capacitación no está Finalizada.
+ *     -> 200 application/pdf con Content-Disposition: attachment; filename="{codigo}_{identificacion}.pdf"
+ *     -> 409 { error: 'CAPACITACION_NO_FINALIZADA', message }
+ *     -> 409 { error: 'FIRMAS_FALTANTES', message, faltantes: [string,...] }
+ *     -> 503 { error: 'SERVICIO_EMISOR_NO_DISPONIBLE', message }
+ *     -> 404 si el asistente o capacitación no existe.
  *
  * Todos los endpoints requieren Bearer (policy Admin) — usan `http.js`.
  */
@@ -29,25 +31,30 @@ export function listByCapacitacion(capacitacionId) {
 /**
  * Descarga el certificado del asistente.
  *
- * IMPORTANTE — Stub de Fase 5:
- *  El backend aún no emite PDFs en Fase 5; responderá 501 "pendiente" (o 409
- *  si la capacitación no está Finalizada). Por eso actualmente usamos
- *  `http.get` para que el error se propague como `HttpError` al caller y
- *  éste muestre el toast informativo correspondiente.
- *
- *  TODO Fase 6: cuando el backend emita blob PDF real, cambiar esta función
- *  a `http.downloadBlob(...)` con un `fallbackFilename` basado en el código
- *  de la capacitación + identificación del asistente. Ver `http.js`:
- *  `downloadBlob` ya se encarga del `Content-Disposition` y el click en
- *  `<a download>`.
+ * Usa `http.downloadBlob`, que:
+ *  - Respeta `Content-Disposition` del backend (filename sugerido).
+ *  - Dispara el click en `<a download>` automáticamente (el navegador
+ *    abre el diálogo de guardado).
+ *  - Relanza `HttpError` con `body.error`, `body.message` y —si aplica—
+ *    `body.faltantes` para que el caller pueda distinguir entre
+ *    `FIRMAS_FALTANTES`, `CAPACITACION_NO_FINALIZADA`,
+ *    `SERVICIO_EMISOR_NO_DISPONIBLE`, etc.
  *
  * @param {string} capacitacionId
  * @param {string} asistenteId
- * @returns {Promise<any>}
+ * @param {string} [fallbackFilename='certificado.pdf'] - Nombre a usar
+ *   si el backend no envía Content-Disposition. Recomendado:
+ *   `${codigo}_${identificacion}.pdf`.
+ * @returns {Promise<{ blob: Blob, filename: string }>}
  */
-export function descargarCertificado(capacitacionId, asistenteId) {
-  return http.get(
+export function descargarCertificado(
+  capacitacionId,
+  asistenteId,
+  fallbackFilename = 'certificado.pdf',
+) {
+  return http.downloadBlob(
     `${BASE}/${capacitacionId}/asistentes/${asistenteId}/certificado`,
+    { fallbackFilename },
   );
 }
 

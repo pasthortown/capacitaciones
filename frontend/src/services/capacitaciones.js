@@ -99,6 +99,24 @@ export function generateLinkInscripcion(id) {
   return http.post(`${BASE}/${id}/link-inscripcion`);
 }
 
+/**
+ * Genera (en lote) los certificados de todos los asistentes de una capacitación.
+ *
+ * POST /api/capacitaciones/{id}/certificados/generar
+ *   → 200 { total, emitidos, errores: [{ asistenteId, codigo, mensaje }] }
+ *   → 409 { error: 'CAPACITACION_NO_FINALIZADA', message } si la capacitación
+ *     aún no está finalizada.
+ *
+ * El backend responde 200 incluso cuando hay errores parciales; el caller
+ * debe inspeccionar `errores.length` para mostrar el detalle.
+ *
+ * @param {string} capacitacionId
+ * @returns {Promise<{ total: number, emitidos: number, errores: Array<{ asistenteId?: string, codigo?: string, mensaje: string }> }>}
+ */
+export function generarCertificados(capacitacionId) {
+  return http.post(`${BASE}/${capacitacionId}/certificados/generar`);
+}
+
 export default {
   listCapacitaciones,
   getCapacitacion,
@@ -107,4 +125,5 @@ export default {
   deleteCapacitacion,
   generateLinkCapacitador,
   generateLinkInscripcion,
+  generarCertificados,
 };
