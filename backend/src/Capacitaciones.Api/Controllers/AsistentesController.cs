@@ -24,17 +24,20 @@ public class AsistentesController : ControllerBase
     private readonly DescargarCertificadoUseCase _descargarCertificado;
     private readonly MarcarAsistenciaUseCase _marcarAsistencia;
     private readonly CalificarAsistenteUseCase _calificar;
+    private readonly DescargarReporteAsistenciaUseCase _descargarReporte;
 
     public AsistentesController(
         ListarAsistentesUseCase listar,
         DescargarCertificadoUseCase descargarCertificado,
         MarcarAsistenciaUseCase marcarAsistencia,
-        CalificarAsistenteUseCase calificar)
+        CalificarAsistenteUseCase calificar,
+        DescargarReporteAsistenciaUseCase descargarReporte)
     {
         _listar = listar;
         _descargarCertificado = descargarCertificado;
         _marcarAsistencia = marcarAsistencia;
         _calificar = calificar;
+        _descargarReporte = descargarReporte;
     }
 
     [HttpGet]
@@ -48,6 +51,35 @@ public class AsistentesController : ControllerBase
         catch (CapacitacionNotFoundException)
         {
             return NotFound();
+        }
+    }
+
+    /// <summary>
+    /// Reporte de asistencia en PDF (modelo "Registro de Capacitación de Personal").
+    /// Incluye a todos los inscritos; firma solo de los Presentes.
+    /// </summary>
+    [HttpGet("reporte")]
+    public async Task<IActionResult> DescargarReporte(Guid capacitacionId, CancellationToken ct)
+    {
+        try
+        {
+            var descarga = await _descargarReporte.ExecuteAsync(capacitacionId, ct);
+            return File(descarga.FileStream, descarga.ContentType, descarga.Filename);
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (HttpRequestException ex)
+        {
+            return new ObjectResult(new
+            {
+                error = "SERVICIO_EMISOR_NO_DISPONIBLE",
+                message = $"No se pudo contactar al servicio emisor_documentos: {ex.Message}"
+            })
+            {
+                StatusCode = StatusCodes.Status503ServiceUnavailable
+            };
         }
     }
 

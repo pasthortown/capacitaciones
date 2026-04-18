@@ -200,6 +200,7 @@ builder.Services.AddScoped<ObtenerInscripcionPublicaUseCase>();
 builder.Services.AddScoped<InscribirAsistenteUseCase>();
 builder.Services.AddScoped<ListarAsistentesUseCase>();
 builder.Services.AddScoped<DescargarCertificadoUseCase>();
+builder.Services.AddScoped<DescargarReporteAsistenciaUseCase>();
 
 // Fase 6 — integración con servicio externo emisor_documentos (Node + Puppeteer).
 var emisorOptions = builder.Configuration.GetSection(EmisorDocumentosOptions.SectionName)

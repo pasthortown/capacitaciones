@@ -36,6 +36,20 @@ public class EmisorDocumentosHttpClient : IEmisorDocumentosClient
         return resultado;
     }
 
+    public async Task<EmisionResultado> EmitirReporteAsistenciaAsync(ReporteAsistenciaRequest req, CancellationToken ct)
+    {
+        using var response = await _http.PostAsJsonAsync("emitir/reporte-asistencia", req, JsonOptions, ct);
+        response.EnsureSuccessStatusCode();
+
+        var resultado = await response.Content.ReadFromJsonAsync<EmisionResultado>(JsonOptions, ct);
+        if (resultado is null || string.IsNullOrWhiteSpace(resultado.Ruta))
+        {
+            throw new HttpRequestException(
+                "El servicio emisor_documentos respondió un body vacío o sin campo 'ruta' para el reporte.");
+        }
+        return resultado;
+    }
+
     public async Task<bool> IsHealthyAsync(CancellationToken ct)
     {
         try

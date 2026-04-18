@@ -12,7 +12,13 @@ const fsp = require('fs/promises');
 const express = require('express');
 
 const config = require('./config');
-const { renderHtml, buildPdfFilename, ValidationError } = require('./template');
+const {
+  renderHtml,
+  buildPdfFilename,
+  renderReporteAsistenciaHtml,
+  buildPdfReporteFilename,
+  ValidationError
+} = require('./template');
 const { renderPdf, closeBrowser } = require('./renderer');
 
 const app = express();
@@ -44,6 +50,42 @@ app.post('/emitir/certificado', async (req, res) => {
     }
     // eslint-disable-next-line no-console
     console.error('[emisor] error al emitir certificado:', err);
+    return res.status(500).json({ error: 'InternalError', message: err.message || 'Error interno' });
+  }
+});
+
+/**
+ * Reporte de Asistencia (post-Fase 12). Layout A4 portrait definido por la
+ * plantilla, no usa el fondo del certificado. PDF se escribe en OUTPUT_DIR con
+ * nombre `Reporte_Asistencia_{codigo}.pdf`.
+ */
+app.post('/emitir/reporte-asistencia', async (req, res) => {
+  try {
+    const html = renderReporteAsistenciaHtml(req.body);
+    const { codigo } = req.body.capacitacion;
+
+    const filename = buildPdfReporteFilename(codigo);
+    const outPath = path.join(config.outputDir, filename);
+
+    await fsp.mkdir(config.outputDir, { recursive: true });
+
+    const pdfBuffer = await renderPdf(html, config.templatesDir, {
+      landscape: false,
+      preferCSSPageSize: true,
+      // preferCSSPageSize honra @page del HTML, así que margin aquí lo ignora
+      // puppeteer, pero lo dejamos explícito para que no herede el del certificado.
+      margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' }
+    });
+    await fsp.writeFile(outPath, pdfBuffer);
+
+    const responsePath = `/output/${filename}`;
+    return res.status(201).json({ ruta: responsePath });
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({ error: 'ValidationError', message: err.message });
+    }
+    // eslint-disable-next-line no-console
+    console.error('[emisor] error al emitir reporte de asistencia:', err);
     return res.status(500).json({ error: 'InternalError', message: err.message || 'Error interno' });
   }
 });

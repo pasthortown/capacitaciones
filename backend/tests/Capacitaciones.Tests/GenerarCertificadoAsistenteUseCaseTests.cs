@@ -412,6 +412,9 @@ public class GenerarCertificadoAsistenteUseCaseTests
         public EmisionRequest? LastRequest { get; private set; }
         public int EmitirCallCount { get; private set; }
 
+        public Task<EmisionResultado> EmitirReporteAsistenciaAsync(ReporteAsistenciaRequest req, CancellationToken ct)
+            => throw new NotImplementedException();
+
         public Task<EmisionResultado> EmitirAsync(EmisionRequest req, CancellationToken ct)
         {
             LastRequest = req;

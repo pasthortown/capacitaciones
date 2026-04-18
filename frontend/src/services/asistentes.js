@@ -99,9 +99,33 @@ export function descargarCertificado(
   );
 }
 
+/**
+ * Descarga el reporte PDF de asistencia de la capacitación (modelo "Registro de
+ * Capacitación de Personal"). Incluye a todos los inscritos; firma solo de los Presentes.
+ *
+ * GET /api/capacitaciones/{capacitacionId}/asistentes/reporte
+ *   → 200 application/pdf con Content-Disposition attachment
+ *   → 503 { error: 'SERVICIO_EMISOR_NO_DISPONIBLE' }
+ *   → 404 si la capacitación no existe.
+ *
+ * @param {string} capacitacionId
+ * @param {string} [fallbackFilename='Reporte_Asistencia.pdf'] - Nombre recomendado:
+ *   `Reporte_Asistencia_${codigo}.pdf`.
+ */
+export function descargarReporteAsistencia(
+  capacitacionId,
+  fallbackFilename = 'Reporte_Asistencia.pdf',
+) {
+  return http.downloadBlob(
+    `${BASE}/${capacitacionId}/asistentes/reporte`,
+    { fallbackFilename },
+  );
+}
+
 export default {
   listByCapacitacion,
   marcarAsistenciaAdmin,
   calificarAsistenteAdmin,
   descargarCertificado,
+  descargarReporteAsistencia,
 };

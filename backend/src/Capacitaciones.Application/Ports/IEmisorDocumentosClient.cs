@@ -18,6 +18,13 @@ public interface IEmisorDocumentosClient
     Task<EmisionResultado> EmitirAsync(EmisionRequest req, CancellationToken ct);
 
     /// <summary>
+    /// Invoca <c>POST /emitir/reporte-asistencia</c>. Devuelve la ruta del PDF generado
+    /// dentro del volumen compartido (<c>/output/Reporte_Asistencia_{codigo}.pdf</c>).
+    /// Lanza <see cref="HttpRequestException"/> si el emisor no responde.
+    /// </summary>
+    Task<EmisionResultado> EmitirReporteAsistenciaAsync(ReporteAsistenciaRequest req, CancellationToken ct);
+
+    /// <summary>
     /// Invoca <c>GET /health</c>. Devuelve <c>true</c> si responde <c>200 OK</c>,
     /// <c>false</c> en cualquier otro caso (incluyendo excepciones de red).
     /// </summary>

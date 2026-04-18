@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Registro de Asistencia</title>
+  <style>
+    /* ===== Tipografías oficiales (§6.1 instrucciones.md) ===== */
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; }
+
+    /* ===== Página ===== */
+    @page { size: A4 portrait; margin: 14mm 12mm 14mm 12mm; }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Montserrat', Arial, sans-serif;
+      color: #1a1a1a;
+      font-size: 9.5pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* ===== Página lógica =====
+       Cada "pagina" es una unidad con tamaño predecible. JavaScript calcula cuántas
+       filas caben según el presupuesto vertical (ver template.js constantes FILAS_*)
+       y genera N divs .pagina, cada uno con su propio header repetido y la parte
+       correspondiente de la tabla.
+
+       Se FIJA la altura a 269mm (297mm A4 − 14mm top − 14mm bottom) y se declara
+       overflow:hidden para impedir que Puppeteer parta un .pagina entre dos páginas
+       físicas dejando una hoja intermedia sin el header oficial. Si el contenido
+       desborda, se corta visualmente — mejor eso que romper el layout. Las
+       constantes FILAS_* están calibradas con margen para que esto no ocurra. */
+    .pagina {
+      height: 269mm;
+      box-sizing: border-box;
+      /* 2mm de padding a cada lado: sin esto, Chrome/Puppeteer pierde el borde
+         derecho de las tablas internas que usan width:100% (cae en pixel fraccional
+         fuera del área renderizable por el overflow:hidden del contenedor). */
+      padding: 0 2mm;
+      overflow: hidden;
+      page-break-after: always;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .pagina:last-child { page-break-after: auto; }
+
+    /* ===== Header oficial (repetido en cada página) ===== */
+    .page-header {
+      border: 1px solid #222;
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 4mm;
+    }
+    .page-header td {
+      border: 1px solid #222;
+      vertical-align: middle;
+      padding: 2mm 3mm;
+    }
+    .page-header .logo-cell {
+      width: 30mm;
+      text-align: center;
+      padding: 2mm;
+    }
+    .page-header .logo-cell img {
+      width: 22mm;
+      height: auto;
+      object-fit: contain;
+    }
+    .page-header .title-cell {
+      text-align: center;
+      font-weight: 700;
+      font-size: 11pt;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .page-header .meta-cell {
+      width: 46mm;
+      font-size: 8.5pt;
+      line-height: 1.35;
+    }
+
+    /* ===== Metadata de la capacitación (solo pág 1) ===== */
+    .metadata {
+      width: 100%;
+      border: 1px solid #222;
+      border-collapse: collapse;
+      margin-bottom: 3mm;
+    }
+    .metadata td {
+      border: 1px solid #222;
+      vertical-align: top;
+      padding: 2mm 3mm;
+    }
+    .metadata .label {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 8.5pt;
+      letter-spacing: 0.3px;
+    }
+    .metadata .value {
+      font-weight: 400;
+      font-size: 10pt;
+      min-height: 6mm;
+      padding-top: 1mm;
+      word-wrap: break-word;
+    }
+    .metadata .firma-cell {
+      vertical-align: middle;
+      text-align: center;
+      min-width: 60mm;
+    }
+    .metadata .firma-label {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 8.5pt;
+      letter-spacing: 0.3px;
+      margin-bottom: 2mm;
+    }
+    .metadata .firma-img {
+      max-height: 26mm;
+      max-width: 58mm;
+      object-fit: contain;
+    }
+
+    /* ===== Tabla de asistentes =====
+       Filas de ALTO FIJO (18mm) — mismas en cualquier estado (Presente/Ausente/vacío),
+       lo que permite calcular de forma determinista cuántas caben por página desde JS. */
+    .lista {
+      width: 100%;
+      border: 1px solid #222;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    .lista th, .lista td {
+      border: 1px solid #222;
+      padding: 1.5mm 2mm;
+      font-size: 9pt;
+      vertical-align: middle;
+      /* Intencional: NO usar overflow:hidden. Recorta el borde derecho de la
+         última celda en Chrome/Puppeteer con table-layout:fixed+border-collapse.
+         El desborde de imágenes se previene con width/height FIJOS en .firma-img. */
+    }
+    .lista thead th {
+      background-color: #f2f2f2;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 9pt;
+      letter-spacing: 0.4px;
+      text-align: center;
+      height: 7mm;
+    }
+    .lista tbody tr { height: 18mm; page-break-inside: avoid; }
+    .lista tbody td { height: 18mm; }
+    /* Anchos en % para que la tabla no exceda nunca el ancho útil del contenedor
+       (el padding interno de las celdas no se suma al total con porcentajes). */
+    .lista .col-num    { width:  5%; text-align: center; font-weight: 600; }
+    .lista .col-nombre { width: 38%; }
+    .lista .col-cedula { width: 16%; text-align: center; }
+    .lista .col-area   { width: 19%; }
+    .lista .col-firma  { width: 22%; text-align: center; }
+    .lista tbody .firma-img {
+      /* Tamaño FIJO (no max-*) para evitar que el ancho intrínseco de un PNG
+         grande empuje la celda y recorte la tabla. Se pierde la proporción
+         original cuando la firma no es 36×15 — decisión explícita del usuario
+         para mantener el layout predecible en todos los casos. */
+      width: 36mm;
+      height: 15mm;
+      display: inline-block;
+    }
+    .lista tbody .ausente {
+      color: #a30000;
+      font-weight: 600;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .lista tbody .pendiente {
+      color: #999;
+      font-style: italic;
+      font-size: 8.5pt;
+    }
+  </style>
+</head>
+<body>
+{{paginasHtml}}
+</body>
+</html>

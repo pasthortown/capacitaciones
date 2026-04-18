@@ -10,6 +10,7 @@ const path = require('path');
 const config = require('./config');
 
 const TEMPLATE_PATH = path.join(config.templatesDir, 'certificado.html');
+const REPORTE_TEMPLATE_PATH = path.join(config.templatesDir, 'reporte_asistencia.html');
 
 // Mapeo artículo + sustantivo por tipo de actividad (case-insensitive, sin acentos).
 const ACTIVIDAD_MAP = {
@@ -269,8 +270,270 @@ function formatDuracion(duracionHoras) {
   return num.toFixed(1);
 }
 
+// ========== Reporte de Asistencia (Fase post-12) =====================================
+
+/**
+ * Constantes de paginación calculadas contra el layout de reporte_asistencia.html,
+ * con margen de seguridad aplicado tras smoke test: los bordes, paddings y márgenes
+ * acumulados reales suman ~10-15mm más que el cálculo teórico.
+ *
+ * Presupuesto vertical (A4 portrait, margen 14mm top/bottom → 269mm útiles),
+ * valores calibrados en vivo:
+ *   Primera página: 7 filas de 18mm (126mm) + bloques fijos cabe en 269mm.
+ *   Páginas siguientes: 12 filas de 18mm (216mm) + header oficial + thead cabe.
+ *
+ * Cada `.pagina` tiene height:269mm + overflow:hidden (ver CSS) — si una fila
+ * extra se cuela aquí, se corta visualmente pero NO se rompe el layout ni genera
+ * una hoja intermedia sin header.
+ */
+const REPORTE_FILAS_PRIMERA_PAGINA = 7;
+const REPORTE_FILAS_PAGINA_SIGUIENTE = 12;
+const REPORTE_FILAS_MINIMAS_HOJA_VACIA = 12;
+
+/**
+ * Valida el payload del reporte de asistencia. Estructura:
+ *   {
+ *     capacitacion: { codigo, tema, capacitador, fechaInicio, duracionHoras,
+ *                     departamento?, descripcion?, firmaCapacitadorBase64? },
+ *     asistentes:   [ { nombres, apellidos, identificacion, area?, estadoAsistencia?, firmaBase64? } ]
+ *   }
+ *
+ * `asistentes` puede ser lista vacía (la tabla sale sin filas).
+ */
+function validateReportePayload(body) {
+  if (!body || typeof body !== 'object') {
+    throw new ValidationError('Payload vacío o no es un objeto.');
+  }
+  const { capacitacion, asistentes } = body;
+  if (!capacitacion || typeof capacitacion !== 'object') {
+    throw new ValidationError('`capacitacion` es obligatorio.');
+  }
+  if (!capacitacion.codigo) throw new ValidationError('`capacitacion.codigo` es obligatorio.');
+  if (!capacitacion.tema) throw new ValidationError('`capacitacion.tema` es obligatorio.');
+  if (!capacitacion.fechaInicio) throw new ValidationError('`capacitacion.fechaInicio` es obligatorio.');
+  if (capacitacion.duracionHoras === undefined || capacitacion.duracionHoras === null) {
+    throw new ValidationError('`capacitacion.duracionHoras` es obligatorio.');
+  }
+  if (asistentes !== undefined && !Array.isArray(asistentes)) {
+    throw new ValidationError('`asistentes` debe ser un arreglo.');
+  }
+}
+
+/**
+ * Construye la imagen de firma del capacitador o una caja vacía si no hay firma.
+ * El espacio se reserva igual para que la celda del metadata no colapse.
+ */
+function buildFirmaCapacitadorHtml(firmaBase64) {
+  if (!firmaBase64 || typeof firmaBase64 !== 'string') {
+    return '<div style="height:26mm;"></div>';
+  }
+  return `<img class="firma-img" src="${firmaBase64}" alt="Firma del capacitador" />`;
+}
+
+/**
+ * Construye la fila HTML de un asistente. Posición fija: <tr height=18mm>.
+ * Firma se embebe SOLO si estadoAsistencia === 'Presente'. Ausentes → "AUSENTE" rojo;
+ * null → celda con guión discreto.
+ */
+function buildFilaAsistenteHtml(asistente, numero) {
+  const nombre = escapeHtml(`${asistente.apellidos || ''} ${asistente.nombres || ''}`.trim());
+  const cedula = escapeHtml(asistente.identificacion || '');
+  const area = escapeHtml(asistente.area || '—');
+
+  let firmaHtml = '';
+  const estado = String(asistente.estadoAsistencia || '').toLowerCase();
+  if (estado === 'presente') {
+    firmaHtml = asistente.firmaBase64
+      ? `<img class="firma-img" src="${asistente.firmaBase64}" alt="firma" />`
+      : '';
+  } else if (estado === 'ausente') {
+    firmaHtml = '<span class="ausente">Ausente</span>';
+  } else {
+    firmaHtml = '<span class="pendiente">—</span>';
+  }
+
+  return `<tr>
+    <td class="col-num">${numero}</td>
+    <td class="col-nombre">${nombre}</td>
+    <td class="col-cedula">${cedula}</td>
+    <td class="col-area">${area}</td>
+    <td class="col-firma">${firmaHtml}</td>
+  </tr>`;
+}
+
+/**
+ * Construye una fila vacía (placeholder). Mantiene la numeración correlativa.
+ * Se usa cuando no hay inscritos (hoja en blanco estilo modelo impreso).
+ */
+function buildFilaVaciaHtml(numero) {
+  return `<tr>
+    <td class="col-num">${numero}</td>
+    <td class="col-nombre"></td>
+    <td class="col-cedula"></td>
+    <td class="col-area"></td>
+    <td class="col-firma"></td>
+  </tr>`;
+}
+
+/**
+ * Construye el HTML del header oficial (logo DOS + título + cuadro código/versión/página).
+ * Se repite en cada página lógica. Recibe el número de página actual y el total
+ * para emitir "Página X de Y" ya calculado desde JS (no dependemos del pageNumber
+ * nativo de Puppeteer porque ese solo está disponible en headerTemplate/footerTemplate,
+ * que es un contexto separado sin acceso a nuestros estilos).
+ */
+function buildHeaderOficialHtml(codigo, numeroPagina, totalPaginas) {
+  return `
+    <table class="page-header">
+      <tr>
+        <td class="logo-cell" rowspan="3">
+          <img src="./logotipo-DOS-Color.png" alt="DOS" />
+        </td>
+        <td class="title-cell" rowspan="3">Registro de Capacitación de Personal</td>
+        <td class="meta-cell">Código: ${escapeHtml(codigo)}</td>
+      </tr>
+      <tr><td class="meta-cell">Versión: 2</td></tr>
+      <tr><td class="meta-cell">Página ${numeroPagina} de ${totalPaginas}</td></tr>
+    </table>`;
+}
+
+/**
+ * Construye el bloque de metadata de la capacitación (solo va en la primera página).
+ */
+function buildMetadataHtml(capacitacion) {
+  const tema = escapeHtml(capacitacion.tema || '');
+  const capacitador = escapeHtml(capacitacion.capacitador || '—');
+  const fecha = escapeHtml(formatFechaEs(capacitacion.fechaInicio, config.timeZone));
+  const duracion = `${escapeHtml(formatDuracion(capacitacion.duracionHoras))} hora${Number(capacitacion.duracionHoras) === 1 ? '' : 's'}`;
+  const departamento = escapeHtml(capacitacion.departamento || '—');
+  const descripcion = escapeHtml(capacitacion.descripcion || '—');
+  const firmaCapacitadorHtml = buildFirmaCapacitadorHtml(capacitacion.firmaCapacitadorBase64);
+
+  return `
+    <table class="metadata">
+      <tr>
+        <td colspan="2"><div class="label">Tema de Capacitación:</div><div class="value">${tema}</div></td>
+      </tr>
+      <tr>
+        <td colspan="2"><div class="label">Capacitador:</div><div class="value">${capacitador}</div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="label">Fecha:</div>
+          <div class="value">${fecha}</div>
+        </td>
+        <td class="firma-cell" rowspan="3">
+          <div class="firma-label">Firma del Capacitador</div>
+          ${firmaCapacitadorHtml}
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <div class="label">Duración de la Capacitación:</div>
+          <div class="value">${duracion}</div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <div class="label">Departamento Capacitado:</div>
+          <div class="value">${departamento}</div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2"><div class="label">Descripción de la Capacitación:</div><div class="value">${descripcion}</div></td>
+      </tr>
+    </table>`;
+}
+
+/**
+ * Divide la lista ordenada de asistentes en chunks según FILAS_PRIMERA / FILAS_SIGUIENTE.
+ * Devuelve un arreglo de arreglos (cada subarreglo es una página).
+ */
+function paginarAsistentes(asistentes) {
+  const paginas = [];
+  if (!Array.isArray(asistentes) || asistentes.length === 0) {
+    // Hoja modelo en blanco cuando no hay inscritos.
+    paginas.push({ filasVacias: REPORTE_FILAS_MINIMAS_HOJA_VACIA, start: 0 });
+    return paginas;
+  }
+  const total = asistentes.length;
+  // Primera página: hasta FILAS_PRIMERA_PAGINA.
+  let cursor = 0;
+  const primera = asistentes.slice(cursor, cursor + REPORTE_FILAS_PRIMERA_PAGINA);
+  paginas.push({ items: primera, start: cursor });
+  cursor += primera.length;
+  // Siguientes páginas: hasta FILAS_PAGINA_SIGUIENTE cada una.
+  while (cursor < total) {
+    const slice = asistentes.slice(cursor, cursor + REPORTE_FILAS_PAGINA_SIGUIENTE);
+    paginas.push({ items: slice, start: cursor });
+    cursor += slice.length;
+  }
+  return paginas;
+}
+
+/**
+ * Ensambla el HTML de una página lógica (div.pagina): header + metadata opcional + tabla.
+ */
+function buildPaginaHtml(page, capacitacion, numeroPagina, totalPaginas, esPrimera) {
+  const headerHtml = buildHeaderOficialHtml(capacitacion.codigo || '', numeroPagina, totalPaginas);
+  const metadataHtml = esPrimera ? buildMetadataHtml(capacitacion) : '';
+
+  let filasHtml = '';
+  if (Array.isArray(page.items)) {
+    filasHtml = page.items
+      .map((a, i) => buildFilaAsistenteHtml(a, page.start + i + 1))
+      .join('');
+  } else if (page.filasVacias) {
+    for (let i = 1; i <= page.filasVacias; i++) {
+      filasHtml += buildFilaVaciaHtml(i);
+    }
+  }
+
+  const tablaHtml = `
+    <table class="lista">
+      <thead>
+        <tr>
+          <th class="col-num">N°</th>
+          <th class="col-nombre">Nombre y Apellido</th>
+          <th class="col-cedula">N° Cédula</th>
+          <th class="col-area">Área</th>
+          <th class="col-firma">Firma</th>
+        </tr>
+      </thead>
+      <tbody>${filasHtml}</tbody>
+    </table>`;
+
+  return `<div class="pagina">${headerHtml}${metadataHtml}${tablaHtml}</div>`;
+}
+
+/**
+ * Genera el HTML del reporte de asistencia. Se le pasa ya validado.
+ */
+function renderReporteAsistenciaHtml(payload) {
+  validateReportePayload(payload);
+
+  const { capacitacion, asistentes } = payload;
+  const paginas = paginarAsistentes(asistentes || []);
+  const totalPaginas = paginas.length;
+
+  const paginasHtml = paginas
+    .map((p, idx) => buildPaginaHtml(p, capacitacion, idx + 1, totalPaginas, idx === 0))
+    .join('');
+
+  const template = fs.readFileSync(REPORTE_TEMPLATE_PATH, 'utf8');
+
+  return template.replace(/\{\{\s*paginasHtml\s*\}\}/g, paginasHtml);
+}
+
+function buildPdfReporteFilename(codigo) {
+  const safeCodigo = sanitizeFilenamePart(codigo) || 'CAPACITACION';
+  return `Reporte_Asistencia_${safeCodigo}.pdf`;
+}
+
 module.exports = {
   renderHtml,
   buildPdfFilename,
+  renderReporteAsistenciaHtml,
+  buildPdfReporteFilename,
   ValidationError
 };

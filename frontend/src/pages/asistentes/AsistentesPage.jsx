@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, FileBadge, FileCheck2 } from 'lucide-react';
+import { ArrowLeft, ClipboardList, FileBadge, FileCheck2 } from 'lucide-react';
 import DataTable from '../../components/Table/DataTable.jsx';
 import Modal from '../../components/Modal/Modal.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
@@ -14,6 +14,7 @@ import {
 import {
   listByCapacitacion,
   descargarCertificado,
+  descargarReporteAsistencia,
   marcarAsistenciaAdmin,
   calificarAsistenteAdmin,
 } from '../../services/asistentes.js';
@@ -51,6 +52,9 @@ export default function AsistentesPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [loteResult, setLoteResult] = useState(null); // { total, emitidos, errores }
+
+  // Reporte de asistencia (PDF)
+  const [descargandoReporte, setDescargandoReporte] = useState(false);
 
   // Modal informativo para "firmas faltantes"
   const [firmasFaltantes, setFirmasFaltantes] = useState(null);
@@ -169,6 +173,32 @@ export default function AsistentesPage() {
 
   const handleGenerarLote = () => {
     setConfirmOpen(true);
+  };
+
+  const handleDescargarReporte = async () => {
+    if (!id || descargandoReporte) return;
+    setDescargandoReporte(true);
+    try {
+      const fallback = capacitacion?.codigo
+        ? `Reporte_Asistencia_${capacitacion.codigo}.pdf`
+        : 'Reporte_Asistencia.pdf';
+      await descargarReporteAsistencia(id, fallback);
+      toast.success('Reporte de asistencia descargado.');
+    } catch (err) {
+      if (err instanceof HttpError) {
+        if (err.status === 503) {
+          toast.error('El servicio de emisión no está disponible. Intenta en unos minutos.');
+        } else if (err.status === 404) {
+          toast.error('Capacitación no encontrada.');
+        } else {
+          toast.error(err.message || 'No se pudo descargar el reporte.');
+        }
+      } else {
+        toast.error(err?.message || 'No se pudo descargar el reporte.');
+      }
+    } finally {
+      if (mountedRef.current) setDescargandoReporte(false);
+    }
   };
 
   const confirmGenerarLote = async () => {
@@ -446,6 +476,20 @@ export default function AsistentesPage() {
           </p>
         </div>
         <div className={styles.headerActions}>
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={handleDescargarReporte}
+            disabled={descargandoReporte || generating}
+            title="Descargar reporte de asistencia (PDF)"
+          >
+            {descargandoReporte ? (
+              <Spinner size={14} label="Descargando..." />
+            ) : (
+              <ClipboardList width={16} height={16} />
+            )}
+            <span>Reporte de asistencia</span>
+          </button>
           {esFinalizada && (
             <button
               type="button"
@@ -470,7 +514,7 @@ export default function AsistentesPage() {
             type="button"
             className="btn btn--secondary"
             onClick={handleVolver}
-            disabled={generating}
+            disabled={generating || descargandoReporte}
           >
             <ArrowLeft width={16} height={16} />
             <span>Volver</span>

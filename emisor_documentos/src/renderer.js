@@ -47,8 +47,13 @@ async function closeBrowser() {
  * Renderiza el HTML a PDF. Escribimos el HTML en un archivo temporal dentro de
  * `baseDir` (carpeta de plantillas) y usamos `page.goto('file://...')` para que
  * Puppeteer resuelva los assets relativos (fonts, fondo.png) de forma natural.
+ *
+ * `pdfOptions` permite al caller sobreescribir los defaults (formato/landscape/margin).
+ * Por default usa el layout del certificado: A4 landscape, márgenes 0. El reporte
+ * de asistencia pasa `{ landscape: false, preferCSSPageSize: true }` y deja que
+ * la propia `@page` del HTML defina tamaño y márgenes.
  */
-async function renderPdf(html, baseDir) {
+async function renderPdf(html, baseDir, pdfOptions = {}) {
   const browser = await getBrowser();
   const page = await browser.newPage();
 
@@ -60,13 +65,15 @@ async function renderPdf(html, baseDir) {
     // Asegurar que las fuentes custom terminen de cargar antes de imprimir.
     await page.evaluateHandle('document.fonts.ready');
 
-    const pdfBuffer = await page.pdf({
+    const defaultOptions = {
       format: 'A4',
       landscape: true,
       printBackground: true,
       preferCSSPageSize: false,
       margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' }
-    });
+    };
+
+    const pdfBuffer = await page.pdf({ ...defaultOptions, ...pdfOptions });
     return pdfBuffer;
   } finally {
     await page.close().catch(() => {});
