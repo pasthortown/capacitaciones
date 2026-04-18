@@ -35,3 +35,28 @@ public class CertificadoFirmasFaltantesException : CapacitacionServiceException
         Faltantes = faltantes;
     }
 }
+
+/// <summary>
+/// Fase 12 — se lanza cuando el asistente no es elegible para recibir certificado:
+/// está marcado como <c>Ausente</c> o no fue marcado por el capacitador (<c>null</c>).
+/// Regla universal (decisión 10): sin importar el tipo de certificación, un ausente
+/// nunca recibe certificado. El código <c>ASISTENTE_NO_ELEGIBLE_CERTIFICADO</c> se
+/// traduce a <c>409 Conflict</c>.
+/// </summary>
+public class CertificadoAsistenteNoElegibleException : CapacitacionServiceException
+{
+    /// <summary>"AUSENTE" | "SIN_MARCAR" — facilita el manejo diferenciado en UI.</summary>
+    public string Motivo { get; }
+
+    private CertificadoAsistenteNoElegibleException(string motivo, string mensaje)
+        : base("ASISTENTE_NO_ELEGIBLE_CERTIFICADO", mensaje)
+    {
+        Motivo = motivo;
+    }
+
+    public static CertificadoAsistenteNoElegibleException Ausente() =>
+        new("AUSENTE", "El asistente está marcado como ausente y no recibe certificado.");
+
+    public static CertificadoAsistenteNoElegibleException SinMarcar() =>
+        new("SIN_MARCAR", "El asistente no fue marcado en el pase de lista y no recibe certificado.");
+}

@@ -39,6 +39,18 @@ public class AsistenteConfiguration : IEntityTypeConfiguration<Asistente>
         builder.Property(a => a.FechaInscripcion)
             .IsRequired();
 
+        // Fase 10 — pase de lista. EstadoAsistencia se almacena como int nullable; null indica
+        // "sin registrar". FechaMarcacionAsistencia persiste el timestamp UTC de la última marcación.
+        builder.Property(a => a.EstadoAsistencia)
+            .HasConversion<int?>();
+
+        builder.Property(a => a.FechaMarcacionAsistencia);
+
+        // Fase 11 — calificación 0–10 con step 0.1. decimal(4,2) cubre [0.00..10.00]
+        // con un dígito decimal efectivo; el step lo valida el caso de uso.
+        builder.Property(a => a.Calificacion)
+            .HasColumnType("decimal(4,2)");
+
         // FK a Capacitacion: cascade delete (al borrar físicamente una capacitación se
         // eliminan sus asistentes; el delete lógico por defecto no propaga nada).
         builder.HasOne(a => a.Capacitacion)

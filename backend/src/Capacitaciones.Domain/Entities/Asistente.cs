@@ -31,4 +31,22 @@ public class Asistente
     public string Firma { get; set; } = string.Empty;
 
     public DateTime FechaInscripcion { get; set; }
+
+    /// <summary>
+    /// Null = sin registrar. Presente/Ausente según pase de lista del capacitador.
+    /// Fase 10.
+    /// </summary>
+    public EstadoAsistencia? EstadoAsistencia { get; set; }
+
+    /// <summary>
+    /// Timestamp UTC de la última marcación de <see cref="EstadoAsistencia"/>.
+    /// Null si nunca fue marcado o si la marcación fue limpiada. Fase 10.
+    /// </summary>
+    public DateTime? FechaMarcacionAsistencia { get; set; }
+
+    /// <summary>
+    /// Calificación 0–10 con step 0.1. Aplica solo cuando la capacitación es
+    /// TipoCertificacion=Aprobacion y el asistente está Presente. Null en cualquier otro caso.
+    /// </summary>
+    public decimal? Calificacion { get; set; }
 }

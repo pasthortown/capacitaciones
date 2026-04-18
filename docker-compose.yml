@@ -58,9 +58,11 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       EmisorDocumentos__BaseUrl: http://emisor_documentos:3000
       REPOSITORIO_DIR: /repository
+      IMAGEN_CAPACITACIONES_DIR: /imagen_capacitaciones
     volumes:
       - ./output:/output
       - ./repository:/repository
+      - ./imagen_capacitaciones:/imagen_capacitaciones
     networks:
       capacitaciones-net:
         ipv4_address: 192.168.56.11
@@ -71,6 +73,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./repository:/usr/local/apache2/htdocs:ro
+      - ./imagen_capacitaciones:/usr/local/apache2/htdocs/imagenes:ro
       - ./infra/repository-httpd/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
     networks:
       capacitaciones-net:
@@ -87,8 +90,10 @@ services:
       PORT: 3000
       OUTPUT_DIR: /output
       TEMPLATES_DIR: /app/templates
+      IMAGEN_CAPACITACIONES_DIR: /imagen_capacitaciones
     volumes:
       - ./output:/output
+      - ./imagen_capacitaciones:/imagen_capacitaciones:ro
     networks:
       capacitaciones-net:
         ipv4_address: 192.168.56.16

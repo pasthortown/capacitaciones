@@ -210,6 +210,8 @@ public class CapacitacionesEndpointTests : IClassFixture<InMemoryWebAppFactory>
             tipoCertificacion = "Aprobacion",
             fechaHoraInicio = creada.FechaHoraInicio,
             duracionMinutos = creada.DuracionMinutos,
+            // Fase 9: al cambiar a Aprobacion, puntajeMinimo es obligatorio (rango 0–10).
+            puntajeMinimo = 7.0m,
             descripcion = "Nueva descripcion",
             // Invertimos el orden: primero el 2 (orden 0), luego el 1 (orden 1).
             responsableIds = new[] { SeededResponsable2Id, SeededResponsable1Id }

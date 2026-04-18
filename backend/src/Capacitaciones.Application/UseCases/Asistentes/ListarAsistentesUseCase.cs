@@ -40,7 +40,14 @@ public class ListarAsistentesUseCase
                 Identificacion = a.Identificacion,
                 Email = a.EmailUsuario,
                 Area = new CatalogoRefDto { Id = a.AreaId, Nombre = a.Area?.Nombre ?? string.Empty },
-                FechaInscripcion = a.FechaInscripcion
+                FechaInscripcion = a.FechaInscripcion,
+                // Fase 10 — el front usa estos dos campos para pintar el toggle de asistencia
+                // en la tabla de listado (admin) sin hacer otro round-trip.
+                EstadoAsistencia = a.EstadoAsistencia?.ToString(),
+                FechaMarcacionAsistencia = a.FechaMarcacionAsistencia,
+                // Fase 11 — calificación editable inline en la tabla admin. El front decide si
+                // renderizarla según el TipoCertificacion de la capacitación (Aprobacion).
+                Calificacion = a.Calificacion
             })
             .ToList();
     }

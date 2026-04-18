@@ -20,6 +20,15 @@ public class CapacitacionListDto
     public DateTime FechaHoraInicio { get; set; }
     public int DuracionMinutos { get; set; }
 
+    /// <summary>Fase 9: puntaje mínimo de aprobación (null si el tipo es Participacion).</summary>
+    public decimal? PuntajeMinimo { get; set; }
+
+    /// <summary>
+    /// Fase 9: URL relativa del logo (ej. <c>/imagenes/&lt;Guid&gt;.png</c>).
+    /// Null cuando la capacitación no tiene logo cargado.
+    /// </summary>
+    public string? LogoUrl { get; set; }
+
     /// <summary>Inscripciones Abiertas / Iniciada / Finalizada.</summary>
     public string Estado { get; set; } = string.Empty;
 

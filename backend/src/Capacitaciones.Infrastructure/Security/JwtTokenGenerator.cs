@@ -94,6 +94,27 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     }
 
     /// <summary>
+    /// Emite un JWT para el link de pase de lista del capacitador (Fase 10).
+    /// Reutiliza el claim <c>cid</c> que ya usan los tokens de capacitación para que el controller
+    /// pueda compartir el helper <c>TryGetCapacitacionId</c>. La policy "PaseLista" distingue por role.
+    /// </summary>
+    public JwtTokenResult GeneratePaseListaToken(Guid capacitacionId)
+    {
+        var dias = _options.PaseListaTokenDias > 0 ? _options.PaseListaTokenDias : 90;
+        return GenerateResourceToken(capacitacionId, role: "PaseLista", scope: "pase-lista", idClaim: "cid", dias: dias);
+    }
+
+    /// <summary>
+    /// Emite un JWT para el link de calificaciones del capacitador (Fase 11). Igual que el token
+    /// de pase de lista pero con role/scope propios — la policy "Calificaciones" lo distingue.
+    /// </summary>
+    public JwtTokenResult GenerateCalificacionesToken(Guid capacitacionId)
+    {
+        var dias = _options.CalificacionesTokenDias > 0 ? _options.CalificacionesTokenDias : 90;
+        return GenerateResourceToken(capacitacionId, role: "Calificaciones", scope: "calificaciones", idClaim: "cid", dias: dias);
+    }
+
+    /// <summary>
     /// Helper compartido por los tokens de recursos públicos (capacitador/inscripción/responsable):
     /// firman un recurso (<paramref name="resourceId"/>) con los claims <c>sub</c> + <c>role</c> +
     /// <c>scope</c> + un claim específico (<paramref name="idClaim"/> = "cid" o "rid") que replica el id.

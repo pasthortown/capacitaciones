@@ -272,6 +272,9 @@ public class InscribirAsistenteUseCaseTests
         public Task<Asistente?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => Task.FromResult(Added.FirstOrDefault(a => a.Id == id));
 
+        public Task UpdateAsync(Asistente entity, CancellationToken ct = default)
+            => Task.CompletedTask;
+
         public Task<int> CountByCapacitacionAsync(Guid capacitacionId, CancellationToken ct = default)
             => Task.FromResult(Added.Count(a => a.CapacitacionId == capacitacionId));
 

@@ -29,6 +29,47 @@ export function listByCapacitacion(capacitacionId) {
 }
 
 /**
+ * Marca (o corrige) la asistencia de un asistente desde el panel admin.
+ *
+ * PUT /api/capacitaciones/{capacitacionId}/asistentes/{asistenteId}/asistencia
+ *   body: { estadoAsistencia: "Presente" | "Ausente" | null }
+ *   → 200 { id, estadoAsistencia, fechaMarcacionAsistencia }
+ *
+ * @param {string} capacitacionId
+ * @param {string} asistenteId
+ * @param {'Presente' | 'Ausente' | null} estadoAsistencia
+ * @returns {Promise<{ id: string, estadoAsistencia: 'Presente' | 'Ausente' | null, fechaMarcacionAsistencia: string | null }>}
+ */
+export function marcarAsistenciaAdmin(capacitacionId, asistenteId, estadoAsistencia) {
+  return http.put(
+    `${BASE}/${capacitacionId}/asistentes/${asistenteId}/asistencia`,
+    { estadoAsistencia },
+  );
+}
+
+/**
+ * Registra (o actualiza) la calificación de un asistente desde el panel admin (Fase 11).
+ *
+ * PUT /api/capacitaciones/{capacitacionId}/asistentes/{asistenteId}/calificacion
+ *   body: { calificacion: number | null }
+ *   → 200 { id, calificacion }
+ *   → 400 CALIFICACION_FUERA_DE_RANGO
+ *   → 409 ASISTENTE_NO_PRESENTE
+ *   → 409 CALIFICACIONES_NO_APLICA (la capacitación no es Aprobación)
+ *
+ * @param {string} capacitacionId
+ * @param {string} asistenteId
+ * @param {number | null} calificacion
+ * @returns {Promise<{ id: string, calificacion: number | null }>}
+ */
+export function calificarAsistenteAdmin(capacitacionId, asistenteId, calificacion) {
+  return http.put(
+    `${BASE}/${capacitacionId}/asistentes/${asistenteId}/calificacion`,
+    { calificacion },
+  );
+}
+
+/**
  * Descarga el certificado del asistente.
  *
  * Usa `http.downloadBlob`, que:
@@ -60,5 +101,7 @@ export function descargarCertificado(
 
 export default {
   listByCapacitacion,
+  marcarAsistenciaAdmin,
+  calificarAsistenteAdmin,
   descargarCertificado,
 };

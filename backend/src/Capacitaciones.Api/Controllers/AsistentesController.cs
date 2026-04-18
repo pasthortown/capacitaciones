@@ -1,13 +1,19 @@
+using Capacitaciones.Application.Dtos.Calificaciones;
+using Capacitaciones.Application.Dtos.PaseLista;
 using Capacitaciones.Application.UseCases.Asistentes;
+using Capacitaciones.Application.UseCases.Calificaciones;
 using Capacitaciones.Application.UseCases.Capacitaciones;
+using Capacitaciones.Application.UseCases.Capacitador;
 using Capacitaciones.Application.UseCases.Certificados;
+using Capacitaciones.Application.UseCases.PaseLista;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Capacitaciones.Api.Controllers;
 
 /// <summary>
-/// Admin — listado de asistentes de una capacitación y descarga del certificado (Fase 6).
+/// Admin — listado de asistentes de una capacitación, descarga del certificado (Fase 6)
+/// y corrección de asistencia por fila (Fase 10).
 /// </summary>
 [ApiController]
 [Authorize(Policy = "Admin")]
@@ -16,13 +22,19 @@ public class AsistentesController : ControllerBase
 {
     private readonly ListarAsistentesUseCase _listar;
     private readonly DescargarCertificadoUseCase _descargarCertificado;
+    private readonly MarcarAsistenciaUseCase _marcarAsistencia;
+    private readonly CalificarAsistenteUseCase _calificar;
 
     public AsistentesController(
         ListarAsistentesUseCase listar,
-        DescargarCertificadoUseCase descargarCertificado)
+        DescargarCertificadoUseCase descargarCertificado,
+        MarcarAsistenciaUseCase marcarAsistencia,
+        CalificarAsistenteUseCase calificar)
     {
         _listar = listar;
         _descargarCertificado = descargarCertificado;
+        _marcarAsistencia = marcarAsistencia;
+        _calificar = calificar;
     }
 
     [HttpGet]
@@ -79,6 +91,19 @@ public class AsistentesController : ControllerBase
                 StatusCode = StatusCodes.Status409Conflict
             };
         }
+        catch (CertificadoAsistenteNoElegibleException ex)
+        {
+            // Fase 12: el asistente está ausente o sin marcar; 409 con motivo para el UI.
+            return new ObjectResult(new
+            {
+                error = ex.Codigo,
+                message = ex.Message,
+                motivo = ex.Motivo
+            })
+            {
+                StatusCode = StatusCodes.Status409Conflict
+            };
+        }
         catch (CapacitacionServiceException ex)
         {
             var status = ex.Codigo switch
@@ -100,6 +125,93 @@ public class AsistentesController : ControllerBase
             {
                 StatusCode = StatusCodes.Status503ServiceUnavailable
             };
+        }
+    }
+
+    /// <summary>
+    /// Fase 10: corrección admin de la asistencia de un asistente desde la tabla de listado.
+    /// Acepta <c>"Presente"</c>, <c>"Ausente"</c> o <c>null</c> (limpiar marcación).
+    /// </summary>
+    [HttpPut("{asistenteId:guid}/asistencia")]
+    public async Task<IActionResult> MarcarAsistencia(
+        Guid capacitacionId,
+        Guid asistenteId,
+        [FromBody] MarcarAsistenciaDto? input,
+        CancellationToken ct)
+    {
+        try
+        {
+            var estado = MarcarAsistenciaUseCase.ParseEstado(input?.EstadoAsistencia);
+            var dto = await _marcarAsistencia.ExecuteAsync(capacitacionId, asistenteId, estado, ct);
+            return Ok(dto);
+        }
+        catch (AsistenteNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CapacitadorForbiddenException ex)
+        {
+            return new ObjectResult(new { error = "CAPACITACION_INACTIVA", message = ex.Message })
+            {
+                StatusCode = StatusCodes.Status409Conflict
+            };
+        }
+        catch (CapacitacionServiceException ex)
+        {
+            var status = ex.Codigo switch
+            {
+                "ESTADO_ASISTENCIA_INVALIDO" => StatusCodes.Status400BadRequest,
+                _ => StatusCodes.Status400BadRequest
+            };
+            return new ObjectResult(new { error = ex.Codigo, message = ex.Message }) { StatusCode = status };
+        }
+    }
+
+    /// <summary>
+    /// Fase 11: edición admin de la calificación de un asistente desde la tabla de listado.
+    /// Acepta <c>null</c> (limpiar) o un decimal en [0..10].
+    /// </summary>
+    [HttpPut("{asistenteId:guid}/calificacion")]
+    public async Task<IActionResult> Calificar(
+        Guid capacitacionId,
+        Guid asistenteId,
+        [FromBody] CalificarAsistenteDto? input,
+        CancellationToken ct)
+    {
+        try
+        {
+            var dto = await _calificar.ExecuteAsync(capacitacionId, asistenteId, input?.Calificacion, ct);
+            return Ok(dto);
+        }
+        catch (AsistenteNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CapacitadorForbiddenException ex)
+        {
+            return new ObjectResult(new { error = "CAPACITACION_INACTIVA", message = ex.Message })
+            {
+                StatusCode = StatusCodes.Status409Conflict
+            };
+        }
+        catch (CapacitacionServiceException ex)
+        {
+            var status = ex.Codigo switch
+            {
+                "CALIFICACIONES_NO_APLICA" => StatusCodes.Status409Conflict,
+                "ASISTENTE_NO_PRESENTE" => StatusCodes.Status409Conflict,
+                "CALIFICACION_FUERA_DE_RANGO" => StatusCodes.Status400BadRequest,
+                _ => StatusCodes.Status400BadRequest
+            };
+            return new ObjectResult(new { error = ex.Codigo, message = ex.Message }) { StatusCode = status };
         }
     }
 }

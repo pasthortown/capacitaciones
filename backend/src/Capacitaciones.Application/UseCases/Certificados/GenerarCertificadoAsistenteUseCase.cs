@@ -56,6 +56,17 @@ public class GenerarCertificadoAsistenteUseCase
             throw CertificadoNoDisponibleException.CapacitacionNoFinalizada();
         }
 
+        // Fase 12 — validación de elegibilidad por asistencia (aplica a todos los tipos de certificación).
+        // Decisión 10: ausente o sin marcar ⇒ sin certificado, punto.
+        if (asistente.EstadoAsistencia == EstadoAsistencia.Ausente)
+        {
+            throw CertificadoAsistenteNoElegibleException.Ausente();
+        }
+        if (asistente.EstadoAsistencia is null)
+        {
+            throw CertificadoAsistenteNoElegibleException.SinMarcar();
+        }
+
         // Validación de firmas: recolectamos todas las faltantes para que el UI pueda mostrarlas
         // de una sola vez en vez de obligar al admin a intentar varias veces.
         var faltantes = new List<string>();
@@ -137,6 +148,15 @@ public class GenerarCertificadoAsistenteUseCase
         // DuracionHoras en decimal para permitir medias horas (step de 30 min en UI → 0.5h).
         var duracionHoras = capacitacion.DuracionMinutos / 60m;
 
+        // Fase 12 — ruta local para el emisor. El backend conoce solo el nombre físico
+        // (<guid>.ext) en LogoPath; el emisor tiene el volumen montado en /imagen_capacitaciones.
+        string? logoPathLocal = null;
+        if (!string.IsNullOrWhiteSpace(capacitacion.LogoPath))
+        {
+            // Usa / explícitamente (Linux en emisor) — ambos contenedores son linux.
+            logoPathLocal = $"/imagen_capacitaciones/{capacitacion.LogoPath}";
+        }
+
         return new EmisionRequest
         {
             Capacitacion = new EmisionCapacitacionDto
@@ -146,16 +166,46 @@ public class GenerarCertificadoAsistenteUseCase
                 TipoActividad = capacitacion.TipoActividad?.Nombre ?? string.Empty,
                 TipoCertificacion = capacitacion.TipoCertificacion.ToString(),
                 FechaInicio = fechaIso,
-                DuracionHoras = duracionHoras
+                DuracionHoras = duracionHoras,
+                PuntajeMinimo = capacitacion.PuntajeMinimo,
+                LogoPathLocal = logoPathLocal
             },
             Asistente = new EmisionAsistenteDto
             {
                 Nombres = asistente.Nombres,
                 Apellidos = asistente.Apellidos,
-                Identificacion = asistente.Identificacion
+                Identificacion = asistente.Identificacion,
+                Calificacion = asistente.Calificacion
             },
-            Firmantes = firmantes
+            Firmantes = firmantes,
+            CertificadoEfectivo = CalcularCertificadoEfectivo(capacitacion, asistente)
         };
+    }
+
+    /// <summary>
+    /// Fase 12 — decide qué etiqueta imprime el certificado. Asume que el asistente ya pasó
+    /// la verificación de <see cref="EstadoAsistencia.Presente"/> (cualquier otro estado aborta antes).
+    ///
+    /// - Participacion + Presente → "Participacion".
+    /// - Aprobacion + Presente + Calificacion &gt;= PuntajeMinimo → "Aprobacion".
+    /// - Aprobacion + Presente + cualquier otro caso (calificación &lt; umbral, null, o umbral null por dato
+    ///   inconsistente) → "Asistencia". Fallback seguro: nunca emitimos "Aprobacion" sin evidencia.
+    /// </summary>
+    internal static string CalcularCertificadoEfectivo(Capacitacion capacitacion, Asistente asistente)
+    {
+        if (capacitacion.TipoCertificacion != TipoCertificacion.Aprobacion)
+        {
+            return "Participacion";
+        }
+
+        if (asistente.Calificacion.HasValue
+            && capacitacion.PuntajeMinimo.HasValue
+            && asistente.Calificacion.Value >= capacitacion.PuntajeMinimo.Value)
+        {
+            return "Aprobacion";
+        }
+
+        return "Asistencia";
     }
 
     private static string ExtractFilename(string ruta)

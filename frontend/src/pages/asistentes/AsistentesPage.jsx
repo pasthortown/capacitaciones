@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Download, FileCheck2 } from 'lucide-react';
+import { ArrowLeft, FileBadge, FileCheck2 } from 'lucide-react';
 import DataTable from '../../components/Table/DataTable.jsx';
 import Modal from '../../components/Modal/Modal.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
+import AttendanceToggle from '../../components/AttendanceToggle/AttendanceToggle.jsx';
 import { useToast } from '../../components/Toast/useToast.js';
 import { HttpError } from '../../services/http.js';
 import {
@@ -13,6 +14,8 @@ import {
 import {
   listByCapacitacion,
   descargarCertificado,
+  marcarAsistenciaAdmin,
+  calificarAsistenteAdmin,
 } from '../../services/asistentes.js';
 import { formatFechaHora } from '../../utils/formatters.js';
 import styles from './AsistentesPage.module.css';
@@ -136,6 +139,18 @@ export default function AsistentesPage() {
         toast.error('La capacitación aún no está finalizada.');
         return;
       }
+      if (err.status === 409 && code === 'ASISTENTE_NO_ELEGIBLE_CERTIFICADO') {
+        // Fase 12: diferenciamos por motivo para que el mensaje sea específico.
+        const motivo = err.body?.motivo;
+        const msg =
+          motivo === 'AUSENTE'
+            ? 'El asistente está marcado como ausente — no recibe certificado.'
+            : motivo === 'SIN_MARCAR'
+            ? 'El asistente no fue marcado en el pase de lista.'
+            : err.message || 'El asistente no es elegible para certificado.';
+        toast.error(msg);
+        return;
+      }
       if (err.status === 503 && code === 'SERVICIO_EMISOR_NO_DISPONIBLE') {
         toast.error(
           'El servicio de emisión no está disponible. Intenta en unos minutos.',
@@ -163,14 +178,22 @@ export default function AsistentesPage() {
       if (!mountedRef.current) return;
       const total = Number(resp?.total ?? 0);
       const emitidos = Number(resp?.emitidos ?? 0);
+      // Fase 12: los no-elegibles (ausentes / sin marcar) son estado esperado, no error.
+      const noElegibles = Number(resp?.noElegibles ?? 0);
+      const noElegiblesDetalle = Array.isArray(resp?.noElegiblesDetalle)
+        ? resp.noElegiblesDetalle
+        : [];
       const errores = Array.isArray(resp?.errores) ? resp.errores : [];
       setConfirmOpen(false);
-      if (errores.length === 0 && emitidos === total) {
-        toast.success(`Se emitieron ${total} certificados.`);
+      if (errores.length === 0 && emitidos + noElegibles === total) {
+        // Cubierta completa: todo lo elegible salió y los que no eran elegibles se omitieron ok.
+        const extra = noElegibles > 0
+          ? ` (${noElegibles} omitidos por ausencia o falta de marcación)`
+          : '';
+        toast.success(`Se emitieron ${emitidos} certificados${extra}.`);
         setLoteResult(null);
       } else {
-        // Hay errores parciales — abrir modal con el resumen.
-        setLoteResult({ total, emitidos, errores });
+        setLoteResult({ total, emitidos, noElegibles, noElegiblesDetalle, errores });
       }
     } catch (err) {
       if (!mountedRef.current) return;
@@ -198,7 +221,150 @@ export default function AsistentesPage() {
 
   const esFinalizada = capacitacion?.estado === 'Finalizada';
 
+  /**
+   * Corrige la asistencia de un asistente desde la tabla admin (Fase 10).
+   * Optimistic update: si falla el PUT, revierte y muestra toast.
+   */
+  const handleMarcarAsistencia = async (row, nuevoValor) => {
+    if (!row?.id || !id) return;
+    const previous = row?.estadoAsistencia ?? null;
+    if (previous === nuevoValor) return;
+
+    // Optimistic update.
+    setAsistentes((prev) =>
+      prev.map((a) =>
+        a?.id === row.id ? { ...a, estadoAsistencia: nuevoValor } : a,
+      ),
+    );
+
+    try {
+      const resp = await marcarAsistenciaAdmin(id, row.id, nuevoValor);
+      setAsistentes((prev) =>
+        prev.map((a) =>
+          a?.id === row.id
+            ? {
+                ...a,
+                estadoAsistencia: resp?.estadoAsistencia ?? nuevoValor,
+                fechaMarcacionAsistencia:
+                  resp?.fechaMarcacionAsistencia ?? a.fechaMarcacionAsistencia,
+              }
+            : a,
+        ),
+      );
+    } catch (err) {
+      // Revertir al valor anterior.
+      setAsistentes((prev) =>
+        prev.map((a) =>
+          a?.id === row.id ? { ...a, estadoAsistencia: previous } : a,
+        ),
+      );
+      toast.error(err?.message || 'No se pudo actualizar la asistencia.');
+    }
+  };
+
+  /**
+   * Persiste la calificación de un asistente (Fase 11). Sólo habilitado si el
+   * asistente está `Presente`. Optimistic update con rollback ante error,
+   * y validación client-side de rango (0..10, step 0.1).
+   */
+  const handleCalificar = async (row, rawValue) => {
+    if (!row?.id || !id) return;
+    const previous = row?.calificacion ?? null;
+
+    // Interpretar vacío como null (limpiar).
+    const trimmed = typeof rawValue === 'string' ? rawValue.trim() : rawValue;
+    let nextValue = null;
+    if (trimmed !== '' && trimmed !== null && trimmed !== undefined) {
+      const parsed = Number(trimmed);
+      if (!Number.isFinite(parsed) || parsed < 0 || parsed > 10) {
+        toast.error('La calificación debe estar entre 0 y 10.');
+        // Revertir UI (por si el input aún muestra el valor fuera de rango).
+        setAsistentes((prev) =>
+          prev.map((a) =>
+            a?.id === row.id ? { ...a, calificacion: previous } : a,
+          ),
+        );
+        return;
+      }
+      nextValue = Math.round(parsed * 10) / 10;
+    }
+
+    const prevNum = previous == null ? null : Number(previous);
+    if (prevNum === nextValue) return;
+
+    // Optimistic update.
+    setAsistentes((prev) =>
+      prev.map((a) =>
+        a?.id === row.id ? { ...a, calificacion: nextValue } : a,
+      ),
+    );
+
+    try {
+      const resp = await calificarAsistenteAdmin(id, row.id, nextValue);
+      setAsistentes((prev) =>
+        prev.map((a) =>
+          a?.id === row.id
+            ? { ...a, calificacion: resp?.calificacion ?? nextValue }
+            : a,
+        ),
+      );
+    } catch (err) {
+      // Rollback.
+      setAsistentes((prev) =>
+        prev.map((a) =>
+          a?.id === row.id ? { ...a, calificacion: previous } : a,
+        ),
+      );
+      if (err instanceof HttpError) {
+        const code = err.body?.error;
+        if (err.status === 409 && code === 'ASISTENTE_NO_PRESENTE') {
+          toast.error('Sólo se puede calificar a asistentes Presentes.');
+          return;
+        }
+        if (err.status === 400 && code === 'CALIFICACION_FUERA_DE_RANGO') {
+          toast.error('La calificación debe estar entre 0 y 10.');
+          return;
+        }
+        if (err.status === 409 && code === 'CALIFICACIONES_NO_APLICA') {
+          toast.error('Esta capacitación es de Participación; no admite calificaciones.');
+          return;
+        }
+      }
+      toast.error(err?.message || 'No se pudo guardar la calificación.');
+    }
+  };
+
+  const esAprobacion = capacitacion?.tipoCertificacion === 'Aprobacion';
+  const puntajeMinimo = capacitacion?.puntajeMinimo ?? null;
+
   const columns = [
+    {
+      key: 'asistencia',
+      header: 'Asistencia',
+      accessor: (row) => (
+        <AttendanceToggle
+          value={row?.estadoAsistencia ?? null}
+          onChange={(v) => handleMarcarAsistencia(row, v)}
+          size="sm"
+        />
+      ),
+    },
+    // Columna Calificación visible sólo en capacitaciones de Aprobación (Fase 11).
+    ...(esAprobacion
+      ? [
+          {
+            key: 'calificacion',
+            header: 'Calificación',
+            accessor: (row) => (
+              <CalificacionCell
+                row={row}
+                puntajeMinimo={puntajeMinimo}
+                onChange={(v) => handleCalificar(row, v)}
+              />
+            ),
+          },
+        ]
+      : []),
     { key: 'nombres', header: 'Nombres' },
     { key: 'apellidos', header: 'Apellidos' },
     { key: 'identificacion', header: 'Identificación' },
@@ -221,25 +387,36 @@ export default function AsistentesPage() {
 
   const renderActions = (row) => {
     const isDownloading = downloadingId === row?.id;
-    const disabled = !esFinalizada || isDownloading || generating;
+    // Fase 12: ausentes o no marcados no son elegibles para certificado; deshabilitamos
+    // el botón para evitar un 409 evitable y dejamos claro por qué en el tooltip.
+    const esPresente = row?.estadoAsistencia === 'Presente';
+    const esAusente = row?.estadoAsistencia === 'Ausente';
+    const sinMarcar = !row?.estadoAsistencia;
+    const noElegible = esFinalizada && !esPresente;
+    const disabled = !esFinalizada || isDownloading || generating || noElegible;
+
+    const titleMsg = !esFinalizada
+      ? 'Disponible cuando la capacitación esté Finalizada'
+      : esAusente
+      ? 'El asistente está ausente — no recibe certificado'
+      : sinMarcar
+      ? 'Pendiente de marcación en el pase de lista'
+      : 'Descargar certificado';
+
     return (
       <button
         type="button"
-        className="btn btn--secondary btn--sm"
+        className="btn btn--icon btn--secondary btn--sm"
         onClick={() => handleDescargar(row)}
         disabled={disabled}
-        title={
-          esFinalizada
-            ? 'Descargar certificado'
-            : 'Disponible cuando la capacitación esté Finalizada'
-        }
+        title={titleMsg}
+        aria-label={titleMsg}
       >
         {isDownloading ? (
-          <Spinner size={14} label="Descargando..." />
+          <Spinner size={16} label="Descargando..." />
         ) : (
-          <Download width={14} height={14} />
+          <FileBadge width={18} height={18} />
         )}
-        <span>Certificado</span>
       </button>
     );
   };
@@ -371,6 +548,14 @@ export default function AsistentesPage() {
               Se emitieron <strong>{loteResult.emitidos}</strong> de{' '}
               <strong>{loteResult.total}</strong> certificados.
             </p>
+            {loteResult.noElegibles > 0 && (
+              <p className="text-sm text-secondary">
+                <strong>{loteResult.noElegibles}</strong> asistente(s) no eran
+                elegibles (ausentes o sin marcar en el pase de lista) y se
+                omitieron. Esto no es un error — revisa la asistencia si esperabas
+                emitirlos.
+              </p>
+            )}
             {loteResult.errores.length > 0 && (
               <>
                 <p className="text-sm text-secondary">
@@ -447,6 +632,71 @@ export default function AsistentesPage() {
         )}
       </Modal>
     </div>
+  );
+}
+
+/**
+ * Celda editable de calificación para el admin (Fase 11).
+ *  - Bloqueada si el asistente no está `Presente` (tooltip explicativo).
+ *  - Fondo verde/rojo según supere o no el `puntajeMinimo`.
+ *  - Guarda on blur / on Enter.
+ */
+function CalificacionCell({ row, puntajeMinimo, onChange }) {
+  const initial = row?.calificacion == null ? '' : String(row.calificacion);
+  const [value, setValue] = useState(initial);
+
+  // Sincroniza el input con el estado de la fila (por rollback o reloads).
+  useEffect(() => {
+    setValue(row?.calificacion == null ? '' : String(row.calificacion));
+  }, [row?.calificacion]);
+
+  const disabled = row?.estadoAsistencia !== 'Presente';
+
+  const commit = () => {
+    if (disabled) return;
+    onChange(value);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
+  };
+
+  const numeric = row?.calificacion == null ? null : Number(row.calificacion);
+  let wrapperClass = styles.calificacionCell;
+  if (!disabled && numeric != null && puntajeMinimo != null) {
+    wrapperClass =
+      numeric >= Number(puntajeMinimo)
+        ? `${styles.calificacionCell} ${styles.calificacionCellPass}`
+        : `${styles.calificacionCell} ${styles.calificacionCellFail}`;
+  }
+
+  return (
+    <span
+      className={wrapperClass}
+      title={
+        disabled
+          ? 'Sólo se puede calificar a asistentes Presentes.'
+          : undefined
+      }
+    >
+      <input
+        type="number"
+        min="0"
+        max="10"
+        step="0.1"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        disabled={disabled}
+        className={styles.calificacionInput}
+        aria-label={`Calificación de ${row?.nombres ?? ''} ${row?.apellidos ?? ''}`}
+        placeholder={disabled ? '—' : ''}
+      />
+    </span>
   );
 }
 

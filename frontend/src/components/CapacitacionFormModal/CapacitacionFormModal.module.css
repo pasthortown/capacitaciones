@@ -299,3 +299,92 @@
   border-color: var(--color-error);
   color: var(--color-error);
 }
+
+/* Fase 9: bloque del logo de capacitación ---------------------------------- */
+
+.logoBlock {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: var(--spacing-4);
+  align-items: stretch;
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg-main);
+}
+
+.logoPreview {
+  width: 160px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2);
+  background-color: var(--color-bg-paper);
+  border: 1px dashed var(--color-border-main);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.logoImg {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.logoPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.logoActions {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.logoHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.logoButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.logoPendingBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--spacing-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--color-warning-bg, #FEF3C7);
+  color: var(--color-warning-text, #92400E);
+  border-radius: var(--radius-full, 9999px);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .logoBlock {
+    grid-template-columns: 1fr;
+  }
+
+  .logoPreview {
+    width: 100%;
+    height: 140px;
+  }
+}

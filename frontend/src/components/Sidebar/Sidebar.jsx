@@ -69,12 +69,18 @@ export default function Sidebar({ collapsed = false }) {
 
   return (
     <nav className="sidebar">
-      {/* Logo / branding */}
+      {/* Logo / branding. Cuando la sidebar está colapsada usamos la versión
+          reducida (logo_min.png) para que el símbolo siga siendo visible sin
+          desbordar el carril. */}
       <div className="sidebar__logo" style={{ textAlign: 'center' }}>
         <img
-          src="/logo.png"
+          src={collapsed ? '/logo_min.png' : '/logo.png'}
           alt="Capacitados — tecnología con propósito"
-          style={{ width: '100%', maxWidth: 200, height: 'auto', display: 'block', margin: '0 auto' }}
+          style={
+            collapsed
+              ? { width: 36, height: 36, objectFit: 'contain', display: 'block', margin: '0 auto' }
+              : { width: '100%', maxWidth: 200, height: 'auto', display: 'block', margin: '0 auto' }
+          }
         />
       </div>
 

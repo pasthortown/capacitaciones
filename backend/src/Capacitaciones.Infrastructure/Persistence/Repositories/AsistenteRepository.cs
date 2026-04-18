@@ -82,6 +82,35 @@ public class AsistenteRepository : IAsistenteRepository
             .FirstOrDefaultAsync(a => a.Id == id, ct);
     }
 
+    public async Task UpdateAsync(Asistente entity, CancellationToken ct = default)
+    {
+        // La entidad llega detached (viene de GetByIdAsync con AsNoTracking + Include).
+        // Adjuntar esa instancia directamente provoca conflictos de tracking con la Capacitacion
+        // ya materializada por el caso de uso (GetByIdWithResponsablesAsync se invocó antes en el
+        // mismo DbContext scope).
+        //
+        // Estrategia segura: limpiar todo el ChangeTracker del scope y persistir la entidad como
+        // Modified. El use case no necesita otras entidades tracked después de este punto, y así
+        // evitamos replicar manualmente cada propiedad escalar.
+        _db.ChangeTracker.Clear();
+        _db.Asistentes.Attach(entity);
+        _db.Entry(entity).State = EntityState.Modified;
+
+        // Las navegaciones cargadas (Capacitacion, Area) quedan en estado Unchanged tras el Attach
+        // por el graph-attach automático; las marcamos explícitamente como Unchanged para evitar
+        // que EF intente UPDATE sobre ellas.
+        if (entity.Capacitacion is not null)
+        {
+            _db.Entry(entity.Capacitacion).State = EntityState.Unchanged;
+        }
+        if (entity.Area is not null)
+        {
+            _db.Entry(entity.Area).State = EntityState.Unchanged;
+        }
+
+        await _db.SaveChangesAsync(ct);
+    }
+
     public Task<int> CountByCapacitacionAsync(Guid capacitacionId, CancellationToken ct = default)
     {
         return _db.Asistentes

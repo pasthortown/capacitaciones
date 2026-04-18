@@ -48,6 +48,8 @@ public class EditarCapacitacionUseCase
 
         var tipoCert = CapacitacionValidator.ParsearTipoCertificacion(input.TipoCertificacion);
 
+        CapacitacionValidator.ValidarPuntajeMinimo(input.PuntajeMinimo, tipoCert);
+
         await CapacitacionValidator.ValidarCatalogosAsync(
             input.ModalidadId, input.TipoActividadId, _modalidades, _tiposActividad, ct);
 
@@ -65,6 +67,8 @@ public class EditarCapacitacionUseCase
         entity.TipoCertificacion = tipoCert;
         entity.FechaHoraInicio = input.FechaHoraInicio;
         entity.DuracionMinutos = input.DuracionMinutos;
+        // Fase 9: al cambiar a Participacion se limpia el puntaje previo para evitar datos huérfanos.
+        entity.PuntajeMinimo = tipoCert == TipoCertificacion.Aprobacion ? input.PuntajeMinimo : null;
         entity.FechaActualizacion = DateTime.UtcNow;
 
         var nuevasRelaciones = (input.ResponsableIds ?? new List<Guid>())

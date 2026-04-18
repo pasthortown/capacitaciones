@@ -41,6 +41,15 @@ public class Capacitacion
     /// <summary>Duración en minutos. Debe ser múltiplo de 30 y mayor a 0.</summary>
     public int DuracionMinutos { get; set; }
 
+    /// <summary>Requerido solo cuando TipoCertificacion == Aprobacion. Escala 0–10.</summary>
+    public decimal? PuntajeMinimo { get; set; }
+
+    /// <summary>Nombre físico del logo dentro del volumen (ej. "&lt;Guid&gt;.png"). Null si no hay logo.</summary>
+    public string? LogoPath { get; set; }
+
+    /// <summary>MIME original (ej. "image/png").</summary>
+    public string? LogoContentType { get; set; }
+
     public bool Activo { get; set; } = true;
 
     public DateTime FechaCreacion { get; set; }

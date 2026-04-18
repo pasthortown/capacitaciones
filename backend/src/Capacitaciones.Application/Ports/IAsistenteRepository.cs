@@ -31,6 +31,13 @@ public interface IAsistenteRepository
     /// <summary>Obtiene un asistente por id, con <c>Capacitacion</c> y <c>Area</c> cargadas.</summary>
     Task<Asistente?> GetByIdAsync(Guid id, CancellationToken ct = default);
 
+    /// <summary>
+    /// Persiste los cambios escalares de un <see cref="Asistente"/>. Usado por el pase de lista
+    /// (Fase 10) para actualizar <c>EstadoAsistencia</c> / <c>FechaMarcacionAsistencia</c> sin
+    /// modificar el resto del registro.
+    /// </summary>
+    Task UpdateAsync(Asistente entity, CancellationToken ct = default);
+
     /// <summary>Cuenta asistentes inscritos en una capacitación.</summary>
     Task<int> CountByCapacitacionAsync(Guid capacitacionId, CancellationToken ct = default);
 

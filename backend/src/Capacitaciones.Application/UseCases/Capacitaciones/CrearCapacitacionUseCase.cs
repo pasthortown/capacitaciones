@@ -46,6 +46,8 @@ public class CrearCapacitacionUseCase
 
         var tipoCert = CapacitacionValidator.ParsearTipoCertificacion(input.TipoCertificacion);
 
+        CapacitacionValidator.ValidarPuntajeMinimo(input.PuntajeMinimo, tipoCert);
+
         await CapacitacionValidator.ValidarCatalogosAsync(
             input.ModalidadId, input.TipoActividadId, _modalidades, _tiposActividad, ct);
 
@@ -69,6 +71,10 @@ public class CrearCapacitacionUseCase
             TipoCertificacion = tipoCert,
             FechaHoraInicio = input.FechaHoraInicio,
             DuracionMinutos = input.DuracionMinutos,
+            PuntajeMinimo = tipoCert == TipoCertificacion.Aprobacion ? input.PuntajeMinimo : null,
+            // El logo se carga aparte vía POST /api/capacitaciones/{id}/logo.
+            LogoPath = null,
+            LogoContentType = null,
             Activo = true,
             FechaCreacion = now,
             FechaActualizacion = null,

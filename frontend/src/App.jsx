@@ -4,6 +4,8 @@ import LoginPage from './pages/LoginPage.jsx';
 import CapacitacionesPage from './pages/capacitaciones/CapacitacionesPage.jsx';
 import AsistentesPage from './pages/asistentes/AsistentesPage.jsx';
 import CapacitadorPage from './pages/capacitador/CapacitadorPage.jsx';
+import PaseListaPage from './pages/capacitador/PaseListaPage.jsx';
+import CalificacionesPage from './pages/capacitador/CalificacionesPage.jsx';
 import InscripcionPage from './pages/inscripcion/InscripcionPage.jsx';
 import ResponsablePage from './pages/responsable/ResponsablePage.jsx';
 import ResponsablesPage from './pages/responsables/ResponsablesPage.jsx';
@@ -58,6 +60,8 @@ export default function App() {
       {/* Públicas (sin sidebar / sin guard admin) */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/capacitador" element={<CapacitadorPage />} />
+      <Route path="/capacitador/pase-lista" element={<PaseListaPage />} />
+      <Route path="/capacitador/calificaciones" element={<CalificacionesPage />} />
       <Route path="/responsable" element={<ResponsablePage />} />
       <Route path="/inscripcion" element={<InscripcionPage />} />
 

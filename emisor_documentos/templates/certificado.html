@@ -70,6 +70,35 @@
       height: 88mm;
     }
 
+    /* Fase 12 — logo opcional de la capacitación. Esquina superior-derecha,
+       sin intervenir la zona central del fondo pre-impreso. */
+    .logo-capacitacion {
+      position: absolute;
+      top: 14mm;
+      right: 18mm;
+      width: auto;
+      height: 24mm;
+      max-width: 60mm;
+      object-fit: contain;
+    }
+
+    /* Fase 12 — texto opcional con la calificación. Se intercala entre
+       la línea de fecha/duración y los firmantes. */
+    .calificacion {
+      font-family: 'Montserrat', Arial, sans-serif;
+      font-weight: 400;
+      font-size: 12pt;
+      color: #3a3a3a;
+      margin-top: -14px;
+      margin-bottom: 24px;
+      letter-spacing: 0.3px;
+    }
+
+    .calificacion strong {
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
     .subtitulo-certificado {
       font-family: 'Uni Sans', Arial, sans-serif;
       font-weight: 100;
@@ -190,6 +219,10 @@
   </style>
 </head>
 <body>
+  <!-- Fase 12 — logo de la capacitación (opcional). Se inserta fuera de .content
+       porque es posicionado absoluto respecto al body (esquina sup-derecha). -->
+  {{logoHtml}}
+
   <div class="content">
     <!-- "CERTIFICADO" ya viene en el fondo; sólo se renderiza el subtítulo y el resto. -->
     <div class="spacer-top"></div>
@@ -206,6 +239,8 @@
     <div class="fecha-duracion">
       Dictado el <strong>{{fechaFormateada}}</strong> con una duración de <strong>{{duracionHoras}}</strong> horas.
     </div>
+
+    {{calificacionHtml}}
 
     {{firmantesHtml}}
   </div>

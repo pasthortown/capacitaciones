@@ -36,4 +36,17 @@ public class JwtOptions
     /// Default: 90 días (mismo criterio que los otros tokens de recurso público).
     /// </summary>
     public int ResponsableTokenDias { get; set; } = 90;
+
+    /// <summary>
+    /// TTL (en días) del token de pase de lista emitido por el admin para que el capacitador
+    /// marque asistencia desde un link público (Fase 10). Default: 90 días.
+    /// </summary>
+    public int PaseListaTokenDias { get; set; } = 90;
+
+    /// <summary>
+    /// TTL (en días) del token de calificaciones emitido por el admin para que el capacitador
+    /// registre notas desde un link público (Fase 11). Default: 90 días — mismo criterio que
+    /// pase de lista.
+    /// </summary>
+    public int CalificacionesTokenDias { get; set; } = 90;
 }

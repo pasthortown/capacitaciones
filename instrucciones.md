@@ -76,6 +76,11 @@ Sistema de registro y gestión de capacitaciones. El equipo está compuesto por 
 | emisor_documentos   | 192.168.56.16 | 3000 (interno)|
 | repository_httpd    | 192.168.56.17 | 80 (interno)  |
 
+> `repository_httpd` sirve dos volúmenes distintos bajo un mismo httpd:
+> - `/repository/` (alias raíz `/`) — material del módulo Repositorio.
+> - `/imagen_capacitaciones/` (alias `/imagenes/`) — logos de capacitaciones (Fase 9).
+> Ambos RW desde backend (`/repository`, `/imagen_capacitaciones`) y RO desde httpd.
+
 **Entregables:**
 - `docker-compose.yml` raíz que orqueste todos los servicios en `capacitaciones-net`.
 - Carpeta `infra/nginx/`:
@@ -399,6 +404,107 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 - Tabla con acciones por fila: copiar enlace (`navigator.clipboard` con fallback), editar metadata, eliminar.
 - Modal de subida con validación client-side (extensión + tamaño) y modal de edición de metadata.
 
+### 7.8 Puntaje mínimo + Logo de capacitación (Fase 9)
+
+**Entidad `Capacitacion` extendida:**
+- `PuntajeMinimo` (decimal(4,2), nullable 0–10) — **requerido solo** si `TipoCertificacion == Aprobacion`; `null` cuando es `Participacion`. Escala fija 0–10.
+- `LogoPath` (varchar(500), nullable) — nombre físico dentro del volumen (ej. `<Guid>.png`).
+- `LogoContentType` (varchar(100), nullable) — MIME original.
+
+**Volumen `imagen_capacitaciones`:**
+- Host: `./imagen_capacitaciones/` (.gitignored salvo `.gitkeep`).
+- Backend (RW): `/imagen_capacitaciones`. Variable `IMAGEN_CAPACITACIONES_DIR=/imagen_capacitaciones`.
+- `repository_httpd` (RO): `/usr/local/apache2/htdocs/imagenes` — servido como `/imagenes/<archivo>` (se agrega Alias en `httpd.conf`; la raíz `/` sigue sirviendo el módulo Repositorio).
+- `emisor_documentos` (RO): `/imagen_capacitaciones` — lee el archivo local para embeberlo en el PDF sin salir por red.
+- Nombre físico: `<Guid>.<ext>`. Whitelist case-insensitive: `png`, `jpg`, `jpeg`, `webp`, `svg`. Tamaño máximo: **2 MB**.
+
+**Endpoints admin (policy `Admin`):**
+- `POST /api/capacitaciones/{id}/logo` multipart `archivo` — `201` con `{ logoPath, logoContentType, logoUrl }`. Si ya había logo, se borra físicamente el anterior.
+- `DELETE /api/capacitaciones/{id}/logo` — `204`. Borra archivo físico y limpia columnas.
+- Al eliminar la capacitación (soft delete), se borra el archivo físico asociado.
+- `CapacitacionDetailDto` y `CapacitacionListDto` exponen `logoUrl` (relativa, ej. `/imagenes/<Guid>.png`) para consumo directo por el front.
+
+**UI (modal CRUD Capacitación):**
+- Upload de logo con preview + botón "Eliminar".
+- Campo `PuntajeMinimo` visible **solo** cuando `TipoCertificacion == Aprobacion` (step 0.1, min 0, max 10, requerido en ese caso).
+
+### 7.9 Pase de lista (Fase 10)
+
+**Entidad `Asistente` extendida:**
+- `EstadoAsistencia` (enum: `null` | `Presente` | `Ausente`) — persiste la marcación.
+- `FechaMarcacionAsistencia` (datetime, nullable).
+
+**Link del capacitador — pase de lista:**
+- Endpoint admin `POST /api/capacitaciones/{id}/link-pase-lista` emite JWT con `role=PaseLista`.
+- Link reusable: volver al mismo link muestra el estado actual de cada asistente y permite corregir.
+- Pantalla pública `/capacitador/pase-lista/:token`:
+  - Itera asistentes **uno por uno** en orden alfabético (`Apellidos`, luego `Nombres`).
+  - Muestra nombre + identificación + componente `AttendanceToggle`.
+  - Botones "Anterior" / "Siguiente". Permite avanzar solo si el asistente actual está marcado o saltarse manualmente.
+  - Al marcar el último y avanzar, muestra `swal2` indicando "Pase de lista completado".
+
+**Componente `AttendanceToggle`** (reusable entre pantalla pública y admin):
+- Split button tipo radio con botones `Presente` y `Ausente`.
+- Estado inicial (`null`): ambos en **gris** (neutral).
+- `Presente` seleccionado: `bg-success` (verde); `Ausente` seleccionado: `bg-danger` (rojo).
+- Marcar uno desmarca el otro. **No se puede desmarcar ambos** una vez que alguno ha sido seleccionado.
+
+**Admin — corrección de asistencia:**
+- En `/capacitaciones/{id}/asistentes`, cada fila muestra `AttendanceToggle` permitiendo cambiar la marcación.
+- Endpoint admin `PUT /api/capacitaciones/{id}/asistentes/{asistenteId}/asistencia` con body `{ estadoAsistencia: "Presente" | "Ausente" | null }`.
+
+**Endpoint público (token `PaseLista`):**
+- `GET /api/capacitador/pase-lista/{token}` — devuelve lista ordenada de asistentes con estado actual.
+- `PUT /api/capacitador/pase-lista/{token}/asistentes/{asistenteId}` — body `{ estadoAsistencia }`.
+
+### 7.10 Calificaciones (Fase 11)
+
+**Entidad `Asistente` extendida:**
+- `Calificacion` (decimal(4,2), nullable 0–10, step 0.1) — aplica solo cuando la capacitación es `Aprobacion`.
+
+**Link del capacitador — calificaciones:**
+- Endpoint admin `POST /api/capacitaciones/{id}/link-calificaciones` emite JWT con `role=Calificaciones`. Solo válido si la capacitación es `TipoCertificacion == Aprobacion`.
+- Pantalla pública `/capacitador/calificaciones/:token`:
+  - Tabla de asistentes con input numérico 0–10 step 0.1 por fila.
+  - Muestra `PuntajeMinimo` de la capacitación y resalta (verde/rojo) si la calificación ingresada aprueba o no.
+  - Solo considera asistentes con `EstadoAsistencia == Presente`.
+
+**Admin — edición en línea:**
+- En `/capacitaciones/{id}/asistentes`, columna `Calificación` editable (mismos límites).
+
+**Endpoints:**
+- Público: `GET /api/capacitador/calificaciones/{token}`, `PUT /api/capacitador/calificaciones/{token}/asistentes/{asistenteId}` con `{ calificacion }`.
+- Admin: `PUT /api/capacitaciones/{id}/asistentes/{asistenteId}/calificacion`.
+
+### 7.11 Lógica condicional de certificado (Fase 12)
+
+**Reglas universales** aplicadas en `GenerarCertificadosCapacitacionUseCase`:
+- `EstadoAsistencia == Ausente` → **sin certificado** (se omite en la emisión).
+- `EstadoAsistencia == null` → sin certificado (tratado como no registrado).
+- `TipoCertificacion == Participacion` + `EstadoAsistencia == Presente` → certificado de **Participación**.
+- `TipoCertificacion == Aprobacion` + `Presente` + `Calificacion >= PuntajeMinimo` → certificado de **Aprobación**.
+- `TipoCertificacion == Aprobacion` + `Presente` + `Calificacion < PuntajeMinimo` (o `null`) → certificado de **Asistencia** (nuevo valor efectivo, no se cambia el tipo en la capacitación).
+
+**Payload al `emisor_documentos`** — se agrega:
+```json
+{
+  "capacitacion": {
+    ...
+    "logoUrlInterna": "file:///imagen_capacitaciones/<guid>.png"
+  },
+  "asistente": {
+    ...
+    "calificacion": 8.5
+  },
+  "certificadoEfectivo": "Aprobacion" | "Participacion" | "Asistencia"
+}
+```
+
+**Plantilla `certificado.html`:**
+- Nuevo placeholder `{{capacitacion.logo}}` — bloque `<img>` condicional.
+- Texto dinámico según `certificadoEfectivo` (no según `tipoCertificacion` original).
+- Si `Aprobacion` efectiva, puede mostrar "con calificación de [Calificacion]/[PuntajeMinimo]" (a confirmar en fase 12).
+
 ## 8. Estado actual
 
 - [x] Design system en `./style/` listo para consumo.
@@ -416,6 +522,10 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 - [x] Listado de asistentes por capacitación + descarga real de certificado.
 - [x] Servicio `emisor_documentos` (Node + Puppeteer) + plantilla HTML del certificado.
 - [x] Módulo Repositorio — upload/CRUD de material (≤100 MB), volumen `./repository`, contenedor `repository_httpd`, link público de descarga.
+- [x] Fase 9 — Puntaje mínimo + Logo de capacitación (volumen `imagen_capacitaciones`).
+- [x] Fase 10 — Pase de lista (link capacitador + `AttendanceToggle` admin).
+- [x] Fase 11 — Calificaciones (link capacitador + edición admin).
+- [x] Fase 12 — Lógica condicional de certificado (Aprobación / Asistencia / Participación + logo en plantilla + filtro de ausentes).
 - [ ] Integración SonarQube + OWASP ZAP.
 
 ## 9. Plan de fases
@@ -430,6 +540,10 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 | 5    | ✅ Página pública de inscripción + `SignaturePad` + listado de asistentes                  | Backend, Frontend             |
 | 6    | ✅ Servicio `emisor_documentos` + plantilla HTML + integración con backend (endpoint gen.) | Infra, Backend                |
 | 7    | ✅ Módulo Repositorio (CRUD + httpd storage + link público, blacklist ejec/scripts, ≤100MB) | Infra, Backend, Frontend     |
+| 9    | ✅ Puntaje mínimo + Logo capacitación (volumen `imagen_capacitaciones`)                   | Infra, Backend, Frontend      |
+| 10   | ✅ Pase de lista (link capacitador + `AttendanceToggle` admin)                            | Backend, Frontend             |
+| 11   | ✅ Calificaciones (link capacitador + edición admin)                                      | Backend, Frontend             |
+| 12   | ✅ Lógica condicional de certificado + logo en plantilla                                  | Backend, emisor_documentos    |
 | 8    | Pasada de calidad y seguridad (Sonar + ZAP)                                               | Security                      |
 
 ## 10. Decisiones tomadas (v1)
@@ -442,3 +556,9 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 | 4 | Capacitador        | Texto libre — `varchar(255)`. No es catálogo.                                                  |
 | 5 | Estado             | Derivado: `Inscripciones Abiertas` → `Iniciada` (al `FechaHoraInicio`) → `Finalizada` (al fin).|
 | 6 | SQL Server         | Imagen `mcr.microsoft.com/mssql/server:2022-latest` con `MSSQL_PID=Express`.                   |
+| 7 | Puntaje Aprobación | `PuntajeMinimo` decimal 0–10, step 0.1, requerido solo si `TipoCertificacion==Aprobacion`.     |
+| 8 | Logo capacitación  | Archivo físico en volumen `./imagen_capacitaciones/` (mismo patrón RW/RO que Repositorio), servido por `repository_httpd` bajo `/imagenes/`. Whitelist `png,jpg,jpeg,webp,svg`, ≤2MB. |
+| 9 | Links capacitador  | 3 URLs firmadas **separadas**: descripción/firma, pase de lista, calificaciones. No un solo link con tabs. |
+| 10| Ausentes           | Sin certificado, independientemente del `TipoCertificacion`.                                   |
+| 11| Cert. efectivo     | `Aprobacion` + `Calificacion < PuntajeMinimo` → cert. tipo **Asistencia** (sin mutar el tipo original de la capacitación). |
+| 12| AttendanceToggle   | Split button radio (gris → verde/rojo), no desmarcable ambos. Reusado en pantalla pública y tabla admin. |

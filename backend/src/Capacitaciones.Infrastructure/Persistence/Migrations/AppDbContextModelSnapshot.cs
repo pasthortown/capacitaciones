@@ -115,6 +115,9 @@ namespace Capacitaciones.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("AreaId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal?>("Calificacion")
+                        .HasColumnType("decimal(4,2)");
+
                     b.Property<Guid>("CapacitacionId")
                         .HasColumnType("uniqueidentifier");
 
@@ -123,7 +126,13 @@ namespace Capacitaciones.Infrastructure.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<int?>("EstadoAsistencia")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("FechaInscripcion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaMarcacionAsistencia")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Firma")
@@ -203,8 +212,19 @@ namespace Capacitaciones.Infrastructure.Persistence.Migrations
                     b.Property<string>("FirmaCapacitador")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("LogoContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("LogoPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<Guid>("ModalidadId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("PuntajeMinimo")
+                        .HasColumnType("decimal(4,2)");
 
                     b.Property<string>("Tema")
                         .IsRequired()

@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronUp, ChevronDown, Trash2, Plus, AlertTriangle } from 'lucide-react';
+import {
+  ChevronUp,
+  ChevronDown,
+  Trash2,
+  Plus,
+  AlertTriangle,
+  Upload,
+  Image as ImageIcon,
+} from 'lucide-react';
 import Modal from '../Modal/Modal.jsx';
 import TextField from '../Forms/TextField.jsx';
 import Spinner from '../Spinner/Spinner.jsx';
@@ -11,6 +19,12 @@ import {
   createCapacitacion,
   updateCapacitacion,
   getCapacitacion,
+  uploadLogoCapacitacion,
+  deleteLogoCapacitacion,
+  LOGO_ACCEPT_MIMES,
+  LOGO_ALLOWED_EXTENSIONS,
+  LOGO_MAX_SIZE_BYTES,
+  getLogoExtension,
 } from '../../services/capacitaciones.js';
 import styles from './CapacitacionFormModal.module.css';
 
@@ -53,6 +67,35 @@ export default function CapacitacionFormModal({
   const [duracionExtraMin, setDuracionExtraMin] = useState(0); // 0 | 30
   const [descripcion, setDescripcion] = useState('');
   const [responsableIds, setResponsableIds] = useState([]); // ordered array
+  // Fase 9: puntaje mínimo (solo aplica si TipoCertificacion == Aprobacion)
+  const [puntajeMinimo, setPuntajeMinimo] = useState('');
+  // Fase 9: logo de la capacitación
+  // `logoUrl`: URL relativa del logo ya persistido en servidor (o null).
+  // `logoFile`: archivo seleccionado localmente, aún no subido.
+  // `logoMarkedForDeletion`: si el logo del servidor debe borrarse al guardar.
+  const [logoUrl, setLogoUrl] = useState(null);
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoMarkedForDeletion, setLogoMarkedForDeletion] = useState(false);
+
+  // URL.createObjectURL temporal para preview del archivo local.
+  const logoFilePreview = useMemo(() => {
+    if (!logoFile) return null;
+    try {
+      return URL.createObjectURL(logoFile);
+    } catch {
+      return null;
+    }
+  }, [logoFile]);
+
+  // Revocar la URL objeto cuando cambia o se desmonta.
+  useEffect(() => {
+    return () => {
+      if (logoFilePreview) URL.revokeObjectURL(logoFilePreview);
+    };
+  }, [logoFilePreview]);
+
+  // Referencia al input file oculto para poder dispararlo desde un botón.
+  const logoInputRef = useRef(null);
 
   // Catálogos --------------------------------------------------------------
   const [modalidades, setModalidades] = useState([]);
@@ -122,6 +165,10 @@ export default function CapacitacionFormModal({
       setDuracionExtraMin(0);
       setDescripcion('');
       setResponsableIds([]);
+      setPuntajeMinimo('');
+      setLogoUrl(null);
+      setLogoFile(null);
+      setLogoMarkedForDeletion(false);
       return;
     }
     // Modo edit: carga detalle del backend
@@ -151,6 +198,15 @@ export default function CapacitacionFormModal({
                 .filter(Boolean)
             : [],
         );
+        // Fase 9 — puntaje + logo
+        setPuntajeMinimo(
+          detail.puntajeMinimo === null || detail.puntajeMinimo === undefined
+            ? ''
+            : String(detail.puntajeMinimo),
+        );
+        setLogoUrl(detail.logoUrl || null);
+        setLogoFile(null);
+        setLogoMarkedForDeletion(false);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -219,8 +275,72 @@ export default function CapacitacionFormModal({
     } else if (duracionMinutos % 30 !== 0) {
       next.duracion = 'La duración debe ser múltiplo de 30 minutos.';
     }
+    // Puntaje mínimo (solo si aplica)
+    if (tipoCertificacion === 'Aprobacion') {
+      const raw = String(puntajeMinimo).trim();
+      if (raw === '') {
+        next.puntajeMinimo = 'Ingresa el puntaje mínimo de aprobación.';
+      } else {
+        const n = Number(raw.replace(',', '.'));
+        if (!Number.isFinite(n)) {
+          next.puntajeMinimo = 'Debe ser un número válido.';
+        } else if (n < 0 || n > 10) {
+          next.puntajeMinimo = 'El puntaje debe estar entre 0 y 10.';
+        }
+      }
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
+  };
+
+  // Handlers del logo ------------------------------------------------------
+  /**
+   * Dispara el selector de archivos nativo (el input file real está oculto).
+   */
+  const handleOpenLogoPicker = () => {
+    if (submitting) return;
+    logoInputRef.current?.click();
+  };
+
+  /**
+   * Valida el archivo seleccionado (tamaño + extensión whitelist) y lo
+   * guarda como archivo pendiente de subir. Limpia la marca de eliminación
+   * si el admin había pedido borrar el anterior.
+   */
+  const handleLogoFileChange = (event) => {
+    const file = event.target?.files?.[0];
+    // Reset del value del input para permitir re-seleccionar el mismo archivo.
+    if (event.target) event.target.value = '';
+    if (!file) return;
+    const ext = getLogoExtension(file.name);
+    if (!ext || !LOGO_ALLOWED_EXTENSIONS.has(ext)) {
+      toast.error(
+        `Formato no permitido. Usa PNG, JPG, JPEG, WebP o SVG.`,
+      );
+      return;
+    }
+    if (file.size > LOGO_MAX_SIZE_BYTES) {
+      toast.error('El logo no puede superar 2 MB.');
+      return;
+    }
+    setLogoFile(file);
+    setLogoMarkedForDeletion(false);
+  };
+
+  /**
+   * Quita el logo: si era un archivo pendiente, simplemente lo descarta;
+   * si era el logo actual del servidor, marca que al guardar se debe llamar
+   * al endpoint DELETE.
+   */
+  const handleRemoveLogo = () => {
+    if (submitting) return;
+    if (logoFile) {
+      setLogoFile(null);
+      return;
+    }
+    if (logoUrl) {
+      setLogoMarkedForDeletion(true);
+    }
   };
 
   // Submit -----------------------------------------------------------------
@@ -240,17 +360,52 @@ export default function CapacitacionFormModal({
       duracionMinutos,
       descripcion: descripcion.trim() || null,
       responsableIds: responsableIds.slice(),
+      // Fase 9 — solo se envía puntaje cuando la cert es de aprobación;
+      // en Participación el backend espera null.
+      puntajeMinimo:
+        tipoCertificacion === 'Aprobacion'
+          ? Number(String(puntajeMinimo).replace(',', '.'))
+          : null,
     };
     setSubmitting(true);
     try {
       let result;
       if (mode === 'edit' && initialValue?.id) {
         result = await updateCapacitacion(initialValue.id, payload);
-        toast.success('Capacitación actualizada.');
       } else {
         result = await createCapacitacion(payload);
+      }
+      const savedId = result?.id;
+
+      // Operaciones del logo (solo si tenemos id del recurso).
+      let logoWarning = null;
+      if (savedId) {
+        try {
+          if (logoMarkedForDeletion) {
+            await deleteLogoCapacitacion(savedId);
+            result = { ...result, logoUrl: null };
+          }
+          if (logoFile) {
+            const logoResult = await uploadLogoCapacitacion(savedId, logoFile);
+            if (logoResult && logoResult.logoUrl) {
+              result = { ...result, logoUrl: logoResult.logoUrl };
+            }
+          }
+        } catch (logoErr) {
+          // No revertimos la capacitación; avisamos con warning.
+          logoWarning =
+            logoErr?.message || 'No se pudo actualizar el logo de la capacitación.';
+        }
+      }
+
+      if (logoWarning) {
+        toast.error(`Guardado con advertencia: ${logoWarning}`);
+      } else if (mode === 'edit' && initialValue?.id) {
+        toast.success('Capacitación actualizada.');
+      } else {
         toast.success('Capacitación creada.');
       }
+
       onSaved?.(result);
       onClose?.();
     } catch (err) {
@@ -408,7 +563,13 @@ export default function CapacitacionFormModal({
                     name="tipoCertificacion"
                     value="Participacion"
                     checked={tipoCertificacion === 'Participacion'}
-                    onChange={() => setTipoCertificacion('Participacion')}
+                    onChange={() => {
+                      setTipoCertificacion('Participacion');
+                      // Al volver a Participación, limpiamos el puntaje y su error.
+                      setPuntajeMinimo('');
+                      if (errors.puntajeMinimo)
+                        setErrors((er) => ({ ...er, puntajeMinimo: undefined }));
+                    }}
                   />
                   Participación
                 </label>
@@ -424,6 +585,47 @@ export default function CapacitacionFormModal({
                 </label>
               </div>
             </div>
+
+            {/* Puntaje mínimo — solo visible para tipo de certificación "Aprobacion" */}
+            {tipoCertificacion === 'Aprobacion' && (
+              <div>
+                <label
+                  className={styles.smallLabel}
+                  data-required="true"
+                  htmlFor="puntaje-minimo"
+                >
+                  Puntaje mínimo
+                </label>
+                <input
+                  id="puntaje-minimo"
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  inputMode="decimal"
+                  className={styles.select}
+                  style={{ backgroundImage: 'none', paddingRight: 'var(--spacing-4)' }}
+                  value={puntajeMinimo}
+                  onChange={(e) => {
+                    setPuntajeMinimo(e.target.value);
+                    if (errors.puntajeMinimo)
+                      setErrors((er) => ({ ...er, puntajeMinimo: undefined }));
+                  }}
+                  placeholder="0.0 – 10.0"
+                  aria-describedby="puntaje-minimo-hint"
+                />
+                <div
+                  id="puntaje-minimo-hint"
+                  className={styles.errorText}
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Escala 0–10 (step 0.1)
+                </div>
+                {errors.puntajeMinimo && (
+                  <div className={styles.errorText}>{errors.puntajeMinimo}</div>
+                )}
+              </div>
+            )}
 
             {/* Fecha y hora de inicio */}
             <div>
@@ -505,6 +707,98 @@ export default function CapacitacionFormModal({
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
                 placeholder="Opcional. La puede llenar el capacitador desde el link firmado."
+              />
+            </div>
+          </div>
+
+          {/* Logo de la capacitación --------------------------------- */}
+          <div className={styles.sectionTitle}>
+            <span>Logo de la capacitación</span>
+          </div>
+
+          <div className={styles.logoBlock}>
+            <div className={styles.logoPreview} aria-live="polite">
+              {(() => {
+                // Prioridad de preview:
+                //   1. Archivo local pendiente (logoFile)
+                //   2. Logo del servidor si no está marcado para eliminar
+                //   3. Placeholder vacío
+                if (logoFile && logoFilePreview) {
+                  return (
+                    <img
+                      src={logoFilePreview}
+                      alt="Vista previa del nuevo logo"
+                      className={styles.logoImg}
+                    />
+                  );
+                }
+                if (logoUrl && !logoMarkedForDeletion) {
+                  return (
+                    <img
+                      src={logoUrl}
+                      alt="Logo actual de la capacitación"
+                      className={styles.logoImg}
+                    />
+                  );
+                }
+                return (
+                  <div className={styles.logoPlaceholder}>
+                    <ImageIcon width={28} height={28} aria-hidden="true" />
+                    <span>Sin logo</span>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className={styles.logoActions}>
+              <div className={styles.logoHint}>
+                Formatos permitidos: PNG, JPG, JPEG, WebP, SVG. Tamaño máximo: 2 MB.
+              </div>
+
+              <div className={styles.logoButtons}>
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  onClick={handleOpenLogoPicker}
+                  disabled={submitting}
+                >
+                  <Upload width={14} height={14} />
+                  <span>{logoUrl || logoFile ? 'Reemplazar imagen' : 'Cargar imagen'}</span>
+                </button>
+
+                {(logoFile || (logoUrl && !logoMarkedForDeletion)) && (
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={handleRemoveLogo}
+                    disabled={submitting}
+                  >
+                    <Trash2 width={14} height={14} />
+                    <span>Eliminar logo</span>
+                  </button>
+                )}
+
+                {logoMarkedForDeletion && (
+                  <span className={styles.logoPendingBadge}>
+                    Logo marcado para eliminar al guardar
+                  </span>
+                )}
+                {logoFile && (
+                  <span className={styles.logoPendingBadge}>
+                    Archivo pendiente: {logoFile.name}
+                  </span>
+                )}
+              </div>
+
+              {/* Input file oculto — disparado desde el botón para un UX limpio. */}
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept={LOGO_ACCEPT_MIMES}
+                onChange={handleLogoFileChange}
+                style={{ display: 'none' }}
+                aria-hidden="true"
+                tabIndex={-1}
               />
             </div>
           </div>

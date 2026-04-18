@@ -1,0 +1,99 @@
+/* Grupo: dos botones adyacentes compartiendo border-radius externo. */
+.group {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: var(--radius-md, 6px);
+  overflow: hidden;
+  border: 1px solid var(--color-border-main, #d1d5db);
+  background: var(--color-bg-paper, #ffffff);
+  line-height: 1;
+  font-family: var(--font-family-primary);
+}
+
+.group:has(button:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Tamaños. */
+.sm .btn {
+  font-size: var(--font-size-xs, 0.75rem);
+  padding: 4px var(--spacing-2, 8px);
+  min-width: 72px;
+  height: 28px;
+}
+
+.md .btn {
+  font-size: var(--font-size-sm, 0.875rem);
+  padding: var(--spacing-2, 8px) var(--spacing-4, 16px);
+  min-width: 104px;
+  height: 40px;
+}
+
+/* Botón base. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2, 8px);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary, #111827);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold, 600);
+  transition:
+    background-color var(--transition-fast, 150ms ease),
+    color var(--transition-fast, 150ms ease),
+    box-shadow var(--transition-fast, 150ms ease);
+  white-space: nowrap;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-primary, #2563eb);
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+}
+
+/* Separador entre los dos botones. */
+.btnLeft {
+  border-right: 1px solid var(--color-border-main, #d1d5db);
+}
+
+/* Estado neutral (gris). */
+.btnNeutral {
+  background-color: var(--color-status-inactive-bg, #F3F4F6);
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.btnNeutral:hover:not(:disabled) {
+  background-color: var(--color-bg-main, #F0EEF5);
+  color: var(--color-text-primary, #111827);
+}
+
+/* Estado activo — Presente (verde). */
+.btnPresentActive {
+  background-color: var(--color-success, #10B981);
+  color: var(--color-text-inverse, #ffffff);
+  cursor: default;
+}
+
+.btnPresentActive:hover:not(:disabled) {
+  background-color: var(--color-success, #10B981);
+  color: var(--color-text-inverse, #ffffff);
+}
+
+/* Estado activo — Ausente (rojo). */
+.btnAbsentActive {
+  background-color: var(--color-error, #EF4444);
+  color: var(--color-text-inverse, #ffffff);
+  cursor: default;
+}
+
+.btnAbsentActive:hover:not(:disabled) {
+  background-color: var(--color-error, #EF4444);
+  color: var(--color-text-inverse, #ffffff);
+}

@@ -36,6 +36,34 @@ internal static class CapacitacionValidator
             throw new CapacitacionServiceException("INVALID_DURACION", "'duracionMinutos' debe ser múltiplo de 30.");
     }
 
+    /// <summary>
+    /// Fase 9: valida que <paramref name="puntajeMinimo"/> sea coherente con el tipo de
+    /// certificación. En <c>Aprobacion</c> el puntaje es requerido (rango 0–10, decimal
+    /// (4,2)). En <c>Participacion</c> debe venir null — rechazamos explícitamente en vez
+    /// de ignorarlo para evitar persistir datos contradictorios que luego confundan al UI.
+    /// </summary>
+    public static void ValidarPuntajeMinimo(decimal? puntajeMinimo, TipoCertificacion tipoCert)
+    {
+        if (tipoCert == TipoCertificacion.Aprobacion)
+        {
+            if (!puntajeMinimo.HasValue)
+                throw new CapacitacionServiceException(
+                    "INVALID_PUNTAJE_MINIMO",
+                    "'puntajeMinimo' es requerido cuando 'tipoCertificacion' es 'Aprobacion'.");
+            if (puntajeMinimo.Value < 0m || puntajeMinimo.Value > 10m)
+                throw new CapacitacionServiceException(
+                    "INVALID_PUNTAJE_MINIMO",
+                    "'puntajeMinimo' debe estar en el rango 0–10.");
+        }
+        else
+        {
+            if (puntajeMinimo.HasValue)
+                throw new CapacitacionServiceException(
+                    "INVALID_PUNTAJE_MINIMO",
+                    "'puntajeMinimo' solo puede asignarse cuando 'tipoCertificacion' es 'Aprobacion'.");
+        }
+    }
+
     public static TipoCertificacion ParsearTipoCertificacion(string? valor)
     {
         if (string.IsNullOrWhiteSpace(valor))

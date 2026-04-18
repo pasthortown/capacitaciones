@@ -58,6 +58,10 @@ output/*
 /repository/*
 !/repository/.gitkeep
 
+# Imagenes (logos) de capacitaciones (subidas por admin/capacitador)
+/imagen_capacitaciones/*
+!/imagen_capacitaciones/.gitkeep
+
 # ----- IDE / OS -----
 .idea/
 .vscode/

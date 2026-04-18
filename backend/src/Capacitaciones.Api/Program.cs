@@ -3,12 +3,14 @@ using Capacitaciones.Application.Ports;
 using Capacitaciones.Application.UseCases.Admin;
 using Capacitaciones.Application.UseCases.Asistentes;
 using Capacitaciones.Application.UseCases.Auth;
+using Capacitaciones.Application.UseCases.Calificaciones;
 using Capacitaciones.Application.UseCases.Capacitaciones;
 using Capacitaciones.Application.UseCases.Capacitador;
 using Capacitaciones.Application.UseCases.Catalogos;
 using Capacitaciones.Application.UseCases.Certificados;
 using Capacitaciones.Application.UseCases.Configuracion;
 using Capacitaciones.Application.UseCases.Inscripcion;
+using Capacitaciones.Application.UseCases.PaseLista;
 using Capacitaciones.Application.UseCases.Recursos;
 using Capacitaciones.Application.UseCases.Responsable;
 using Capacitaciones.Application.UseCases.Responsables;
@@ -142,6 +144,10 @@ builder.Services.AddAuthorization(o =>
     // Policy Refactor Responsables: token del link público del responsable (role=Responsable).
     // El controller valida además el claim rid.
     o.AddPolicy("Responsable", p => p.RequireRole("Responsable"));
+    // Policy Fase 10: token de pase de lista (role=PaseLista). El controller valida el claim cid.
+    o.AddPolicy("PaseLista", p => p.RequireRole("PaseLista"));
+    // Policy Fase 11: token de calificaciones (role=Calificaciones). El controller valida el claim cid.
+    o.AddPolicy("Calificaciones", p => p.RequireRole("Calificaciones"));
 });
 
 // Repositorios (adaptadores EF Core).
@@ -180,6 +186,8 @@ builder.Services.AddScoped<ObtenerCapacitacionUseCase>();
 builder.Services.AddScoped<CrearCapacitacionUseCase>();
 builder.Services.AddScoped<EditarCapacitacionUseCase>();
 builder.Services.AddScoped<EliminarCapacitacionUseCase>();
+builder.Services.AddScoped<SubirLogoCapacitacionUseCase>();
+builder.Services.AddScoped<EliminarLogoCapacitacionUseCase>();
 
 // Fase 4 — flujo del capacitador (link firmado + GET/PUT sobre su propia capacitación).
 builder.Services.AddScoped<GenerarLinkCapacitadorUseCase>();
@@ -242,6 +250,21 @@ if (string.IsNullOrWhiteSpace(resourceStorageOptions.Directory))
 builder.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(resourceStorageOptions));
 builder.Services.AddSingleton<IResourceStorage, FileSystemResourceStorage>();
 
+// Fase 9 — Logo de capacitación. Mismo patrón: env IMAGEN_CAPACITACIONES_DIR > appsettings > default.
+var logoStorageOptions = builder.Configuration.GetSection(LogoCapacitacionStorageOptions.SectionName)
+    .Get<LogoCapacitacionStorageOptions>() ?? new LogoCapacitacionStorageOptions();
+var logoDirEnv = Environment.GetEnvironmentVariable("IMAGEN_CAPACITACIONES_DIR");
+if (!string.IsNullOrWhiteSpace(logoDirEnv))
+{
+    logoStorageOptions.Directory = logoDirEnv;
+}
+if (string.IsNullOrWhiteSpace(logoStorageOptions.Directory))
+{
+    logoStorageOptions.Directory = "/imagen_capacitaciones";
+}
+builder.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(logoStorageOptions));
+builder.Services.AddSingleton<ILogoCapacitacionStorage, LogoCapacitacionStorage>();
+
 builder.Services.AddScoped<SubirRecursoUseCase>();
 builder.Services.AddScoped<ListarRecursosUseCase>();
 builder.Services.AddScoped<ObtenerRecursoUseCase>();
@@ -258,6 +281,18 @@ builder.Services.Configure<FormOptions>(o =>
     o.ValueLengthLimit = 100_000_000;
 });
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 100_000_000);
+
+// Fase 10 — pase de lista. Link firmado admin + endpoints públicos con token PaseLista
+// + endpoint admin PUT para corregir asistencia desde la tabla de listado.
+builder.Services.AddScoped<GenerarLinkPaseListaUseCase>();
+builder.Services.AddScoped<ObtenerPaseListaUseCase>();
+builder.Services.AddScoped<MarcarAsistenciaUseCase>();
+
+// Fase 11 — calificaciones. Link firmado admin + endpoints públicos con token Calificaciones
+// + endpoint admin PUT para editar calificación desde la tabla de listado.
+builder.Services.AddScoped<GenerarLinkCalificacionesUseCase>();
+builder.Services.AddScoped<ObtenerCalificacionesUseCase>();
+builder.Services.AddScoped<CalificarAsistenteUseCase>();
 
 // Refactor Responsables — catálogo global + link firmado para página pública.
 builder.Services.AddScoped<ListarResponsablesUseCase>();
@@ -305,6 +340,16 @@ if (!app.Environment.IsEnvironment("Testing"))
         {
             var bootLogger = bootScope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("RepositorioInit");
             bootLogger.LogWarning(ex, "No se pudo inicializar el directorio del repositorio. El endpoint de subida fallará hasta resolverlo.");
+        }
+
+        try
+        {
+            _ = bootScope.ServiceProvider.GetRequiredService<ILogoCapacitacionStorage>();
+        }
+        catch (Exception ex)
+        {
+            var bootLogger = bootScope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("LogoCapacitacionInit");
+            bootLogger.LogWarning(ex, "No se pudo inicializar el directorio de logos de capacitación. El upload de logo fallará hasta resolverlo.");
         }
     }
 }

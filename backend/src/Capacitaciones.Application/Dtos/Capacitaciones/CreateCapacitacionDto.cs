@@ -22,6 +22,12 @@ public class CreateCapacitacionDto
     public DateTime FechaHoraInicio { get; set; }
     public int DuracionMinutos { get; set; }
 
+    /// <summary>
+    /// Fase 9: requerido solo cuando <c>TipoCertificacion == Aprobacion</c> (rango 0–10).
+    /// Debe venir null si el tipo es <c>Participacion</c>.
+    /// </summary>
+    public decimal? PuntajeMinimo { get; set; }
+
     public string? Descripcion { get; set; }
 
     public List<Guid> ResponsableIds { get; set; } = new();

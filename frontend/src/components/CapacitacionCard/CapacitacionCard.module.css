@@ -68,6 +68,25 @@
   flex: 1 1 auto;
 }
 
+/* Fila del título: miniatura (opcional) + título. */
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-width: 0;
+}
+
+/* Miniatura del logo en la card (Fase 9). Tope 48px de alto. */
+.logoThumb {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm, 4px);
+  background-color: var(--color-bg-main);
+  padding: 2px;
+}
+
 .codeChip {
   display: inline-flex;
   align-items: center;

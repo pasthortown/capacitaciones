@@ -34,9 +34,17 @@ function articuloSustantivo(tipoActividad) {
   return `la ${fallback}`;
 }
 
-function tipoCertificacionLabel(tipoCertificacion) {
-  const key = stripAccents(tipoCertificacion).toLowerCase().trim();
+/**
+ * Fase 12 — la etiqueta del certificado se decide con `certificadoEfectivo` (valor
+ * calculado por el backend que puede diferir del `tipoCertificacion` original: una
+ * capacitación Aprobación con calificación < puntaje mínimo imprime "DE ASISTENCIA").
+ * Si el backend aún no envía `certificadoEfectivo` (compat con clientes viejos), se
+ * usa `tipoCertificacion` como fallback.
+ */
+function tipoCertificacionLabel(certificadoEfectivo, tipoCertificacion) {
+  const key = stripAccents(certificadoEfectivo || tipoCertificacion).toLowerCase().trim();
   if (key === 'aprobacion') return 'DE APROBACIÓN';
+  if (key === 'asistencia') return 'DE ASISTENCIA';
   // Default: participación
   return 'DE PARTICIPACIÓN';
 }
@@ -76,6 +84,76 @@ function escapeHtml(unsafe) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * Fase 12 — lee el logo del volumen compartido (/imagen_capacitaciones) y lo devuelve
+ * como <img> con data URL, para que el HTML renderizado sea autocontenido y Puppeteer
+ * no tenga que resolver file:// externos.
+ *
+ * Seguridad: se valida que la ruta recibida esté dentro de `imagenCapacitacionesDir`
+ * — así un payload malicioso con `../../etc/passwd` no llega a ser leído.
+ * Si cualquier paso falla (ruta inválida, archivo inexistente, mime desconocido),
+ * devuelve string vacío y loguea warning: la falta de logo no debe bloquear la emisión.
+ */
+const LOGO_MIME_BY_EXT = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  webp: 'image/webp',
+  svg: 'image/svg+xml'
+};
+
+function buildLogoHtml(logoPathLocal) {
+  if (!logoPathLocal || typeof logoPathLocal !== 'string') return '';
+  try {
+    const absPath = path.resolve(logoPathLocal);
+    const allowedRoot = path.resolve(config.imagenCapacitacionesDir);
+    // Path traversal guard: el archivo debe estar dentro del volumen de logos.
+    if (!absPath.startsWith(allowedRoot + path.sep) && absPath !== allowedRoot) {
+      console.warn('[emisor] logoPathLocal fuera del volumen permitido:', logoPathLocal);
+      return '';
+    }
+    if (!fs.existsSync(absPath)) {
+      console.warn('[emisor] logo no encontrado:', absPath);
+      return '';
+    }
+    const ext = path.extname(absPath).toLowerCase().replace(/^\./, '');
+    const mime = LOGO_MIME_BY_EXT[ext];
+    if (!mime) {
+      console.warn('[emisor] extensión de logo no soportada:', ext);
+      return '';
+    }
+    const buf = fs.readFileSync(absPath);
+    const b64 = buf.toString('base64');
+    return `<img class="logo-capacitacion" src="data:${mime};base64,${b64}" alt="" />`;
+  } catch (err) {
+    console.warn('[emisor] no se pudo leer el logo:', err && err.message);
+    return '';
+  }
+}
+
+/**
+ * Fase 12 — texto "con una calificación de X.X / 10" solo cuando el certificado
+ * efectivo es Aprobación y hay calificación registrada. En Asistencia/Participación
+ * no se muestra calificación (sería engañoso porque el asistente no aprobó).
+ */
+function buildCalificacionHtml(certificadoEfectivo, calificacion, puntajeMinimo) {
+  const key = stripAccents(certificadoEfectivo || '').toLowerCase().trim();
+  if (key !== 'aprobacion') return '';
+  if (calificacion === undefined || calificacion === null) return '';
+  const num = Number(calificacion);
+  if (!Number.isFinite(num)) return '';
+  const calStr = Number.isInteger(num) ? String(num) : num.toFixed(1);
+  // El puntaje mínimo lo mostramos como referencia si está disponible; si no, solo la nota.
+  if (puntajeMinimo !== undefined && puntajeMinimo !== null) {
+    const min = Number(puntajeMinimo);
+    const minStr = Number.isFinite(min) ? (Number.isInteger(min) ? String(min) : min.toFixed(1)) : '';
+    if (minStr) {
+      return `<div class="calificacion">Con una calificación de <strong>${escapeHtml(calStr)}</strong> / 10 (mínimo de aprobación: ${escapeHtml(minStr)}).</div>`;
+    }
+  }
+  return `<div class="calificacion">Con una calificación de <strong>${escapeHtml(calStr)}</strong> / 10.</div>`;
 }
 
 function buildFirmantesHtml(firmantes) {
@@ -146,15 +224,21 @@ class ValidationError extends Error {
 function renderHtml(payload) {
   validatePayload(payload);
 
-  const { capacitacion, asistente, firmantes } = payload;
+  const { capacitacion, asistente, firmantes, certificadoEfectivo } = payload;
 
   const nombreCompleto = `${asistente.nombres || ''} ${asistente.apellidos || ''}`.trim().toUpperCase();
-  const tipoCertStr = tipoCertificacionLabel(capacitacion.tipoCertificacion);
+  const tipoCertStr = tipoCertificacionLabel(certificadoEfectivo, capacitacion.tipoCertificacion);
   const articulo = articuloSustantivo(capacitacion.tipoActividad);
   const fechaFormateada = formatFechaEs(capacitacion.fechaInicio, config.timeZone);
   const duracionHoras = formatDuracion(capacitacion.duracionHoras);
   const tema = String(capacitacion.tema || '').toUpperCase();
   const firmantesHtml = buildFirmantesHtml(firmantes || []);
+  const logoHtml = buildLogoHtml(capacitacion.logoPathLocal);
+  const calificacionHtml = buildCalificacionHtml(
+    certificadoEfectivo,
+    asistente.calificacion,
+    capacitacion.puntajeMinimo
+  );
 
   const template = fs.readFileSync(TEMPLATE_PATH, 'utf8');
 
@@ -165,7 +249,9 @@ function renderHtml(payload) {
     tema: escapeHtml(tema),
     fechaFormateada: escapeHtml(fechaFormateada),
     duracionHoras: escapeHtml(duracionHoras),
-    firmantesHtml
+    firmantesHtml,
+    logoHtml,
+    calificacionHtml
   };
 
   return Object.keys(tokens).reduce((html, key) => {

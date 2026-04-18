@@ -10,6 +10,13 @@ public class EmisionRequest
     public EmisionCapacitacionDto Capacitacion { get; set; } = new();
     public EmisionAsistenteDto Asistente { get; set; } = new();
     public List<EmisionFirmanteDto> Firmantes { get; set; } = new();
+
+    /// <summary>
+    /// Fase 12 — etiqueta efectiva del certificado: "Aprobacion" | "Asistencia" | "Participacion".
+    /// Puede diferir de <c>Capacitacion.TipoCertificacion</c>: una capacitación Aprobacion con
+    /// calificación &lt; puntaje mínimo emite un certificado "Asistencia" sin cambiar el tipo base.
+    /// </summary>
+    public string CertificadoEfectivo { get; set; } = string.Empty;
 }
 
 /// <summary>Datos de la capacitación necesarios para renderizar el certificado.</summary>
@@ -29,6 +36,16 @@ public class EmisionCapacitacionDto
 
     /// <summary>Duración en horas (permite decimales, ej. 1.5).</summary>
     public decimal DuracionHoras { get; set; }
+
+    /// <summary>Fase 12 — puntaje mínimo de aprobación (0–10). Null cuando TipoCertificacion != Aprobacion.</summary>
+    public decimal? PuntajeMinimo { get; set; }
+
+    /// <summary>
+    /// Fase 12 — ruta local del logo dentro del volumen compartido <c>/imagen_capacitaciones</c>
+    /// (ej. <c>/imagen_capacitaciones/&lt;guid&gt;.png</c>). El emisor lo lee del disco y lo embebe
+    /// como data URL en el HTML. Null si la capacitación no tiene logo.
+    /// </summary>
+    public string? LogoPathLocal { get; set; }
 }
 
 public class EmisionAsistenteDto
@@ -36,6 +53,9 @@ public class EmisionAsistenteDto
     public string Nombres { get; set; } = string.Empty;
     public string Apellidos { get; set; } = string.Empty;
     public string Identificacion { get; set; } = string.Empty;
+
+    /// <summary>Fase 12 — calificación 0–10. Solo se incluye si la capacitación es Aprobacion y el asistente está Presente.</summary>
+    public decimal? Calificacion { get; set; }
 }
 
 /// <summary>

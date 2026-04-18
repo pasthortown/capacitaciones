@@ -10,12 +10,17 @@ import {
   Pencil,
   Trash2,
   Building2,
+  ClipboardCheck,
+  Award,
 } from 'lucide-react';
 import { useToast } from '../Toast/useToast.js';
+import { HttpError } from '../../services/http.js';
 import { formatFechaHora, formatDuracion } from '../../utils/formatters.js';
 import {
   generateLinkCapacitador,
   generateLinkInscripcion,
+  generateLinkPaseLista,
+  generateLinkCalificaciones,
 } from '../../services/capacitaciones.js';
 import styles from './CapacitacionCard.module.css';
 
@@ -36,6 +41,8 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
 
   const [generandoLink, setGenerandoLink] = useState(false);
   const [generandoInscripcion, setGenerandoInscripcion] = useState(false);
+  const [generandoPaseLista, setGenerandoPaseLista] = useState(false);
+  const [generandoCalificaciones, setGenerandoCalificaciones] = useState(false);
 
   const {
     id,
@@ -48,7 +55,13 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
     estado,
     totalAsistentes = 0,
     activo = true,
+    logoUrl = null,
+    tipoCertificacion = null,
   } = capacitacion || {};
+
+  // El link/botón de calificaciones sólo aplica cuando la capacitación
+  // es de Aprobación (ver instrucciones.md §7.10 — Fase 11).
+  const esAprobacion = tipoCertificacion === 'Aprobacion';
 
   const esFinalizada = estado === 'Finalizada';
 
@@ -96,6 +109,57 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
     }
   };
 
+  const handleCopyPaseListaLink = async () => {
+    if (!id || generandoPaseLista) return;
+    setGenerandoPaseLista(true);
+    try {
+      const { url, expiresAt } = await generateLinkPaseLista(id);
+      const fullUrl = `${window.location.origin}${url}`;
+      await copyToClipboard(fullUrl);
+      const fecha = formatExpiresAt(expiresAt);
+      toast.success(
+        fecha
+          ? `Enlace de pase de lista copiado (expira: ${fecha})`
+          : 'Enlace de pase de lista copiado',
+      );
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo generar el enlace de pase de lista.');
+    } finally {
+      setGenerandoPaseLista(false);
+    }
+  };
+
+  const handleCopyCalificacionesLink = async () => {
+    if (!id || generandoCalificaciones) return;
+    setGenerandoCalificaciones(true);
+    try {
+      const { url, expiresAt } = await generateLinkCalificaciones(id);
+      const fullUrl = `${window.location.origin}${url}`;
+      await copyToClipboard(fullUrl);
+      const fecha = formatExpiresAt(expiresAt);
+      toast.success(
+        fecha
+          ? `Enlace de calificaciones copiado (expira: ${fecha})`
+          : 'Enlace de calificaciones copiado',
+      );
+    } catch (error) {
+      // Edge case: la capacitación cambió de tipo y ya no aplica calificar.
+      if (
+        error instanceof HttpError &&
+        error.status === 409 &&
+        error.body?.error === 'CALIFICACIONES_NO_APLICA'
+      ) {
+        toast.error(
+          'Esta capacitación es de Participación; no se pueden registrar calificaciones.',
+        );
+      } else {
+        toast.error(error?.message || 'No se pudo generar el enlace de calificaciones.');
+      }
+    } finally {
+      setGenerandoCalificaciones(false);
+    }
+  };
+
   const handleOpenAsistentes = () => {
     navigate(`/capacitaciones/${id}/asistentes`);
   };
@@ -134,8 +198,19 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
         </div>
       </div>
 
-      {/* Fila 2: tema */}
-      <h3 className={styles.title}>{tema || 'Sin tema'}</h3>
+      {/* Fila 2: tema (con miniatura opcional del logo a la izquierda) */}
+      <div className={styles.titleRow}>
+        {logoUrl && (
+          <img
+            src={logoUrl}
+            alt=""
+            className={styles.logoThumb}
+            loading="lazy"
+            aria-hidden="true"
+          />
+        )}
+        <h3 className={styles.title}>{tema || 'Sin tema'}</h3>
+      </div>
 
       {/* Fila 3: capacitador */}
       <div className={styles.row}>
@@ -171,6 +246,28 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
         >
           <Link2 width={16} height={16} />
         </button>
+        <button
+          type="button"
+          className={styles.iconBtn}
+          onClick={handleCopyPaseListaLink}
+          disabled={generandoPaseLista}
+          title="Copiar enlace para pasar lista"
+          aria-label="Copiar enlace para pasar lista"
+        >
+          <ClipboardCheck width={16} height={16} />
+        </button>
+        {esAprobacion && (
+          <button
+            type="button"
+            className={styles.iconBtn}
+            onClick={handleCopyCalificacionesLink}
+            disabled={generandoCalificaciones}
+            title="Copiar enlace de calificaciones"
+            aria-label="Copiar enlace de calificaciones"
+          >
+            <Award width={16} height={16} />
+          </button>
+        )}
         <button
           type="button"
           className={styles.iconBtn}

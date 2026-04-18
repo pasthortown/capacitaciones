@@ -48,6 +48,18 @@ public class CapacitacionConfiguration : IEntityTypeConfiguration<Capacitacion>
         builder.Property(c => c.DuracionMinutos)
             .IsRequired();
 
+        // Fase 9 — Puntaje mínimo (solo aplica cuando TipoCertificacion == Aprobacion).
+        // decimal(4,2) cubre el rango 0.00 – 99.99; el dominio restringe a 0–10 vía validator.
+        builder.Property(c => c.PuntajeMinimo)
+            .HasColumnType("decimal(4,2)");
+
+        // Fase 9 — Logo de la capacitación (archivo físico vive en volumen IMAGEN_CAPACITACIONES_DIR).
+        builder.Property(c => c.LogoPath)
+            .HasMaxLength(500);
+
+        builder.Property(c => c.LogoContentType)
+            .HasMaxLength(100);
+
         builder.Property(c => c.Activo)
             .IsRequired()
             .HasDefaultValue(true);

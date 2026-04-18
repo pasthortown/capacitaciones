@@ -90,7 +90,11 @@ public class GenerarCertificadoAsistenteUseCaseTests
         AreaId = Guid.NewGuid(),
         EmailUsuario = "lsalazar@dos.com.ec",
         Firma = "data:image/png;base64,FIRMA_ASISTENTE",
-        FechaInscripcion = DateTime.UtcNow.AddDays(-1)
+        FechaInscripcion = DateTime.UtcNow.AddDays(-1),
+        // Fase 12 — los certificados exigen EstadoAsistencia = Presente; los tests de Fase 6
+        // se crearon antes de esta regla, así que lo dejamos en Presente por defecto.
+        EstadoAsistencia = EstadoAsistencia.Presente,
+        FechaMarcacionAsistencia = DateTime.UtcNow.AddMinutes(-10)
     };
 
     [Fact]
@@ -218,6 +222,182 @@ public class GenerarCertificadoAsistenteUseCaseTests
             () => useCase.ExecuteAsync(CapacitacionId, AsistenteId));
     }
 
+    // ---------- Fase 12 — lógica condicional de certificado ----------
+
+    [Fact]
+    public async Task ExecuteAsync_AsistenteAusente_LanzaNoElegibleConMotivoAusente()
+    {
+        var cap = BuildCapacitacion();
+        var asistente = BuildAsistente(CapacitacionId);
+        asistente.EstadoAsistencia = EstadoAsistencia.Ausente;
+        var emisor = new FakeEmisorDocumentosClient();
+        var useCase = new GenerarCertificadoAsistenteUseCase(
+            new FakeCapacitacionRepo(cap),
+            new FakeAsistenteRepo(asistente),
+            emisor);
+
+        var ex = await Assert.ThrowsAsync<CertificadoAsistenteNoElegibleException>(
+            () => useCase.ExecuteAsync(CapacitacionId, AsistenteId));
+        Assert.Equal("ASISTENTE_NO_ELEGIBLE_CERTIFICADO", ex.Codigo);
+        Assert.Equal("AUSENTE", ex.Motivo);
+        Assert.Null(emisor.LastRequest);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_AsistenteSinMarcar_LanzaNoElegibleConMotivoSinMarcar()
+    {
+        var cap = BuildCapacitacion();
+        var asistente = BuildAsistente(CapacitacionId);
+        asistente.EstadoAsistencia = null;
+        asistente.FechaMarcacionAsistencia = null;
+        var emisor = new FakeEmisorDocumentosClient();
+        var useCase = new GenerarCertificadoAsistenteUseCase(
+            new FakeCapacitacionRepo(cap),
+            new FakeAsistenteRepo(asistente),
+            emisor);
+
+        var ex = await Assert.ThrowsAsync<CertificadoAsistenteNoElegibleException>(
+            () => useCase.ExecuteAsync(CapacitacionId, AsistenteId));
+        Assert.Equal("SIN_MARCAR", ex.Motivo);
+        Assert.Null(emisor.LastRequest);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Participacion_CertificadoEfectivoEsParticipacion()
+    {
+        var cap = BuildCapacitacion(); // tipo default = Participacion
+        var asistente = BuildAsistente(CapacitacionId);
+        var emisor = new FakeEmisorDocumentosClient();
+        var useCase = new GenerarCertificadoAsistenteUseCase(
+            new FakeCapacitacionRepo(cap),
+            new FakeAsistenteRepo(asistente),
+            emisor);
+
+        await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
+
+        Assert.NotNull(emisor.LastRequest);
+        Assert.Equal("Participacion", emisor.LastRequest!.CertificadoEfectivo);
+        Assert.Null(emisor.LastRequest.Capacitacion.PuntajeMinimo);
+        Assert.Null(emisor.LastRequest.Asistente.Calificacion);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_AprobacionConCalificacionSuficiente_CertificadoEfectivoEsAprobacion()
+    {
+        var cap = BuildCapacitacion();
+        cap.TipoCertificacion = TipoCertificacion.Aprobacion;
+        cap.PuntajeMinimo = 7.0m;
+        var asistente = BuildAsistente(CapacitacionId);
+        asistente.Calificacion = 8.5m;
+        var emisor = new FakeEmisorDocumentosClient();
+        var useCase = new GenerarCertificadoAsistenteUseCase(
+            new FakeCapacitacionRepo(cap),
+            new FakeAsistenteRepo(asistente),
+            emisor);
+
+        await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
+
+        Assert.Equal("Aprobacion", emisor.LastRequest!.CertificadoEfectivo);
+        Assert.Equal(7.0m, emisor.LastRequest.Capacitacion.PuntajeMinimo);
+        Assert.Equal(8.5m, emisor.LastRequest.Asistente.Calificacion);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_AprobacionJustoEnElLimite_CertificadoEfectivoEsAprobacion()
+    {
+        // Borde: calificación == puntaje mínimo. La regla es `>=`, así que aprueba.
+        var cap = BuildCapacitacion();
+        cap.TipoCertificacion = TipoCertificacion.Aprobacion;
+        cap.PuntajeMinimo = 7.0m;
+        var asistente = BuildAsistente(CapacitacionId);
+        asistente.Calificacion = 7.0m;
+        var emisor = new FakeEmisorDocumentosClient();
+        var useCase = new GenerarCertificadoAsistenteUseCase(
+            new FakeCapacitacionRepo(cap),
+            new FakeAsistenteRepo(asistente),
+            emisor);
+
+        await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
+
+        Assert.Equal("Aprobacion", emisor.LastRequest!.CertificadoEfectivo);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_AprobacionCalificacionInsuficiente_CertificadoEfectivoEsAsistencia()
+    {
+        var cap = BuildCapacitacion();
+        cap.TipoCertificacion = TipoCertificacion.Aprobacion;
+        cap.PuntajeMinimo = 7.0m;
+        var asistente = BuildAsistente(CapacitacionId);
+        asistente.Calificacion = 6.9m;
+        var emisor = new FakeEmisorDocumentosClient();
+        var useCase = new GenerarCertificadoAsistenteUseCase(
+            new FakeCapacitacionRepo(cap),
+            new FakeAsistenteRepo(asistente),
+            emisor);
+
+        await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
+
+        Assert.Equal("Asistencia", emisor.LastRequest!.CertificadoEfectivo);
+        Assert.Equal(6.9m, emisor.LastRequest.Asistente.Calificacion);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_AprobacionSinCalificacion_CertificadoEfectivoEsAsistencia()
+    {
+        // Aprobacion + Presente pero calificacion = null ⇒ fallback seguro "Asistencia".
+        var cap = BuildCapacitacion();
+        cap.TipoCertificacion = TipoCertificacion.Aprobacion;
+        cap.PuntajeMinimo = 7.0m;
+        var asistente = BuildAsistente(CapacitacionId);
+        asistente.Calificacion = null;
+        var emisor = new FakeEmisorDocumentosClient();
+        var useCase = new GenerarCertificadoAsistenteUseCase(
+            new FakeCapacitacionRepo(cap),
+            new FakeAsistenteRepo(asistente),
+            emisor);
+
+        await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
+
+        Assert.Equal("Asistencia", emisor.LastRequest!.CertificadoEfectivo);
+        Assert.Null(emisor.LastRequest.Asistente.Calificacion);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ConLogo_IncluyeLogoPathLocalEnPayload()
+    {
+        var cap = BuildCapacitacion();
+        cap.LogoPath = "abc123.png";
+        cap.LogoContentType = "image/png";
+        var asistente = BuildAsistente(CapacitacionId);
+        var emisor = new FakeEmisorDocumentosClient();
+        var useCase = new GenerarCertificadoAsistenteUseCase(
+            new FakeCapacitacionRepo(cap),
+            new FakeAsistenteRepo(asistente),
+            emisor);
+
+        await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
+
+        Assert.Equal("/imagen_capacitaciones/abc123.png", emisor.LastRequest!.Capacitacion.LogoPathLocal);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_SinLogo_LogoPathLocalEsNull()
+    {
+        var cap = BuildCapacitacion();
+        cap.LogoPath = null;
+        var asistente = BuildAsistente(CapacitacionId);
+        var emisor = new FakeEmisorDocumentosClient();
+        var useCase = new GenerarCertificadoAsistenteUseCase(
+            new FakeCapacitacionRepo(cap),
+            new FakeAsistenteRepo(asistente),
+            emisor);
+
+        await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
+
+        Assert.Null(emisor.LastRequest!.Capacitacion.LogoPathLocal);
+    }
+
     // ---------- Fakes ----------
 
     private sealed class FakeEmisorDocumentosClient : IEmisorDocumentosClient
@@ -295,6 +475,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         public Task<int> CountByCapacitacionAsync(Guid capacitacionId, CancellationToken ct = default)
             => throw new NotImplementedException();
         public Task<IReadOnlyDictionary<Guid, int>> CountByCapacitacionesAsync(IEnumerable<Guid> capacitacionIds, CancellationToken ct = default)
+            => throw new NotImplementedException();
+        public Task UpdateAsync(Asistente entity, CancellationToken ct = default)
             => throw new NotImplementedException();
     }
 }

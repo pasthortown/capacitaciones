@@ -68,6 +68,16 @@ public class GenerarCertificadosCapacitacionUseCase
                 // Respetamos la cancelación propagándola.
                 throw;
             }
+            catch (CertificadoAsistenteNoElegibleException ex)
+            {
+                // Fase 12 — ausentes / sin marcar NO son errores: se omiten y se reportan aparte.
+                resultado.NoElegibles++;
+                resultado.NoElegiblesDetalle.Add(new GeneracionLoteNoElegibleDto
+                {
+                    AsistenteId = a.Id,
+                    Motivo = ex.Motivo
+                });
+            }
             catch (CapacitacionServiceException ex)
             {
                 resultado.Errores.Add(new GeneracionLoteErrorDto

@@ -40,3 +40,45 @@
   background-color: var(--color-bg-main, #f3f4f6);
   color: var(--color-text-secondary, #6b7280);
 }
+
+/* --- Celda de calificación (Fase 11) --- */
+.calificacionCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
+  border-radius: var(--radius-md, 6px);
+  padding: 4px 8px;
+  transition: background-color 0.15s ease;
+}
+
+.calificacionCellPass {
+  background-color: var(--color-success-bg, #D1FAE5);
+}
+
+.calificacionCellFail {
+  background-color: var(--color-error-bg, #FEE2E2);
+}
+
+.calificacionInput {
+  width: 80px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md, 6px);
+  border: 1px solid var(--color-border, #d1d5db);
+  background: #ffffff;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-primary, #111827);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.calificacionInput:focus {
+  outline: none;
+  border-color: var(--color-primary, #2563eb);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.calificacionInput:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background-color: #f9fafb;
+}
