@@ -177,16 +177,19 @@ async function downloadBlob(path, { fallbackFilename = 'download' } = {}) {
 }
 
 /**
- * Envía un `FormData` (multipart) por POST y devuelve el JSON parseado.
+ * Envía un `FormData` (multipart) y devuelve el JSON parseado.
  * No setea Content-Type manualmente: el navegador lo arma con el boundary.
+ * Soporta POST (default) y PUT para edición con reemplazo opcional de archivo.
  *
  * @param {string}   path
  * @param {FormData} formData
+ * @param {object}   [options]
+ * @param {'POST'|'PUT'} [options.method='POST']
  */
-async function uploadForm(path, formData) {
+async function uploadForm(path, formData, { method = 'POST' } = {}) {
   const token = getAuthToken();
   const response = await fetch(buildUrl(path), {
-    method: 'POST',
+    method,
     headers: {
       Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -202,7 +205,7 @@ async function uploadForm(path, formData) {
     }
     const message =
       (parsed && typeof parsed === 'object' && (parsed.message || parsed.title)) ||
-      `HTTP ${response.status} en POST ${path}`;
+      `HTTP ${response.status} en ${method} ${path}`;
     throw new HttpError(message, { status: response.status, body: parsed });
   }
 

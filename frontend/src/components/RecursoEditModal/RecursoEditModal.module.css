@@ -1,0 +1,63 @@
+.modalWide {
+  width: min(600px, 95vw) !important;
+  max-width: 95vw !important;
+}
+
+.field {
+  margin-top: var(--spacing-4);
+}
+
+.field:first-child {
+  margin-top: 0;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: var(--radius-md, 8px);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-main, #ffffff);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+}
+
+.textareaError {
+  border-color: var(--color-error, #ef4444);
+}
+
+.counter {
+  display: flex;
+  justify-content: flex-end;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-1);
+}
+
+.counterError {
+  color: var(--color-error, #ef4444);
+}
+
+.errorMsg {
+  font-size: var(--font-size-xs);
+  color: var(--color-error, #ef4444);
+  margin-top: var(--spacing-1);
+}
+
+.currentFileHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background-color: var(--color-bg-light, rgba(0, 0, 0, 0.03));
+  border-radius: var(--radius-sm, 6px);
+}

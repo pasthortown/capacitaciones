@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Pencil, Trash2, Link2, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, Link2, Check, RotateCcw } from 'lucide-react';
 import DataTable from '../../components/Table/DataTable.jsx';
 import Modal from '../../components/Modal/Modal.jsx';
 import TextField from '../../components/Forms/TextField.jsx';
@@ -8,6 +8,7 @@ import SignaturePad from '../../components/SignaturePad/SignaturePad.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
 import { useToast } from '../../components/Toast/useToast.js';
 import { formatFechaHora } from '../../utils/formatters.js';
+import { confirm as swalConfirm } from '../../utils/swal.js';
 import responsablesService from '../../services/responsables.js';
 import styles from './ResponsablesPage.module.css';
 
@@ -171,9 +172,14 @@ export default function ResponsablesPage() {
   };
 
   const handleDelete = async (row) => {
-    const confirmed = window.confirm(
-      `¿Eliminar a "${row.nombres}"? Se marcará como inactivo.`,
-    );
+    const confirmed = await swalConfirm({
+      title: 'Eliminar responsable',
+      text: `"${row.nombres}" se marcará como inactivo. Podrás reactivarlo luego.`,
+      icon: 'warning',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      danger: true,
+    });
     if (!confirmed) return;
     try {
       await responsablesService.del(row.id);
@@ -181,6 +187,23 @@ export default function ResponsablesPage() {
       await fetchList(includeInactive);
     } catch (err) {
       toast.error(err?.message || 'No se pudo eliminar el responsable.');
+    }
+  };
+
+  const handleReactivate = async (row) => {
+    try {
+      // El backend acepta `activo` opcional en el PUT — si llega true y la entidad
+      // está inactiva, la reactiva. No tocamos firma (null = conservar).
+      await responsablesService.update(row.id, {
+        nombres: row.nombres,
+        cargo: row.cargo,
+        empresa: row.empresa,
+        activo: true,
+      });
+      toast.success('Responsable reactivado.');
+      await fetchList(includeInactive);
+    } catch (err) {
+      toast.error(err?.message || 'No se pudo reactivar el responsable.');
     }
   };
 
@@ -340,15 +363,27 @@ export default function ResponsablesPage() {
                 >
                   <Pencil width={16} height={16} />
                 </button>
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--sm btn--icon"
-                  onClick={() => handleDelete(row)}
-                  aria-label={`Eliminar ${row.nombres}`}
-                  title="Eliminar"
-                >
-                  <Trash2 width={16} height={16} />
-                </button>
+                {row?.activo ? (
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm btn--icon"
+                    onClick={() => handleDelete(row)}
+                    aria-label={`Eliminar ${row.nombres}`}
+                    title="Eliminar (marcar como inactivo)"
+                  >
+                    <Trash2 width={16} height={16} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm btn--icon"
+                    onClick={() => handleReactivate(row)}
+                    aria-label={`Reactivar ${row.nombres}`}
+                    title="Reactivar"
+                  >
+                    <RotateCcw width={16} height={16} />
+                  </button>
+                )}
               </>
             )}
           />

@@ -9,9 +9,11 @@ using Capacitaciones.Application.UseCases.Catalogos;
 using Capacitaciones.Application.UseCases.Certificados;
 using Capacitaciones.Application.UseCases.Configuracion;
 using Capacitaciones.Application.UseCases.Inscripcion;
+using Capacitaciones.Application.UseCases.Recursos;
 using Capacitaciones.Application.UseCases.Responsable;
 using Capacitaciones.Application.UseCases.Responsables;
 using Capacitaciones.Domain.Entities;
+using Capacitaciones.Infrastructure.Adapters.Storage;
 using Capacitaciones.Infrastructure.Adapters.Xlsx;
 using Capacitaciones.Infrastructure.Persistence;
 using Capacitaciones.Infrastructure.Persistence.Repositories;
@@ -19,6 +21,7 @@ using Capacitaciones.Infrastructure.Persistence.Services;
 using Capacitaciones.Infrastructure.Security;
 using Capacitaciones.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -150,6 +153,7 @@ builder.Services.AddScoped<IConfiguracionNumeracionRepository, ConfiguracionNume
 builder.Services.AddScoped<ICapacitacionRepository, CapacitacionRepository>();
 builder.Services.AddScoped<IResponsableRepository, ResponsableRepository>();
 builder.Services.AddScoped<IAsistenteRepository, AsistenteRepository>();
+builder.Services.AddScoped<IRecursoRepository, RecursoRepository>();
 
 // También registramos el puerto genérico ICatalogoRepository<T> para que el CatalogoService<T>
 // pueda resolverlo directamente sin acoplarse a los puertos específicos.
@@ -222,6 +226,39 @@ builder.Services.AddHttpClient<IEmisorDocumentosClient, EmisorDocumentosHttpClie
 builder.Services.AddScoped<GenerarCertificadoAsistenteUseCase>();
 builder.Services.AddScoped<GenerarCertificadosCapacitacionUseCase>();
 
+// Módulo Repositorio — storage de archivos + CRUD de recursos.
+// Precedencia de configuración: env var REPOSITORIO_DIR > appsettings "ResourceStorage:Directory" > default "/repository".
+var resourceStorageOptions = builder.Configuration.GetSection(ResourceStorageOptions.SectionName)
+    .Get<ResourceStorageOptions>() ?? new ResourceStorageOptions();
+var repositorioDirEnv = Environment.GetEnvironmentVariable("REPOSITORIO_DIR");
+if (!string.IsNullOrWhiteSpace(repositorioDirEnv))
+{
+    resourceStorageOptions.Directory = repositorioDirEnv;
+}
+if (string.IsNullOrWhiteSpace(resourceStorageOptions.Directory))
+{
+    resourceStorageOptions.Directory = "/repository";
+}
+builder.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(resourceStorageOptions));
+builder.Services.AddSingleton<IResourceStorage, FileSystemResourceStorage>();
+
+builder.Services.AddScoped<SubirRecursoUseCase>();
+builder.Services.AddScoped<ListarRecursosUseCase>();
+builder.Services.AddScoped<ObtenerRecursoUseCase>();
+builder.Services.AddScoped<EditarMetadataRecursoUseCase>();
+builder.Services.AddScoped<EliminarRecursoUseCase>();
+builder.Services.AddScoped<DescargarRecursoUseCase>();
+builder.Services.AddScoped<GenerarLinkDescargaRecursoUseCase>();
+
+// Upload multipart: 100 MB máximo (alineado con SubirRecursoUseCase.MaxBytes y el RequestSizeLimit
+// del controller). Kestrel aparte, porque FormOptions no afecta el body-size del servidor.
+builder.Services.Configure<FormOptions>(o =>
+{
+    o.MultipartBodyLengthLimit = 100_000_000;
+    o.ValueLengthLimit = 100_000_000;
+});
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 100_000_000);
+
 // Refactor Responsables — catálogo global + link firmado para página pública.
 builder.Services.AddScoped<ListarResponsablesUseCase>();
 builder.Services.AddScoped<ObtenerResponsableUseCase>();
@@ -252,6 +289,25 @@ if (builder.Environment.IsDevelopment())
 }
 
 var app = builder.Build();
+
+// Eagerly resolve the resource storage to force the directory setup + effective-path log
+// at startup (the adapter loggea el path absoluto en su constructor). En Testing saltamos
+// esto porque el test factory reemplaza el puerto por un InMemoryResourceStorageAdapter.
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    using (var bootScope = app.Services.CreateScope())
+    {
+        try
+        {
+            _ = bootScope.ServiceProvider.GetRequiredService<IResourceStorage>();
+        }
+        catch (Exception ex)
+        {
+            var bootLogger = bootScope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("RepositorioInit");
+            bootLogger.LogWarning(ex, "No se pudo inicializar el directorio del repositorio. El endpoint de subida fallará hasta resolverlo.");
+        }
+    }
+}
 
 // --- Migraciones + seed del admin inicial (Development) ---
 if (app.Environment.IsDevelopment())

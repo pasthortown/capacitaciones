@@ -52,6 +52,10 @@ security/reports/
 output/*
 !output/.gitkeep
 
+# Repositorio de material compartido (archivos subidos por admin)
+/repository/*
+!/repository/.gitkeep
+
 # ----- IDE / OS -----
 .idea/
 .vscode/

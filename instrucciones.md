@@ -74,6 +74,7 @@ Sistema de registro y gestión de capacitaciones. El equipo está compuesto por 
 | sonar-db (pg)       | 192.168.56.14 | 5432          |
 | owasp-zap           | 192.168.56.15 | 8090          |
 | emisor_documentos   | 192.168.56.16 | 3000 (interno)|
+| repository_httpd    | 192.168.56.17 | 80 (interno)  |
 
 **Entregables:**
 - `docker-compose.yml` raíz que orqueste todos los servicios en `capacitaciones-net`.
@@ -365,6 +366,39 @@ Dictado el [Fecha] con una duración de [Horas] horas.
 
 Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 
+### 7.7 Módulo Repositorio (material compartido)
+
+**Propósito:** permitir al admin subir archivos (PDF, XLSX, imágenes, videos, etc.) hasta **100 MB**, gestionarlos (CRUD), y generar un **link público** para compartir la descarga sin login.
+
+**Almacenamiento:**
+- Volumen host `./repository/` compartido entre `capacitaciones-backend` (RW, en `/repository`) y `capacitaciones-repository-httpd` (RO, en `/usr/local/apache2/htdocs`). httpd cumple el rol de storage; el backend es quien lee/escribe.
+- Nombre físico del archivo: `<Guid>.<ext>` (UUID generado al subir); el nombre original vive sólo en BD.
+- Variable env: `REPOSITORIO_DIR=/repository`.
+
+**Tabla `Recurso`:** `Id`, `NombreOriginal`, `NombreAlmacenado` (único), `Extension`, `ContentType`, `TamanoBytes`, `Descripcion`, `Activo`, `FechaCreacion`, `FechaActualizacion`.
+
+**Endpoints:**
+- Admin (policy `Admin`):
+  - `POST /api/recursos` multipart — `archivo` + `nombre?` + `descripcion` → 201 `RecursoDetailDto`.
+  - `GET /api/recursos?includeInactive=` — listado.
+  - `GET /api/recursos/{id}` — detalle.
+  - `PUT /api/recursos/{id}` — edita metadata (`nombreOriginal`, `descripcion`).
+  - `DELETE /api/recursos/{id}` — soft delete + borrado físico.
+  - `POST /api/recursos/{id}/link` → `{ url, recursoId, nombreOriginal, tamanoBytes, contentType }` con `url` relativa al endpoint público.
+- Público (sin auth):
+  - `GET /api/publico/recursos/{id}/descargar` — `FileStreamResult` con `Content-Disposition: attachment; filename="..."; filename*=UTF-8''...`. 404 si no existe/inactivo, 410 si el archivo físico está ausente.
+
+**Política de extensiones (blacklist, case-insensitive):**
+- Ejecutables: `exe, msi, com, scr, dll, bat, cmd, bin, apk, app, dmg, deb, rpm, jar, war`.
+- Scripts: `sh, bash, zsh, ksh, ps1, psm1, psd1, vbs, vbe, wsf, wsh, js, jse, mjs, cjs, ts, py, pyc, pyw, rb, pl, php, phtml, reg, lnk, htaccess`.
+- Centralizada en `ExtensionPolicy` (backend) y `BLOCKED_EXTENSIONS` (frontend, duplicada sólo para UX temprana).
+
+**Límite de tamaño:** 100 MB (`Kestrel.Limits.MaxRequestBodySize` + `FormOptions.MultipartBodyLengthLimit` + `client_max_body_size 100M;` en nginx).
+
+**UI (`/repositorio`, sidebar "Repositorio"):**
+- Tabla con acciones por fila: copiar enlace (`navigator.clipboard` con fallback), editar metadata, eliminar.
+- Modal de subida con validación client-side (extensión + tamaño) y modal de edición de metadata.
+
 ## 8. Estado actual
 
 - [x] Design system en `./style/` listo para consumo.
@@ -381,6 +415,7 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 - [x] Página pública de inscripción + componente `SignaturePad`.
 - [x] Listado de asistentes por capacitación + descarga real de certificado.
 - [x] Servicio `emisor_documentos` (Node + Puppeteer) + plantilla HTML del certificado.
+- [x] Módulo Repositorio — upload/CRUD de material (≤100 MB), volumen `./repository`, contenedor `repository_httpd`, link público de descarga.
 - [ ] Integración SonarQube + OWASP ZAP.
 
 ## 9. Plan de fases
@@ -394,7 +429,8 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 | 4    | ✅ Link capacitador (descripción + firma + cargo + empresa, token firmado)                | Backend, Frontend             |
 | 5    | ✅ Página pública de inscripción + `SignaturePad` + listado de asistentes                  | Backend, Frontend             |
 | 6    | ✅ Servicio `emisor_documentos` + plantilla HTML + integración con backend (endpoint gen.) | Infra, Backend                |
-| 7    | Pasada de calidad y seguridad (Sonar + ZAP)                                               | Security                      |
+| 7    | ✅ Módulo Repositorio (CRUD + httpd storage + link público, blacklist ejec/scripts, ≤100MB) | Infra, Backend, Frontend     |
+| 8    | Pasada de calidad y seguridad (Sonar + ZAP)                                               | Security                      |
 
 ## 10. Decisiones tomadas (v1)
 

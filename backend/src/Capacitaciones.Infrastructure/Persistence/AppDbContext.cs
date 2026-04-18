@@ -27,6 +27,7 @@ public class AppDbContext : DbContext
     public DbSet<Responsable> Responsables => Set<Responsable>();
     public DbSet<CapacitacionResponsable> CapacitacionResponsables => Set<CapacitacionResponsable>();
     public DbSet<Asistente> Asistentes => Set<Asistente>();
+    public DbSet<Recurso> Recursos => Set<Recurso>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

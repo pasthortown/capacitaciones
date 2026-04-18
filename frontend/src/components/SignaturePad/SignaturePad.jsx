@@ -6,12 +6,15 @@ import styles from './SignaturePad.module.css';
  * Componente `SignaturePad` reutilizable.
  *
  * Dos modos accesibles por tabs:
- *   - Dibujar: canvas con trazo negro (grosor 2px) sobre fondo blanco.
+ *   - Dibujar: canvas con trazo **azul marino** (#1e3a8a, grosor 2px) sobre
+ *     **fondo transparente**. El blanco del área de dibujo es solo visual
+ *     (CSS del canvas); el PNG exportado tiene alpha=0 fuera del trazo para
+ *     componerse limpio sobre el fondo del certificado.
  *     Soporta mouse y touch. Al soltar, emite `onChange(dataURL PNG)`.
- *   - Subir archivo: <input type="file"> PNG/JPEG. El archivo se carga en
- *     un `<img>` auxiliar, se dibuja sobre un canvas offscreen con la misma
- *     relación de aspecto (contained + fondo blanco) y se convierte a
- *     dataURL PNG. Si la imagen excede las dimensiones, se redimensiona.
+ *   - Subir archivo: <input type="file"> PNG/JPEG. El archivo se dibuja sobre
+ *     un canvas offscreen **sin fondo blanco** (contained) y se convierte a
+ *     dataURL PNG preservando la transparencia del original. Se recomienda
+ *     al usuario subir un PNG con fondo transparente.
  *
  * Props:
  *   - value:    string|null   dataURL PNG inicial (puede cambiar desde afuera).
@@ -20,6 +23,7 @@ import styles from './SignaturePad.module.css';
  *   - height:   number        alto en px (default 150)
  *   - disabled: boolean       si true, bloquea interacción.
  */
+const STROKE_COLOR = '#1e3a8a'; // azul marino (navy) — trazo de firma
 export default function SignaturePad({
   value = null,
   onChange,
@@ -42,8 +46,7 @@ export default function SignaturePad({
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (!dataUrl) return;
       const img = new Image();
       img.onload = () => {
@@ -62,17 +65,16 @@ export default function SignaturePad({
     [],
   );
 
-  // Inicialización: fondo blanco al montar / cuando cambian dimensiones.
+  // Inicialización: canvas transparente + trazo azul marino al montar / resize.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.lineWidth = 2;
-    ctx.strokeStyle = '#000000';
+    ctx.strokeStyle = STROKE_COLOR;
     if (value) {
       paintValueIntoCanvas(value);
       lastEmittedRef.current = value;
@@ -148,8 +150,7 @@ export default function SignaturePad({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     lastEmittedRef.current = null;
     onChange?.(null);
   };
@@ -232,11 +233,16 @@ export default function SignaturePad({
             </button>
           </div>
           <span className={styles.hint}>
-            Dibuja tu firma con el mouse o el dedo en pantalla táctil.
+            Dibuja tu firma con el mouse o el dedo. El trazo es azul marino y
+            se guarda con fondo transparente.
           </span>
         </div>
       ) : (
         <div className={styles.uploadArea}>
+          <div className={styles.uploadRecommendation} role="note">
+            Se recomienda un <strong>PNG con fondo transparente</strong> para
+            que la firma se integre limpiamente sobre el certificado.
+          </div>
           <button
             type="button"
             className="btn btn--secondary btn--sm"
@@ -262,7 +268,8 @@ export default function SignaturePad({
             />
           ) : (
             <span className={styles.hint}>
-              Admite PNG o JPG. Se ajustará a {width}×{height}px.
+              Admite PNG o JPG. Se ajustará a {width}×{height}px conservando
+              la transparencia del archivo.
             </span>
           )}
         </div>
@@ -272,8 +279,10 @@ export default function SignaturePad({
 }
 
 /**
- * Lee un File de imagen, lo pinta en un canvas offscreen del tamaño objetivo
- * con fondo blanco y "contain", y retorna el dataURL PNG.
+ * Lee un File de imagen y lo pinta en un canvas offscreen del tamaño objetivo
+ * ("contain") preservando la transparencia del original. Si el archivo trae
+ * fondo blanco, así se conservará — se recomienda al usuario subir PNG con
+ * fondo transparente (ver hint en la UI del tab "Subir archivo").
  */
 function fileToResizedPngDataUrl(file, targetWidth, targetHeight) {
   return new Promise((resolve, reject) => {
@@ -287,8 +296,8 @@ function fileToResizedPngDataUrl(file, targetWidth, targetHeight) {
         canvas.width = targetWidth;
         canvas.height = targetHeight;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, targetWidth, targetHeight);
+        // Canvas transparente por defecto — no rellenar para conservar el
+        // alpha del archivo original (PNG con fondo transparente).
 
         const scale = Math.min(targetWidth / img.width, targetHeight / img.height);
         const dw = img.width * scale;

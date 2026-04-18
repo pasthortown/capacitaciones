@@ -23,3 +23,74 @@ h1, h2, h3, h4, h5, h6,
   font-family: var(--font-family-heading);
   letter-spacing: 0.01em;
 }
+
+/* ============================================================
+   Sidebar — scroll vertical cuando el contenido excede
+   ------------------------------------------------------------
+   `.layout__sidebar` usa `overflow: hidden` en el design system para
+   respetar el border-radius. Aplicamos el scroll al `.sidebar` interior
+   para que aparezca solo si hace falta (ej. sidebar colapsada con
+   muchos ítems, viewport corto). Scrollbar discreto usando los mismos
+   tokens neutros del design system.
+   ============================================================ */
+.layout__sidebar .sidebar {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-main, #d1d5db) transparent;
+}
+
+.layout__sidebar .sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+.layout__sidebar .sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.layout__sidebar .sidebar::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-main, #d1d5db);
+  border-radius: var(--radius-full, 9999px);
+}
+.layout__sidebar .sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-muted, #9ca3af);
+}
+
+/* ============================================================
+   Sidebar colapsada
+   ------------------------------------------------------------
+   El design system ya define `.layout__sidebar--collapsed` con un
+   ancho reducido, pero no oculta el contenido textual. Estas reglas
+   complementan: ocultan labels/section-titles y centran los iconos.
+   El tooltip con el nombre completo se entrega via `title` en el
+   NavLink (ver Sidebar.jsx).
+   ============================================================ */
+.layout__sidebar--collapsed .sidebar__logo {
+  padding: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+  text-align: center;
+}
+.layout__sidebar--collapsed .sidebar__logo img {
+  max-width: 40px;
+  margin: 0 auto;
+}
+.layout__sidebar--collapsed .sidebar__section-title {
+  display: none;
+}
+.layout__sidebar--collapsed .sidebar__nav-link span {
+  display: none;
+}
+.layout__sidebar--collapsed .sidebar__nav-link {
+  justify-content: center;
+  padding-left: var(--spacing-3);
+  padding-right: var(--spacing-3);
+  gap: 0;
+}
+.layout__sidebar--collapsed .sidebar__nav-link--active {
+  margin-left: 0;
+  padding-left: var(--spacing-3);
+  border-left-width: 0;
+}
+/* Chevrons de grupos colapsables ocultos (el nav-icon sí se conserva). */
+.layout__sidebar--collapsed .sidebar__nav-chevron {
+  display: none;
+}

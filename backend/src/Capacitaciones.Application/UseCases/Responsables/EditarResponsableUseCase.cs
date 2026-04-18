@@ -39,6 +39,12 @@ public class EditarResponsableUseCase
             entity.Firma = ResponsableValidator.TrimToNull(input.Firma);
         }
 
+        // Activo: null => no tocar. Permite reactivar desde la UI admin.
+        if (input.Activo.HasValue)
+        {
+            entity.Activo = input.Activo.Value;
+        }
+
         entity.FechaActualizacion = DateTime.UtcNow;
 
         await _repo.UpdateAsync(entity, ct);

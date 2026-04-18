@@ -7,6 +7,7 @@ import CapacitadorPage from './pages/capacitador/CapacitadorPage.jsx';
 import InscripcionPage from './pages/inscripcion/InscripcionPage.jsx';
 import ResponsablePage from './pages/responsable/ResponsablePage.jsx';
 import ResponsablesPage from './pages/responsables/ResponsablesPage.jsx';
+import RepositorioPage from './pages/repositorio/RepositorioPage.jsx';
 import ModalidadesPage from './pages/catalogos/ModalidadesPage.jsx';
 import TiposActividadPage from './pages/catalogos/TiposActividadPage.jsx';
 import AreasPage from './pages/catalogos/AreasPage.jsx';
@@ -75,6 +76,9 @@ export default function App() {
 
           {/* Responsables (catálogo global) */}
           <Route path="/responsables" element={<ResponsablesPage />} />
+
+          {/* Repositorio */}
+          <Route path="/repositorio" element={<RepositorioPage />} />
 
           {/* Catálogos */}
           <Route

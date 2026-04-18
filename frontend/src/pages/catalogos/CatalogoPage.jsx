@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
-import { Plus, Download, Upload, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Download, Upload, Pencil, Trash2, RotateCcw } from 'lucide-react';
 import useCatalogo from '../../hooks/useCatalogo.js';
 import DataTable from '../../components/Table/DataTable.jsx';
 import Modal from '../../components/Modal/Modal.jsx';
 import TextField from '../../components/Forms/TextField.jsx';
 import Toggle from '../../components/Forms/Toggle.jsx';
+import { confirm as swalConfirm } from '../../utils/swal.js';
 
 /**
  * Pantalla genérica para administrar un catálogo (CRUD + XLSX).
@@ -99,12 +100,26 @@ export default function CatalogoPage({ tipo, titulo, descripcion }) {
   };
 
   const handleDelete = async (row) => {
-    const confirmed = window.confirm(
-      `¿Eliminar "${row.nombre}"? Se marcará como inactivo.`,
-    );
+    const confirmed = await swalConfirm({
+      title: 'Eliminar registro',
+      text: `"${row.nombre}" se marcará como inactivo. Podrás reactivarlo luego.`,
+      icon: 'warning',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      danger: true,
+    });
     if (!confirmed) return;
     try {
       await remove(row.id);
+    } catch {
+      // toast ya emitido
+    }
+  };
+
+  const handleReactivate = async (row) => {
+    try {
+      // Reactiva manteniendo el nombre actual; sólo cambia `activo` a true.
+      await update(row.id, { nombre: row.nombre, activo: true });
     } catch {
       // toast ya emitido
     }
@@ -243,15 +258,27 @@ export default function CatalogoPage({ tipo, titulo, descripcion }) {
                 >
                   <Pencil width={16} height={16} />
                 </button>
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--sm btn--icon"
-                  onClick={() => handleDelete(row)}
-                  aria-label={`Eliminar ${row.nombre}`}
-                  title="Eliminar"
-                >
-                  <Trash2 width={16} height={16} />
-                </button>
+                {row?.activo ? (
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm btn--icon"
+                    onClick={() => handleDelete(row)}
+                    aria-label={`Eliminar ${row.nombre}`}
+                    title="Eliminar (marcar como inactivo)"
+                  >
+                    <Trash2 width={16} height={16} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm btn--icon"
+                    onClick={() => handleReactivate(row)}
+                    aria-label={`Reactivar ${row.nombre}`}
+                    title="Reactivar"
+                  >
+                    <RotateCcw width={16} height={16} />
+                  </button>
+                )}
               </>
             )}
           />

@@ -56,11 +56,24 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       EmisorDocumentos__BaseUrl: http://emisor_documentos:3000
+      REPOSITORIO_DIR: /repository
     volumes:
       - ./output:/output
+      - ./repository:/repository
     networks:
       capacitaciones-net:
         ipv4_address: 192.168.56.11
+
+  repository_httpd:
+    image: httpd:2.4-alpine
+    container_name: capacitaciones-repository-httpd
+    restart: unless-stopped
+    volumes:
+      - ./repository:/usr/local/apache2/htdocs:ro
+      - ./infra/repository-httpd/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+    networks:
+      capacitaciones-net:
+        ipv4_address: 192.168.56.17
 
   emisor_documentos:
     build:

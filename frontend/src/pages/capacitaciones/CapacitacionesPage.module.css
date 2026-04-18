@@ -1,13 +1,36 @@
-.grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--spacing-4);
+/* Wrapper con scroll horizontal: si el viewport es más angosto que el ancho
+   mínimo del card (560px), el contenedor muestra scrollbar y los cards
+   conservan su ancho legible. */
+.gridScroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  /* Scrollbar fino, alineado al tuning usado en la sidebar. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-main, #d1d5db) transparent;
+}
+.gridScroll::-webkit-scrollbar {
+  height: 8px;
+}
+.gridScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.gridScroll::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-main, #d1d5db);
+  border-radius: var(--radius-full, 9999px);
+}
+.gridScroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-muted, #9ca3af);
 }
 
-@media (min-width: 900px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+/* El grid se acomoda automáticamente en 1 o 2 columnas según el espacio.
+   `minmax(560px, 1fr)` + `min-width: 560px` garantizan que cada card
+   mantenga su ancho mínimo; si el contenedor visible es < 560px el
+   wrapper padre desborda y activa el scrollbar horizontal. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(560px, 1fr));
+  gap: var(--spacing-4);
+  min-width: 560px;
 }
 
 .loadingWrap {
@@ -15,4 +38,42 @@
   justify-content: center;
   align-items: center;
   padding: var(--spacing-10);
+}
+
+.toolbarFilters {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+.searchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 280px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--spacing-3);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) var(--spacing-8);
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: var(--radius-md, 8px);
+  font-size: var(--font-size-sm);
+  background-color: var(--color-bg-main, #fff);
+  color: var(--color-text-primary);
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
 }

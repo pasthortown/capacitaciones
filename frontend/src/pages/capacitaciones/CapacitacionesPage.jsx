@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Plus, Search } from 'lucide-react';
 import CapacitacionCard from '../../components/CapacitacionCard/CapacitacionCard.jsx';
 import CapacitacionFormModal from '../../components/CapacitacionFormModal/CapacitacionFormModal.jsx';
 import Modal from '../../components/Modal/Modal.jsx';
@@ -10,6 +10,7 @@ import {
   listCapacitaciones,
   deleteCapacitacion,
 } from '../../services/capacitaciones.js';
+import { matchesSearch } from '../../utils/search.js';
 import styles from './CapacitacionesPage.module.css';
 
 /**
@@ -26,7 +27,11 @@ export default function CapacitacionesPage() {
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  // El check controla qué se muestra por *default*. El backend siempre devuelve TODO
+  // (incluyendo inactivas + finalizadas) para que el input de búsqueda pueda encontrar
+  // también capacitaciones pasadas, aunque el check esté desmarcado.
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [search, setSearch] = useState('');
 
   // Modal crear/editar
   const [formOpen, setFormOpen] = useState(false);
@@ -46,10 +51,11 @@ export default function CapacitacionesPage() {
   }, []);
 
   const fetchItems = useCallback(
-    async (flag) => {
+    async () => {
       setLoading(true);
       try {
-        const data = await listCapacitaciones(flag);
+        // Siempre traemos todo; el filtrado (check + búsqueda) es client-side.
+        const data = await listCapacitaciones(true);
         if (mountedRef.current) {
           setItems(Array.isArray(data) ? data : []);
         }
@@ -64,8 +70,23 @@ export default function CapacitacionesPage() {
   );
 
   useEffect(() => {
-    fetchItems(includeInactive);
-  }, [fetchItems, includeInactive]);
+    fetchItems();
+  }, [fetchItems]);
+
+  // Vista filtrada.
+  // Reglas:
+  //  - Si hay `search` → busca sobre TODAS las capacitaciones (ignora el check). Permite
+  //    encontrar por ejemplo una capacitación pasada aunque "Mostrar inactivas" esté off.
+  //  - Si no hay search y `includeInactive` está ON → mostrar todas.
+  //  - Si no hay search y `includeInactive` está OFF → ocultar finalizadas y las inactivas.
+  const visibleItems = useMemo(() => {
+    const q = search.trim();
+    if (q) {
+      return items.filter((x) => matchesSearch(x, q));
+    }
+    if (includeInactive) return items;
+    return items.filter((x) => x.activo !== false && x.estado !== 'Finalizada');
+  }, [items, search, includeInactive]);
 
   const openCreate = () => {
     setEditing(null);
@@ -80,7 +101,7 @@ export default function CapacitacionesPage() {
   };
 
   const handleSaved = () => {
-    fetchItems(includeInactive);
+    fetchItems();
   };
 
   const requestDelete = (row) => {
@@ -94,7 +115,7 @@ export default function CapacitacionesPage() {
       await deleteCapacitacion(deleteTarget.id);
       toast.success('Capacitación eliminada.');
       setDeleteTarget(null);
-      await fetchItems(includeInactive);
+      await fetchItems();
     } catch (err) {
       toast.error(err?.message || 'No se pudo eliminar la capacitación.');
     } finally {
@@ -114,9 +135,20 @@ export default function CapacitacionesPage() {
       </div>
 
       <div className="toolbar">
-        <div className="toolbar__filters">
+        <div className={`toolbar__filters ${styles.toolbarFilters}`}>
+          <div className={styles.searchBox}>
+            <Search width={16} height={16} className={styles.searchIcon} aria-hidden="true" />
+            <input
+              type="search"
+              className={styles.searchInput}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar en todas las capacitaciones..."
+              aria-label="Buscar capacitaciones"
+            />
+          </div>
           <Toggle
-            label="Mostrar inactivas"
+            label="Mostrar finalizadas e inactivas"
             checked={includeInactive}
             onChange={setIncludeInactive}
           />
@@ -133,28 +165,39 @@ export default function CapacitacionesPage() {
         <div className={styles.loadingWrap}>
           <Spinner size={32} />
         </div>
-      ) : items.length === 0 ? (
+      ) : visibleItems.length === 0 ? (
         <div className="card">
           <div className="card__body">
             <div className="empty-state">
-              <div className="empty-state__title">Aún no hay capacitaciones</div>
+              <div className="empty-state__title">
+                {search.trim()
+                  ? 'Sin resultados para tu búsqueda'
+                  : items.length === 0
+                    ? 'Aún no hay capacitaciones'
+                    : 'No hay capacitaciones para mostrar'}
+              </div>
               <p className="empty-state__description">
-                Crea la primera capacitación para empezar a gestionar inscripciones
-                y responsables.
+                {search.trim()
+                  ? `Ningún campo coincide con "${search.trim()}". Prueba con otro término.`
+                  : items.length === 0
+                    ? 'Crea la primera capacitación para empezar a gestionar inscripciones y responsables.'
+                    : 'Marca "Mostrar finalizadas e inactivas" para verlas aquí.'}
               </p>
             </div>
           </div>
         </div>
       ) : (
-        <div className={styles.grid}>
-          {items.map((cap) => (
-            <CapacitacionCard
-              key={cap.id}
-              capacitacion={cap}
-              onEdit={openEdit}
-              onDelete={requestDelete}
-            />
-          ))}
+        <div className={styles.gridScroll}>
+          <div className={styles.grid}>
+            {visibleItems.map((cap) => (
+              <CapacitacionCard
+                key={cap.id}
+                capacitacion={cap}
+                onEdit={openEdit}
+                onDelete={requestDelete}
+              />
+            ))}
+          </div>
         </div>
       )}
 

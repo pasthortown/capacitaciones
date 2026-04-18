@@ -4,10 +4,17 @@
   box-shadow: var(--shadow-card);
   padding: var(--spacing-5) var(--spacing-6);
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-gap: var(--spacing-4);
   align-items: stretch;
   transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+  /* Techo de ancho por card: evita que un único card se infle a todo el
+     viewport cuando el grid tiene un solo track disponible. El grid de la
+     página garantiza el ancho mínimo (560 px con scroll horizontal si hace
+     falta), por lo que el título siempre tiene espacio suficiente. */
+  max-width: 900px;
+  width: 100%;
+  justify-self: start;
 }
 
 .card:hover {
@@ -35,7 +42,12 @@
   color: var(--color-text-primary);
   margin: 0;
   line-height: 1.25;
-  word-break: break-word;
+  /* `overflow-wrap: anywhere` evita el efecto "letras verticales" si el contenedor
+     se vuelve muy estrecho; `min-width: 0` asegura que el flex/grid pueda encogerlo. */
+  overflow-wrap: anywhere;
+  word-break: normal;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .codeChip {
