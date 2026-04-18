@@ -3,10 +3,10 @@
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
   padding: var(--spacing-5) var(--spacing-6);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-gap: var(--spacing-4);
-  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
   transition: box-shadow var(--transition-fast), transform var(--transition-fast);
   /* Techo de ancho por card: evita que un único card se infle a todo el
      viewport cuando el grid tiene un solo track disponible. El grid de la
@@ -21,18 +21,36 @@
   box-shadow: var(--shadow-lg);
 }
 
-.main {
-  min-width: 0;
+/* Fila superior: chip de código a la izquierda, fecha/hora/duración a la derecha. */
+.topRow {
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2);
-}
-
-.titleRow {
-  display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.topRowMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+
+.topRowMeta strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Meta inline: modalidad · asistentes · badge estado. */
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+  margin-top: var(--spacing-1);
 }
 
 .title {
@@ -120,17 +138,15 @@
   color: var(--color-status-inactive-text, #6B7280);
 }
 
+/* Botones de acción: fila alineada a la derecha al final del card. */
 .actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--spacing-2);
-}
-
-.actionsRow {
-  display: flex;
+  justify-content: flex-end;
   gap: var(--spacing-1);
+  flex-wrap: wrap;
+  margin-top: var(--spacing-2);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.06));
 }
 
 .iconBtn {
@@ -164,10 +180,3 @@
   color: var(--color-error);
 }
 
-.footerRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--spacing-2);
-}

@@ -1,5 +1,6 @@
 using Capacitaciones.Application.Dtos.Recursos;
 using Capacitaciones.Application.Ports;
+using Capacitaciones.Domain.Entities;
 
 namespace Capacitaciones.Application.UseCases.Recursos;
 
@@ -50,6 +51,34 @@ public class EditarMetadataRecursoUseCase
         string? contentTypeNuevo,
         CancellationToken ct = default)
     {
+        ValidarMetadata(input);
+
+        var entity = await _repo.GetByIdAsync(id, ct) ?? throw new RecursoNotFoundException(id);
+
+        // Flujo de reemplazo del binario si el caller envió un nuevo archivo.
+        var reemplazoInfo = archivoNuevo is not null && tamanoNuevo > 0
+            ? await AplicarReemplazoArchivoAsync(entity, archivoNuevo, tamanoNuevo, nombreArchivoNuevo, contentTypeNuevo, ct)
+            : null;
+
+        entity.NombreOriginal = input.NombreOriginal.Trim();
+        entity.Descripcion = input.Descripcion.Trim();
+        entity.FechaActualizacion = DateTime.UtcNow;
+
+        await PersistirConCompensacionAsync(entity, reemplazoInfo, ct);
+
+        if (reemplazoInfo is { OldStored: { } oldStored } && oldStored != reemplazoInfo.NewStored)
+        {
+            // Best-effort: borramos el archivo anterior. Si falla, queda huérfano pero el recurso
+            // ya apunta al nuevo. No revertimos porque la fuente de verdad ya es el nuevo.
+            try { await _storage.DeleteAsync(oldStored, CancellationToken.None); }
+            catch { /* swallow: el adaptador loguea si corresponde */ }
+        }
+
+        return RecursoMapper.ToDetail(entity);
+    }
+
+    private static void ValidarMetadata(UpdateRecursoMetadataDto? input)
+    {
         if (input is null)
             throw new RecursoServiceException("INVALID_INPUT", "Payload requerido.");
 
@@ -62,73 +91,71 @@ public class EditarMetadataRecursoUseCase
             throw new RecursoServiceException("DESCRIPCION_REQUERIDA", "La descripción del recurso es requerida.");
         if (input.Descripcion.Length > 2000)
             throw new RecursoServiceException("DESCRIPCION_INVALIDA", "La descripción excede el máximo de 2000 caracteres.");
+    }
 
-        var entity = await _repo.GetByIdAsync(id, ct) ?? throw new RecursoNotFoundException(id);
+    /// <summary>
+    /// Valida tamaño/extensión, guarda el nuevo archivo y muta la entidad con los nuevos
+    /// datos binarios. Devuelve la info necesaria para compensar/limpiar según el resultado
+    /// del UPDATE en BD.
+    /// </summary>
+    private async Task<ReemplazoInfo> AplicarReemplazoArchivoAsync(
+        Recurso entity,
+        Stream archivoNuevo,
+        long tamanoNuevo,
+        string? nombreArchivoNuevo,
+        string? contentTypeNuevo,
+        CancellationToken ct)
+    {
+        if (tamanoNuevo > MaxBytes)
+            throw new RecursoServiceException(
+                "ARCHIVO_DEMASIADO_GRANDE",
+                $"El archivo supera el tamaño máximo permitido ({MaxBytes} bytes).");
 
-        // ¿Se pidió reemplazar el archivo? Sólo consideramos "reemplazo" si hay stream Y tamaño > 0.
-        var reemplaza = archivoNuevo is not null && tamanoNuevo > 0;
-        string? nuevoStored = null;
-        string? oldStored = null;
+        if (string.IsNullOrWhiteSpace(nombreArchivoNuevo))
+            throw new RecursoServiceException("ARCHIVO_REQUERIDO", "El nombre del archivo es requerido.");
 
-        if (reemplaza)
-        {
-            if (tamanoNuevo > MaxBytes)
-                throw new RecursoServiceException(
-                    "ARCHIVO_DEMASIADO_GRANDE",
-                    $"El archivo supera el tamaño máximo permitido ({MaxBytes} bytes).");
+        var ext = ExtensionPolicy.Normalize(nombreArchivoNuevo!);
+        if (!ExtensionPolicy.IsAllowed(ext))
+            throw new RecursoServiceException(
+                "EXTENSION_PROHIBIDA",
+                $"La extensión '.{ext}' está prohibida por la política del repositorio.");
 
-            if (string.IsNullOrWhiteSpace(nombreArchivoNuevo))
-                throw new RecursoServiceException("ARCHIVO_REQUERIDO", "El nombre del archivo es requerido.");
+        var nuevoStored = ext is null
+            ? Guid.NewGuid().ToString("N")
+            : $"{Guid.NewGuid():N}.{ext}";
 
-            var ext = ExtensionPolicy.Normalize(nombreArchivoNuevo!);
-            if (!ExtensionPolicy.IsAllowed(ext))
-                throw new RecursoServiceException(
-                    "EXTENSION_PROHIBIDA",
-                    $"La extensión '.{ext}' está prohibida por la política del repositorio.");
+        // Guardamos el nuevo archivo primero (si falla, no tocamos el recurso).
+        await _storage.SaveAsync(archivoNuevo, nuevoStored, ct);
 
-            nuevoStored = ext is null
-                ? Guid.NewGuid().ToString("N")
-                : $"{Guid.NewGuid():N}.{ext}";
+        var oldStored = entity.NombreAlmacenado;
+        entity.NombreAlmacenado = nuevoStored;
+        entity.Extension = ext;
+        entity.ContentType = string.IsNullOrWhiteSpace(contentTypeNuevo) ? null : contentTypeNuevo!.Trim();
+        entity.TamanoBytes = tamanoNuevo;
 
-            // Guardamos el nuevo archivo primero (si falla, no tocamos el recurso).
-            await _storage.SaveAsync(archivoNuevo!, nuevoStored, ct);
+        return new ReemplazoInfo(nuevoStored, oldStored);
+    }
 
-            oldStored = entity.NombreAlmacenado;
-
-            // Aplicamos los cambios binarios a la entidad.
-            entity.NombreAlmacenado = nuevoStored;
-            entity.Extension = ext;
-            entity.ContentType = string.IsNullOrWhiteSpace(contentTypeNuevo) ? null : contentTypeNuevo!.Trim();
-            entity.TamanoBytes = tamanoNuevo;
-        }
-
-        entity.NombreOriginal = input.NombreOriginal.Trim();
-        entity.Descripcion = input.Descripcion.Trim();
-        entity.FechaActualizacion = DateTime.UtcNow;
-
+    /// <summary>
+    /// Persiste el recurso. Si el UPDATE revienta y hubo un archivo nuevo subido, lo
+    /// borra del storage para no dejar basura huérfana antes de re-lanzar la excepción.
+    /// </summary>
+    private async Task PersistirConCompensacionAsync(Recurso entity, ReemplazoInfo? reemplazoInfo, CancellationToken ct)
+    {
         try
         {
             await _repo.UpdateAsync(entity, ct);
         }
         catch
         {
-            if (reemplaza && nuevoStored is not null)
+            if (reemplazoInfo is not null)
             {
-                // Compensación: borramos el archivo nuevo que acabamos de subir para no dejar basura.
-                try { await _storage.DeleteAsync(nuevoStored, CancellationToken.None); }
+                try { await _storage.DeleteAsync(reemplazoInfo.NewStored, CancellationToken.None); }
                 catch { /* swallow: propagamos la excepción original del repo */ }
             }
             throw;
         }
-
-        if (reemplaza && oldStored is not null && oldStored != nuevoStored)
-        {
-            // Best-effort: borramos el archivo anterior. Si falla, queda huérfano pero el recurso
-            // ya apunta al nuevo. No revertimos porque la fuente de verdad ya es el nuevo.
-            try { await _storage.DeleteAsync(oldStored, CancellationToken.None); }
-            catch { /* swallow: el adaptador loguea si corresponde */ }
-        }
-
-        return RecursoMapper.ToDetail(entity);
     }
+
+    private sealed record ReemplazoInfo(string NewStored, string OldStored);
 }

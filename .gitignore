@@ -45,8 +45,10 @@ infra/sonarqube/data/
 infra/sonarqube/logs/
 infra/sonarqube/extensions/
 infra/sonarqube/postgres/
-security/reports/
+security/reports/*
+!security/reports/.gitkeep
 .scannerwork/
+.sonarqube/
 
 # ----- Certificados generados -----
 output/*

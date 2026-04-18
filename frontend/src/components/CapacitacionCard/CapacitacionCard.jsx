@@ -9,6 +9,7 @@ import {
   Share2,
   Pencil,
   Trash2,
+  Building2,
 } from 'lucide-react';
 import { useToast } from '../Toast/useToast.js';
 import { formatFechaHora, formatDuracion } from '../../utils/formatters.js';
@@ -121,97 +122,94 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
 
   return (
     <article className={styles.card} aria-label={`Capacitación ${codigo || ''}`}>
-      <div className={styles.main}>
-        <div className={styles.titleRow}>
-          <h3 className={styles.title}>{tema || 'Sin tema'}</h3>
-          {codigo && <span className={styles.codeChip}>{codigo}</span>}
-        </div>
-
-        <div className={styles.row}>
-          <User className={styles.icon} aria-hidden="true" />
-          <span>{capacitador || '—'}</span>
-        </div>
-
-        <div className={styles.row}>
+      {/* Fila 1: código (izquierda) | fecha · hora · duración (derecha) */}
+      <div className={styles.topRow}>
+        {codigo && <span className={styles.codeChip}>{codigo}</span>}
+        <div className={styles.topRowMeta}>
           <Calendar className={styles.icon} aria-hidden="true" />
           <strong>{formatFechaHora(fechaHoraInicio) || '—'}</strong>
           <span className={styles.separator}>·</span>
           <Clock className={styles.icon} aria-hidden="true" />
           <span>{formatDuracion(duracionMinutos)}</span>
-          {modalidad?.nombre && (
-            <>
-              <span className={styles.separator}>·</span>
-              <span>{modalidad.nombre}</span>
-            </>
-          )}
-        </div>
-
-        <div className={styles.footerRow}>
-          <div className={styles.row}>
-            <Users className={styles.icon} aria-hidden="true" />
-            <strong>{totalAsistentes}</strong>
-            <span>asistentes</span>
-            <span className={styles.separator}>·</span>
-            <EstadoBadge estado={estado} activo={activo} />
-          </div>
         </div>
       </div>
 
-      <div className={styles.actions}>
-        <div className={styles.actionsRow}>
-          <button
-            type="button"
-            className={styles.iconBtn}
-            onClick={handleCopyCapacitadorLink}
-            disabled={generandoLink}
-            title="Copiar enlace para el capacitador"
-            aria-label="Copiar enlace para el capacitador"
-          >
-            <Link2 width={16} height={16} />
-          </button>
-          <button
-            type="button"
-            className={styles.iconBtn}
-            onClick={handleOpenAsistentes}
-            title="Ver asistentes"
-            aria-label="Ver asistentes"
-          >
-            <Users width={16} height={16} />
-          </button>
-          <button
-            type="button"
-            className={styles.iconBtn}
-            onClick={handleCopyInscripcionLink}
-            disabled={generandoInscripcion}
-            title="Copiar enlace de inscripción"
-            aria-label="Copiar enlace de inscripción"
-          >
-            <Share2 width={16} height={16} />
-          </button>
-        </div>
+      {/* Fila 2: tema */}
+      <h3 className={styles.title}>{tema || 'Sin tema'}</h3>
 
-        <div className={styles.actionsRow}>
-          {!esFinalizada && (
-            <button
-              type="button"
-              className={styles.iconBtn}
-              onClick={() => onEdit?.(capacitacion)}
-              title="Editar"
-              aria-label="Editar capacitación"
-            >
-              <Pencil width={16} height={16} />
-            </button>
-          )}
+      {/* Fila 3: capacitador */}
+      <div className={styles.row}>
+        <User className={styles.icon} aria-hidden="true" />
+        <span>{capacitador || '—'}</span>
+      </div>
+
+      {/* Fila 4: modalidad · asistentes · estado */}
+      <div className={styles.metaRow}>
+        {modalidad?.nombre && (
+          <span className={styles.row}>
+            <Building2 className={styles.icon} aria-hidden="true" />
+            <span>{modalidad.nombre}</span>
+          </span>
+        )}
+        <span className={styles.row}>
+          <Users className={styles.icon} aria-hidden="true" />
+          <strong>{totalAsistentes}</strong>
+          <span>asistentes</span>
+        </span>
+        <EstadoBadge estado={estado} activo={activo} />
+      </div>
+
+      {/* Fila 5: acciones, alineadas a la derecha */}
+      <div className={styles.actions}>
+        <button
+          type="button"
+          className={styles.iconBtn}
+          onClick={handleCopyCapacitadorLink}
+          disabled={generandoLink}
+          title="Copiar enlace para el capacitador"
+          aria-label="Copiar enlace para el capacitador"
+        >
+          <Link2 width={16} height={16} />
+        </button>
+        <button
+          type="button"
+          className={styles.iconBtn}
+          onClick={handleOpenAsistentes}
+          title="Ver asistentes"
+          aria-label="Ver asistentes"
+        >
+          <Users width={16} height={16} />
+        </button>
+        <button
+          type="button"
+          className={styles.iconBtn}
+          onClick={handleCopyInscripcionLink}
+          disabled={generandoInscripcion}
+          title="Copiar enlace de inscripción"
+          aria-label="Copiar enlace de inscripción"
+        >
+          <Share2 width={16} height={16} />
+        </button>
+        {!esFinalizada && (
           <button
             type="button"
-            className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-            onClick={() => onDelete?.(capacitacion)}
-            title="Eliminar"
-            aria-label="Eliminar capacitación"
+            className={styles.iconBtn}
+            onClick={() => onEdit?.(capacitacion)}
+            title="Editar"
+            aria-label="Editar capacitación"
           >
-            <Trash2 width={16} height={16} />
+            <Pencil width={16} height={16} />
           </button>
-        </div>
+        )}
+        <button
+          type="button"
+          className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+          onClick={() => onDelete?.(capacitacion)}
+          title="Eliminar"
+          aria-label="Eliminar capacitación"
+        >
+          <Trash2 width={16} height={16} />
+        </button>
       </div>
     </article>
   );

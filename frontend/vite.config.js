@@ -1,9 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { sri } from 'vite-plugin-sri3';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  // `vite-plugin-sri3` añade `integrity="sha384-..."` en los <script>/<link>
+  // emitidos por Vite — cierra el hallazgo OWASP 90003 (Sub-Resource Integrity).
+  plugins: [react(), sri()],
   server: {
     host: true,
     port: 5173,

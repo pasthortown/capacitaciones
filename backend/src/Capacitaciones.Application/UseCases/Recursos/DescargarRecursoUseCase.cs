@@ -31,7 +31,23 @@ public class DescargarRecursoUseCase
             ? "application/octet-stream"
             : entity.ContentType!;
 
-        return new DescargaRecurso(stream, contentType, entity.NombreOriginal, entity.TamanoBytes);
+        // Garantiza que el archivo descargado conserve la extensión original aunque
+        // el admin haya editado el `NombreOriginal` quitándola (ej. renombró a
+        // "Guía del taller" un archivo que venía como "material.pdf"). Sin esto el
+        // navegador guarda el archivo sin extensión y queda inusable.
+        var nombreDescarga = ComposeFilenameWithExtension(entity.NombreOriginal, entity.Extension);
+
+        return new DescargaRecurso(stream, contentType, nombreDescarga, entity.TamanoBytes);
+    }
+
+    private static string ComposeFilenameWithExtension(string? nombreOriginal, string? extension)
+    {
+        var nombre = string.IsNullOrWhiteSpace(nombreOriginal) ? "recurso" : nombreOriginal!.Trim();
+        if (string.IsNullOrWhiteSpace(extension)) return nombre;
+        var sufijo = "." + extension!.TrimStart('.').ToLowerInvariant();
+        return nombre.EndsWith(sufijo, StringComparison.OrdinalIgnoreCase)
+            ? nombre
+            : nombre + sufijo;
     }
 }
 
