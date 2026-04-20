@@ -18,9 +18,15 @@ import './styles/index.css';
  * - ToastProvider queda cerca de la app para que cualquier página/feature
  *   pueda invocar `useToast()` sin importar si está autenticada.
  */
+// `import.meta.env.BASE_URL` viene del `base` de vite.config.js (default `/`).
+// Cuando se construye con VITE_BASE_PATH=/capacitados/, el router monta sus
+// rutas bajo ese prefijo automáticamente. Se normaliza quitando el trailing
+// slash porque react-router no lo admite como basename (salvo `/`).
+const routerBasename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename}>
       <AuthProvider>
         <ToastProvider>
           <App />

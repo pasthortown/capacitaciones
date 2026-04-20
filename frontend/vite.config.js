@@ -4,6 +4,9 @@ import { sri } from 'vite-plugin-sri3';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Prefijo opcional para servir el SPA bajo una ruta (ej. `/capacitados/`).
+  // En dev/local queda `/`. Se setea `VITE_BASE_PATH` en el build de prod.
+  base: process.env.VITE_BASE_PATH || '/',
   // `vite-plugin-sri3` añade `integrity="sha384-..."` en los <script>/<link>
   // emitidos por Vite — cierra el hallazgo OWASP 90003 (Sub-Resource Integrity).
   plugins: [react(), sri()],
