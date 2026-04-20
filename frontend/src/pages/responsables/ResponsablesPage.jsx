@@ -8,6 +8,7 @@ import SignaturePad from '../../components/SignaturePad/SignaturePad.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
 import { useToast } from '../../components/Toast/useToast.js';
 import { formatFechaHora } from '../../utils/formatters.js';
+import { buildPublicUrl } from '../../utils/urls.js';
 import { confirm as swalConfirm } from '../../utils/swal.js';
 import responsablesService from '../../services/responsables.js';
 import styles from './ResponsablesPage.module.css';
@@ -236,7 +237,7 @@ export default function ResponsablesPage() {
     setGenerandoLinkId(row.id);
     try {
       const { url, expiresAt } = await responsablesService.generateLink(row.id);
-      const fullUrl = `${window.location.origin}${url}`;
+      const fullUrl = buildPublicUrl(url);
       await copyToClipboard(fullUrl);
       const fecha = formatExpiresAt(expiresAt);
       toast.success(

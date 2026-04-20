@@ -16,6 +16,7 @@ import {
 import { useToast } from '../Toast/useToast.js';
 import { HttpError } from '../../services/http.js';
 import { formatFechaHora, formatDuracion } from '../../utils/formatters.js';
+import { buildPublicUrl } from '../../utils/urls.js';
 import {
   generateLinkCapacitador,
   generateLinkInscripcion,
@@ -94,7 +95,7 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
     setGenerandoLink(true);
     try {
       const { url, expiresAt } = await generateLinkCapacitador(id);
-      const fullUrl = `${window.location.origin}${url}`;
+      const fullUrl = buildPublicUrl(url);
       await copyToClipboard(fullUrl);
       const fecha = formatExpiresAt(expiresAt);
       toast.success(
@@ -114,7 +115,7 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
     setGenerandoPaseLista(true);
     try {
       const { url, expiresAt } = await generateLinkPaseLista(id);
-      const fullUrl = `${window.location.origin}${url}`;
+      const fullUrl = buildPublicUrl(url);
       await copyToClipboard(fullUrl);
       const fecha = formatExpiresAt(expiresAt);
       toast.success(
@@ -134,7 +135,7 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
     setGenerandoCalificaciones(true);
     try {
       const { url, expiresAt } = await generateLinkCalificaciones(id);
-      const fullUrl = `${window.location.origin}${url}`;
+      const fullUrl = buildPublicUrl(url);
       await copyToClipboard(fullUrl);
       const fecha = formatExpiresAt(expiresAt);
       toast.success(
@@ -169,7 +170,7 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
     setGenerandoInscripcion(true);
     try {
       const { url, expiresAt } = await generateLinkInscripcion(id);
-      const fullUrl = `${window.location.origin}${url}`;
+      const fullUrl = buildPublicUrl(url);
       await copyToClipboard(fullUrl);
       const fecha = formatExpiresAt(expiresAt);
       toast.success(

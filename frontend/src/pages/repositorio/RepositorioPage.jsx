@@ -7,6 +7,7 @@ import RecursoEditModal from '../../components/RecursoEditModal/RecursoEditModal
 import { useToast } from '../../components/Toast/useToast.js';
 import { formatFechaHora } from '../../utils/formatters.js';
 import { matchesSearch } from '../../utils/search.js';
+import { buildPublicUrl } from '../../utils/urls.js';
 import { confirm as swalConfirm, showCopyableValue } from '../../utils/swal.js';
 import {
   listRecursos,
@@ -112,7 +113,7 @@ export default function RepositorioPage() {
     setCopiandoId(row.id);
     try {
       const response = await getDownloadLink(row.id);
-      const fullUrl = `${window.location.origin}${response.url}`;
+      const fullUrl = buildPublicUrl(response.url);
       const copied = await copyToClipboard(fullUrl);
       if (copied) {
         const shortUrl =
