@@ -74,7 +74,7 @@ export default function Sidebar({ collapsed = false }) {
           desbordar el carril. */}
       <div className="sidebar__logo" style={{ textAlign: 'center' }}>
         <img
-          src={collapsed ? '/logo_min.png' : '/logo.png'}
+          src={`${import.meta.env.BASE_URL}${collapsed ? 'logo_min.png' : 'logo.png'}`}
           alt="Capacitados — tecnología con propósito"
           style={
             collapsed
