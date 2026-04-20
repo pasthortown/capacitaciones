@@ -71,14 +71,16 @@
     }
 
     /* Fase 12 — logo opcional de la capacitación. Esquina superior-derecha,
-       sin intervenir la zona central del fondo pre-impreso. */
+       sin intervenir la zona central del fondo pre-impreso. Dimensiones y
+       offset pedidos por producto: altura 100px, 1.5cm del tope y 1.5cm del
+       margen derecho. El ancho queda proporcional al contener el aspect. */
     .logo-capacitacion {
       position: absolute;
-      top: 14mm;
-      right: 18mm;
+      top: 1.5cm;
+      right: 1.5cm;
       width: auto;
-      height: 24mm;
-      max-width: 60mm;
+      height: 100px;
+      max-width: 80mm;
       object-fit: contain;
     }
 
