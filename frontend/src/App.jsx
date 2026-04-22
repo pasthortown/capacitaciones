@@ -15,6 +15,7 @@ import TiposActividadPage from './pages/catalogos/TiposActividadPage.jsx';
 import AreasPage from './pages/catalogos/AreasPage.jsx';
 import PreguntasEncuestaPage from './pages/catalogos/PreguntasEncuestaPage.jsx';
 import EncuestaPublicaPage from './pages/encuesta/EncuestaPublicaPage.jsx';
+import ResultadosEncuestaPage from './pages/encuesta/ResultadosEncuestaPage.jsx';
 import NumeracionPage from './pages/configuracion/NumeracionPage.jsx';
 import ProtectedRoute from './auth/ProtectedRoute.jsx';
 
@@ -79,6 +80,10 @@ export default function App() {
           <Route
             path="/capacitaciones/:id/asistentes"
             element={<AsistentesPage />}
+          />
+          <Route
+            path="/capacitaciones/:id/encuesta/resultados"
+            element={<ResultadosEncuestaPage />}
           />
 
           {/* Responsables (catálogo global) */}

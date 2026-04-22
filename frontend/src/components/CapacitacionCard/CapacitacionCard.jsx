@@ -14,6 +14,7 @@ import {
   Award,
   MessagesSquare,
   Tag,
+  PieChart,
 } from 'lucide-react';
 import { useToast } from '../Toast/useToast.js';
 import { HttpError } from '../../services/http.js';
@@ -319,6 +320,17 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
             aria-label="Copiar enlace de encuesta de satisfacción"
           >
             <MessagesSquare width={16} height={16} />
+          </button>
+        )}
+        {esFinalizada && (
+          <button
+            type="button"
+            className={styles.iconBtn}
+            onClick={() => navigate(`/capacitaciones/${id}/encuesta/resultados`)}
+            title="Ver resultados de la encuesta"
+            aria-label="Ver resultados de la encuesta"
+          >
+            <PieChart width={16} height={16} />
           </button>
         )}
         {!esFinalizada && (

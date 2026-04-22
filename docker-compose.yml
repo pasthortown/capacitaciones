@@ -68,6 +68,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       EmisorDocumentos__BaseUrl: http://emisor_documentos:3000
+      EmisorReportes__BaseUrl: http://emisor_reportes:5000
       REPOSITORIO_DIR: /repository
       IMAGEN_CAPACITACIONES_DIR: /imagen_capacitaciones
     volumes:
@@ -112,6 +113,25 @@ services:
     networks:
       capacitaciones-net:
         ipv4_address: 192.168.56.16
+
+  # Servicio Python para generar el PDF del dashboard de resultados de encuesta
+  # (matplotlib para las gráficas + reportlab para la composición del PDF).
+  emisor_reportes:
+    build:
+      context: ./emisor_reportes
+      dockerfile: Dockerfile
+    container_name: capacitaciones-emisor-reportes
+    restart: unless-stopped
+    environment:
+      TZ: America/Guayaquil
+      PORT: 5000
+      OUTPUT_DIR: /output
+      ASSETS_DIR: /app/assets
+    volumes:
+      - ./output:/output
+    networks:
+      capacitaciones-net:
+        ipv4_address: 192.168.56.18
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest

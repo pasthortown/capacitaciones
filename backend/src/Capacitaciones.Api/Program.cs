@@ -307,6 +307,28 @@ builder.Services.AddScoped<EditarPreguntaEncuestaUseCase>();
 builder.Services.AddScoped<EliminarPreguntaEncuestaUseCase>();
 builder.Services.AddScoped<ObtenerEncuestaPublicaUseCase>();
 builder.Services.AddScoped<SubmitEncuestaUseCase>();
+builder.Services.AddScoped<ObtenerResultadosEncuestaUseCase>();
+builder.Services.AddScoped<DescargarReporteEncuestaUseCase>();
+
+// Servicio externo emisor_reportes (Python + matplotlib + reportlab).
+var emisorReportesOptions = builder.Configuration.GetSection(EmisorReportesOptions.SectionName)
+    .Get<EmisorReportesOptions>() ?? new EmisorReportesOptions();
+if (string.IsNullOrWhiteSpace(emisorReportesOptions.BaseUrl))
+{
+    emisorReportesOptions.BaseUrl = "http://emisor_reportes:5000";
+}
+if (emisorReportesOptions.TimeoutSeconds <= 0)
+{
+    emisorReportesOptions.TimeoutSeconds = 120;
+}
+builder.Services.AddSingleton(emisorReportesOptions);
+builder.Services.AddHttpClient<IEmisorReportesClient, EmisorReportesHttpClient>(client =>
+{
+    var baseUrl = emisorReportesOptions.BaseUrl;
+    if (!baseUrl.EndsWith('/')) baseUrl += "/";
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(emisorReportesOptions.TimeoutSeconds);
+});
 
 // Refactor Responsables — catálogo global + link firmado para página pública.
 builder.Services.AddScoped<ListarResponsablesUseCase>();
