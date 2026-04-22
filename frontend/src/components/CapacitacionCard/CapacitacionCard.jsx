@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   Award,
   MessagesSquare,
+  Tag,
 } from 'lucide-react';
 import { useToast } from '../Toast/useToast.js';
 import { HttpError } from '../../services/http.js';
@@ -52,6 +53,7 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
     tema,
     capacitador,
     modalidad,
+    tipoActividad,
     fechaHoraInicio,
     duracionMinutos,
     estado,
@@ -239,6 +241,12 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
           <span className={styles.row}>
             <Building2 className={styles.icon} aria-hidden="true" />
             <span>{modalidad.nombre}</span>
+          </span>
+        )}
+        {tipoActividad?.nombre && (
+          <span className={styles.row}>
+            <Tag className={styles.icon} aria-hidden="true" />
+            <span>{tipoActividad.nombre}</span>
           </span>
         )}
         <span className={styles.row}>
