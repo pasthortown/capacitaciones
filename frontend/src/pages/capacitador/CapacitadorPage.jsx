@@ -40,6 +40,7 @@ export default function CapacitadorPage() {
     firmaCapacitador: null,
     cargoCapacitador: '',
     empresaCapacitador: '',
+    emailCapacitador: '',
   });
 
   const hydrateFromData = useCallback((dto) => {
@@ -49,6 +50,7 @@ export default function CapacitadorPage() {
       firmaCapacitador: dto?.firmaCapacitador ?? null,
       cargoCapacitador: dto?.cargoCapacitador ?? '',
       empresaCapacitador: dto?.empresaCapacitador ?? '',
+      emailCapacitador: dto?.emailCapacitador ?? '',
     });
   }, []);
 
@@ -100,6 +102,16 @@ export default function CapacitadorPage() {
       toast.error(msg);
       return;
     }
+    const emailTrim = form.emailCapacitador?.trim() ?? '';
+    if (emailTrim) {
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRe.test(emailTrim)) {
+        const msg = 'Ingresa un email válido.';
+        setError(msg);
+        toast.error(msg);
+        return;
+      }
+    }
     setSaving(true);
     setError('');
     try {
@@ -111,6 +123,7 @@ export default function CapacitadorPage() {
         empresaCapacitador: form.empresaCapacitador?.trim()
           ? form.empresaCapacitador
           : null,
+        emailCapacitador: emailTrim || null,
       };
       const updated = await updateCapacitacion(token, payload);
       setData(updated);
@@ -313,6 +326,26 @@ export default function CapacitadorPage() {
                   placeholder="Ej. DOS S.A."
                   disabled={saving}
                   maxLength={200}
+                />
+              </div>
+              <div className={styles.formRow}>
+                <label className={styles.formLabel} htmlFor="emailCap">
+                  Email
+                </label>
+                <input
+                  id="emailCap"
+                  type="email"
+                  className="form-input"
+                  value={form.emailCapacitador}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      emailCapacitador: e.target.value,
+                    }))
+                  }
+                  placeholder="Ej. nombre@dos.com.ec"
+                  disabled={saving}
+                  maxLength={320}
                 />
               </div>
             </div>

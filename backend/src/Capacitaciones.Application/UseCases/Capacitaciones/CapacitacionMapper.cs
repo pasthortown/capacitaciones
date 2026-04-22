@@ -45,6 +45,7 @@ internal static class CapacitacionMapper
         Capacitador = c.Capacitador,
         CargoCapacitador = c.CargoCapacitador,
         EmpresaCapacitador = c.EmpresaCapacitador,
+        EmailCapacitador = c.EmailCapacitador,
         FirmaCapacitador = c.FirmaCapacitador,
         Descripcion = c.Descripcion,
         Modalidad = new CatalogoRefDto { Id = c.ModalidadId, Nombre = c.Modalidad?.Nombre ?? string.Empty },

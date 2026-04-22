@@ -54,7 +54,8 @@ public class ObtenerCapacitacionCapacitadorUseCase
         Descripcion = c.Descripcion,
         FirmaCapacitador = c.FirmaCapacitador,
         CargoCapacitador = c.CargoCapacitador,
-        EmpresaCapacitador = c.EmpresaCapacitador
+        EmpresaCapacitador = c.EmpresaCapacitador,
+        EmailCapacitador = c.EmailCapacitador
     };
 }
 

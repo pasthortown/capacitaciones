@@ -57,6 +57,7 @@ public class ActualizarCapacitadorCapacitacionUseCase
         entity.Descripcion = NormalizeEmptyToNull(input.Descripcion);
         entity.CargoCapacitador = NormalizeEmptyToNull(input.CargoCapacitador);
         entity.EmpresaCapacitador = NormalizeEmptyToNull(input.EmpresaCapacitador);
+        entity.EmailCapacitador = NormalizeEmptyToNull(input.EmailCapacitador);
         entity.FirmaCapacitador = NormalizeEmptyToNull(input.FirmaCapacitador);
         entity.FechaActualizacion = DateTime.UtcNow;
 

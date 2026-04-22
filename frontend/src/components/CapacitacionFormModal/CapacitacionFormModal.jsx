@@ -59,6 +59,7 @@ export default function CapacitacionFormModal({
   const [capacitador, setCapacitador] = useState('');
   const [cargoCapacitador, setCargoCapacitador] = useState('');
   const [empresaCapacitador, setEmpresaCapacitador] = useState('');
+  const [emailCapacitador, setEmailCapacitador] = useState('');
   const [modalidadId, setModalidadId] = useState('');
   const [tipoActividadId, setTipoActividadId] = useState('');
   const [tipoCertificacion, setTipoCertificacion] = useState('Participacion');
@@ -157,6 +158,7 @@ export default function CapacitacionFormModal({
       setCapacitador('');
       setCargoCapacitador('');
       setEmpresaCapacitador('');
+      setEmailCapacitador('');
       setModalidadId('');
       setTipoActividadId('');
       setTipoCertificacion('Participacion');
@@ -181,6 +183,7 @@ export default function CapacitacionFormModal({
         setCapacitador(detail.capacitador || '');
         setCargoCapacitador(detail.cargoCapacitador || '');
         setEmpresaCapacitador(detail.empresaCapacitador || '');
+        setEmailCapacitador(detail.emailCapacitador || '');
         setModalidadId(detail.modalidad?.id || '');
         setTipoActividadId(detail.tipoActividad?.id || '');
         setTipoCertificacion(detail.tipoCertificacion || 'Participacion');
@@ -267,6 +270,15 @@ export default function CapacitacionFormModal({
     if (!tema.trim()) next.tema = 'El tema es obligatorio.';
     else if (tema.length > 500) next.tema = 'Máximo 500 caracteres.';
     if (!capacitador.trim()) next.capacitador = 'El capacitador es obligatorio.';
+    const emailTrim = emailCapacitador.trim();
+    if (emailTrim) {
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRe.test(emailTrim)) {
+        next.emailCapacitador = 'Ingresa un email válido.';
+      } else if (emailTrim.length > 320) {
+        next.emailCapacitador = 'Máximo 320 caracteres.';
+      }
+    }
     if (!modalidadId) next.modalidadId = 'Selecciona una modalidad.';
     if (!tipoActividadId) next.tipoActividadId = 'Selecciona un tipo de actividad.';
     if (!fechaHoraInicio) next.fechaHoraInicio = 'Ingresa fecha y hora.';
@@ -353,6 +365,7 @@ export default function CapacitacionFormModal({
       capacitador: capacitador.trim(),
       cargoCapacitador: cargoCapacitador.trim() || null,
       empresaCapacitador: empresaCapacitador.trim() || null,
+      emailCapacitador: emailCapacitador.trim() || null,
       modalidadId,
       tipoActividadId,
       tipoCertificacion,
@@ -496,6 +509,20 @@ export default function CapacitacionFormModal({
               value={empresaCapacitador}
               onChange={setEmpresaCapacitador}
               maxLength={255}
+            />
+
+            <TextField
+              label="Email del capacitador"
+              name="emailCapacitador"
+              type="email"
+              value={emailCapacitador}
+              onChange={(v) => {
+                setEmailCapacitador(v);
+                if (errors.emailCapacitador) setErrors((e) => ({ ...e, emailCapacitador: undefined }));
+              }}
+              maxLength={320}
+              error={errors.emailCapacitador}
+              helper="Correo de contacto del capacitador."
             />
 
             {/* Modalidad */}

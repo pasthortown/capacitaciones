@@ -28,6 +28,8 @@ public class AppDbContext : DbContext
     public DbSet<CapacitacionResponsable> CapacitacionResponsables => Set<CapacitacionResponsable>();
     public DbSet<Asistente> Asistentes => Set<Asistente>();
     public DbSet<Recurso> Recursos => Set<Recurso>();
+    public DbSet<PreguntaEncuesta> PreguntasEncuesta => Set<PreguntaEncuesta>();
+    public DbSet<RespuestaEncuesta> RespuestasEncuesta => Set<RespuestaEncuesta>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

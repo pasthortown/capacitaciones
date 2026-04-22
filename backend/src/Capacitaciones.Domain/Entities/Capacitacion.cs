@@ -22,6 +22,10 @@ public class Capacitacion
 
     public string? EmpresaCapacitador { get; set; }
 
+    /// <summary>Correo del capacitador. Capturado al crear la capacitación (admin)
+    /// o auto-completado por el capacitador desde el link firmado.</summary>
+    public string? EmailCapacitador { get; set; }
+
     /// <summary>Firma del capacitador (base64 del PNG/JPG). Capturada vía link firmado en Fase 4.</summary>
     public string? FirmaCapacitador { get; set; }
 

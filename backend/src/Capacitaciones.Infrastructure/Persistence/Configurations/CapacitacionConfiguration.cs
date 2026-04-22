@@ -33,6 +33,10 @@ public class CapacitacionConfiguration : IEntityTypeConfiguration<Capacitacion>
         builder.Property(c => c.EmpresaCapacitador)
             .HasMaxLength(255);
 
+        // Email del capacitador (320 cubre RFC 5321: 64 local + @ + 255 dominio).
+        builder.Property(c => c.EmailCapacitador)
+            .HasMaxLength(320);
+
         // Firma del capacitador y Descripción no tienen límite de tamaño (pueden ser base64 grande o texto libre).
         builder.Property(c => c.FirmaCapacitador);
         builder.Property(c => c.Descripcion);

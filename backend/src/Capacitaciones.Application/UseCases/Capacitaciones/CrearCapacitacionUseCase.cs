@@ -64,6 +64,7 @@ public class CrearCapacitacionUseCase
             Capacitador = input.Capacitador.Trim(),
             CargoCapacitador = string.IsNullOrWhiteSpace(input.CargoCapacitador) ? null : input.CargoCapacitador.Trim(),
             EmpresaCapacitador = string.IsNullOrWhiteSpace(input.EmpresaCapacitador) ? null : input.EmpresaCapacitador.Trim(),
+            EmailCapacitador = string.IsNullOrWhiteSpace(input.EmailCapacitador) ? null : input.EmailCapacitador.Trim(),
             FirmaCapacitador = null,
             Descripcion = string.IsNullOrWhiteSpace(input.Descripcion) ? null : input.Descripcion,
             ModalidadId = input.ModalidadId,

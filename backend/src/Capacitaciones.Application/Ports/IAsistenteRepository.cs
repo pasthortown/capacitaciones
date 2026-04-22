@@ -32,6 +32,15 @@ public interface IAsistenteRepository
     Task<Asistente?> GetByIdAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
+    /// Obtiene un asistente a partir de la combinación (capacitación, identificación).
+    /// Usado en el flujo público de encuesta para autoidentificar al asistente por cédula.
+    /// </summary>
+    Task<Asistente?> GetByCapacitacionAndIdentificacionAsync(
+        Guid capacitacionId,
+        string identificacion,
+        CancellationToken ct = default);
+
+    /// <summary>
     /// Persiste los cambios escalares de un <see cref="Asistente"/>. Usado por el pase de lista
     /// (Fase 10) para actualizar <c>EstadoAsistencia</c> / <c>FechaMarcacionAsistencia</c> sin
     /// modificar el resto del registro.

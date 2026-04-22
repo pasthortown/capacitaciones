@@ -11,6 +11,7 @@ public class UpdateCapacitacionDto
     public string Capacitador { get; set; } = string.Empty;
     public string? CargoCapacitador { get; set; }
     public string? EmpresaCapacitador { get; set; }
+    public string? EmailCapacitador { get; set; }
     public string? FirmaCapacitador { get; set; }
 
     public Guid ModalidadId { get; set; }

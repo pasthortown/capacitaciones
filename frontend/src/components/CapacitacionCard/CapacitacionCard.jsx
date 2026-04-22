@@ -12,6 +12,7 @@ import {
   Building2,
   ClipboardCheck,
   Award,
+  MessagesSquare,
 } from 'lucide-react';
 import { useToast } from '../Toast/useToast.js';
 import { HttpError } from '../../services/http.js';
@@ -165,6 +166,19 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
     navigate(`/capacitaciones/${id}/asistentes`);
   };
 
+  const handleCopyEncuestaLink = async () => {
+    if (!id) return;
+    try {
+      // La encuesta usa id de capacitación directo (sin JWT) — el asistente se
+      // autoidentifica con cédula al enviar. `buildPublicUrl` prefija origin + BASE_URL.
+      const fullUrl = buildPublicUrl(`/encuesta/${id}`);
+      await copyToClipboard(fullUrl);
+      toast.success('Enlace de encuesta copiado.');
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo copiar el enlace de encuesta.');
+    }
+  };
+
   const handleCopyInscripcionLink = async () => {
     if (!id || generandoInscripcion) return;
     setGenerandoInscripcion(true);
@@ -288,6 +302,17 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
         >
           <Share2 width={16} height={16} />
         </button>
+        {esFinalizada && (
+          <button
+            type="button"
+            className={styles.iconBtn}
+            onClick={handleCopyEncuestaLink}
+            title="Copiar enlace de encuesta de satisfacción"
+            aria-label="Copiar enlace de encuesta de satisfacción"
+          >
+            <MessagesSquare width={16} height={16} />
+          </button>
+        )}
         {!esFinalizada && (
           <button
             type="button"

@@ -13,6 +13,7 @@ public class CreateCapacitacionDto
     public string Capacitador { get; set; } = string.Empty;
     public string? CargoCapacitador { get; set; }
     public string? EmpresaCapacitador { get; set; }
+    public string? EmailCapacitador { get; set; }
 
     public Guid ModalidadId { get; set; }
     public Guid TipoActividadId { get; set; }

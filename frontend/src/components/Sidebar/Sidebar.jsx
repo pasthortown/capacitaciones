@@ -13,6 +13,7 @@ import {
   Hash,
   UserCheck,
   FolderOpen,
+  MessagesSquare,
 } from 'lucide-react';
 import { useAuth } from '../../auth/useAuth.js';
 
@@ -186,6 +187,16 @@ export default function Sidebar({ collapsed = false }) {
                   <NavLink to="/catalogos/areas" title="Áreas" className={navLinkClass}>
                     <Building2 className="sidebar__nav-icon" />
                     <span>Áreas</span>
+                  </NavLink>
+                </li>
+                <li className="sidebar__nav-item">
+                  <NavLink
+                    to="/catalogos/preguntas-encuesta"
+                    title="Preguntas de encuesta"
+                    className={navLinkClass}
+                  >
+                    <MessagesSquare className="sidebar__nav-icon" />
+                    <span>Preguntas de encuesta</span>
                   </NavLink>
                 </li>
               </ul>

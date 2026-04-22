@@ -60,6 +60,7 @@ public class EditarCapacitacionUseCase
         entity.Capacitador = input.Capacitador.Trim();
         entity.CargoCapacitador = string.IsNullOrWhiteSpace(input.CargoCapacitador) ? null : input.CargoCapacitador.Trim();
         entity.EmpresaCapacitador = string.IsNullOrWhiteSpace(input.EmpresaCapacitador) ? null : input.EmpresaCapacitador.Trim();
+        entity.EmailCapacitador = string.IsNullOrWhiteSpace(input.EmailCapacitador) ? null : input.EmailCapacitador.Trim();
         entity.FirmaCapacitador = string.IsNullOrWhiteSpace(input.FirmaCapacitador) ? entity.FirmaCapacitador : input.FirmaCapacitador;
         entity.Descripcion = string.IsNullOrWhiteSpace(input.Descripcion) ? null : input.Descripcion;
         entity.ModalidadId = input.ModalidadId;

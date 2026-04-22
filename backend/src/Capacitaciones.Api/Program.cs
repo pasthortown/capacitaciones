@@ -9,8 +9,10 @@ using Capacitaciones.Application.UseCases.Capacitador;
 using Capacitaciones.Application.UseCases.Catalogos;
 using Capacitaciones.Application.UseCases.Certificados;
 using Capacitaciones.Application.UseCases.Configuracion;
+using Capacitaciones.Application.UseCases.Encuesta;
 using Capacitaciones.Application.UseCases.Inscripcion;
 using Capacitaciones.Application.UseCases.PaseLista;
+using Capacitaciones.Application.UseCases.PreguntasEncuesta;
 using Capacitaciones.Application.UseCases.Recursos;
 using Capacitaciones.Application.UseCases.Responsable;
 using Capacitaciones.Application.UseCases.Responsables;
@@ -160,6 +162,8 @@ builder.Services.AddScoped<ICapacitacionRepository, CapacitacionRepository>();
 builder.Services.AddScoped<IResponsableRepository, ResponsableRepository>();
 builder.Services.AddScoped<IAsistenteRepository, AsistenteRepository>();
 builder.Services.AddScoped<IRecursoRepository, RecursoRepository>();
+builder.Services.AddScoped<IPreguntaEncuestaRepository, PreguntaEncuestaRepository>();
+builder.Services.AddScoped<IRespuestaEncuestaRepository, RespuestaEncuestaRepository>();
 
 // También registramos el puerto genérico ICatalogoRepository<T> para que el CatalogoService<T>
 // pueda resolverlo directamente sin acoplarse a los puertos específicos.
@@ -294,6 +298,15 @@ builder.Services.AddScoped<MarcarAsistenciaUseCase>();
 builder.Services.AddScoped<GenerarLinkCalificacionesUseCase>();
 builder.Services.AddScoped<ObtenerCalificacionesUseCase>();
 builder.Services.AddScoped<CalificarAsistenteUseCase>();
+
+// Encuesta de satisfacción — CRUD admin del catálogo de preguntas + endpoints públicos.
+builder.Services.AddScoped<ListarPreguntasEncuestaUseCase>();
+builder.Services.AddScoped<ObtenerPreguntaEncuestaUseCase>();
+builder.Services.AddScoped<CrearPreguntaEncuestaUseCase>();
+builder.Services.AddScoped<EditarPreguntaEncuestaUseCase>();
+builder.Services.AddScoped<EliminarPreguntaEncuestaUseCase>();
+builder.Services.AddScoped<ObtenerEncuestaPublicaUseCase>();
+builder.Services.AddScoped<SubmitEncuestaUseCase>();
 
 // Refactor Responsables — catálogo global + link firmado para página pública.
 builder.Services.AddScoped<ListarResponsablesUseCase>();

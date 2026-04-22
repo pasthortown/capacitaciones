@@ -32,4 +32,6 @@ public class UpdateCapacitadorCapacitacionDto
     public string? CargoCapacitador { get; set; }
 
     public string? EmpresaCapacitador { get; set; }
+
+    public string? EmailCapacitador { get; set; }
 }

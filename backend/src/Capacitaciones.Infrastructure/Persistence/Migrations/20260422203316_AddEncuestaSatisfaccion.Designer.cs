@@ -4,6 +4,7 @@ using Capacitaciones.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Capacitaciones.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260422203316_AddEncuestaSatisfaccion")]
+    partial class AddEncuestaSatisfaccion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -193,10 +196,6 @@ namespace Capacitaciones.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("DuracionMinutos")
                         .HasColumnType("int");
-
-                    b.Property<string>("EmailCapacitador")
-                        .HasMaxLength(320)
-                        .HasColumnType("nvarchar(320)");
 
                     b.Property<string>("EmpresaCapacitador")
                         .HasMaxLength(255)

@@ -82,6 +82,21 @@ public class AsistenteRepository : IAsistenteRepository
             .FirstOrDefaultAsync(a => a.Id == id, ct);
     }
 
+    public async Task<Asistente?> GetByCapacitacionAndIdentificacionAsync(
+        Guid capacitacionId,
+        string identificacion,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(identificacion)) return null;
+        var normalized = identificacion.Trim();
+        return await _db.Asistentes
+            .AsNoTracking()
+            .Include(a => a.Area)
+            .FirstOrDefaultAsync(
+                a => a.CapacitacionId == capacitacionId && a.Identificacion == normalized,
+                ct);
+    }
+
     public async Task UpdateAsync(Asistente entity, CancellationToken ct = default)
     {
         // La entidad llega detached (viene de GetByIdAsync con AsNoTracking + Include).

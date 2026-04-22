@@ -13,6 +13,8 @@ import RepositorioPage from './pages/repositorio/RepositorioPage.jsx';
 import ModalidadesPage from './pages/catalogos/ModalidadesPage.jsx';
 import TiposActividadPage from './pages/catalogos/TiposActividadPage.jsx';
 import AreasPage from './pages/catalogos/AreasPage.jsx';
+import PreguntasEncuestaPage from './pages/catalogos/PreguntasEncuestaPage.jsx';
+import EncuestaPublicaPage from './pages/encuesta/EncuestaPublicaPage.jsx';
 import NumeracionPage from './pages/configuracion/NumeracionPage.jsx';
 import ProtectedRoute from './auth/ProtectedRoute.jsx';
 
@@ -64,6 +66,7 @@ export default function App() {
       <Route path="/capacitador/calificaciones" element={<CalificacionesPage />} />
       <Route path="/responsable" element={<ResponsablePage />} />
       <Route path="/inscripcion" element={<InscripcionPage />} />
+      <Route path="/encuesta/:capacitacionId" element={<EncuestaPublicaPage />} />
 
       {/* Protegidas */}
       <Route element={<ProtectedRoute />}>
@@ -92,6 +95,7 @@ export default function App() {
           <Route path="/catalogos/modalidades" element={<ModalidadesPage />} />
           <Route path="/catalogos/tipos-actividad" element={<TiposActividadPage />} />
           <Route path="/catalogos/areas" element={<AreasPage />} />
+          <Route path="/catalogos/preguntas-encuesta" element={<PreguntasEncuestaPage />} />
 
           {/* Configuración */}
           <Route
