@@ -151,7 +151,10 @@
       color: #333;
     }
 
-    /* ===== Firmantes ===== */
+    /* ===== Firmantes =====
+       margin-top negativo (=-10mm) sube todo el bloque 2cm respecto al baseline
+       anterior (10mm) — queda cargo y empresa visibles sobre el marco oscuro
+       del fondo del certificado. */
     .firmantes {
       display: flex;
       flex-direction: row;
@@ -159,7 +162,7 @@
       align-items: flex-start;
       gap: 24mm;
       width: 100%;
-      margin-top: 10mm;
+      margin-top: -10mm;
     }
 
     .firmante {
