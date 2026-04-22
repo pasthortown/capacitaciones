@@ -10,6 +10,7 @@ public class ResponsableDetailDto
     public string Nombres { get; set; } = string.Empty;
     public string Cargo { get; set; } = string.Empty;
     public string Empresa { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
     public bool TieneFirma { get; set; }
     public bool Activo { get; set; }
     public DateTime FechaCreacion { get; set; }

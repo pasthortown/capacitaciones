@@ -15,6 +15,9 @@ public class Responsable
     public string Cargo { get; set; } = string.Empty;
     public string Empresa { get; set; } = string.Empty;
 
+    /// <summary>Correo electrónico de contacto del responsable. Requerido a nivel aplicación.</summary>
+    public string Email { get; set; } = string.Empty;
+
     /// <summary>Firma (base64 del PNG/JPG). Opcional: el responsable la completa desde su link firmado.</summary>
     public string? Firma { get; set; }
 

@@ -40,6 +40,7 @@ export default function ResponsablesPage() {
   const [nombres, setNombres] = useState('');
   const [cargo, setCargo] = useState('');
   const [empresa, setEmpresa] = useState('');
+  const [email, setEmail] = useState('');
   const [firma, setFirma] = useState(null);
   const [errors, setErrors] = useState({});
 
@@ -88,6 +89,7 @@ export default function ResponsablesPage() {
     setNombres('');
     setCargo('');
     setEmpresa('');
+    setEmail('');
     setFirma(null);
     setErrors({});
   };
@@ -106,6 +108,7 @@ export default function ResponsablesPage() {
     setNombres(row.nombres || '');
     setCargo(row.cargo || '');
     setEmpresa(row.empresa || '');
+    setEmail(row.email || '');
     setFormOpen(true);
 
     // Fetch del detalle para obtener la firma base64
@@ -116,6 +119,7 @@ export default function ResponsablesPage() {
         setNombres(detail.nombres || '');
         setCargo(detail.cargo || '');
         setEmpresa(detail.empresa || '');
+        setEmail(detail.email || '');
         setFirma(detail.firma || null);
       }
     } catch (err) {
@@ -138,6 +142,14 @@ export default function ResponsablesPage() {
     else if (cargo.length > 255) next.cargo = 'Máximo 255 caracteres.';
     if (!empresa.trim()) next.empresa = 'La empresa es obligatoria.';
     else if (empresa.length > 255) next.empresa = 'Máximo 255 caracteres.';
+    const emailTrim = email.trim();
+    if (!emailTrim) {
+      next.email = 'El correo es obligatorio.';
+    } else if (emailTrim.length > 320) {
+      next.email = 'Máximo 320 caracteres.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
+      next.email = 'Formato de correo inválido.';
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -151,6 +163,7 @@ export default function ResponsablesPage() {
       nombres: nombres.trim(),
       cargo: cargo.trim(),
       empresa: empresa.trim(),
+      email: email.trim(),
       firma: firma || null,
     };
 
@@ -199,6 +212,7 @@ export default function ResponsablesPage() {
         nombres: row.nombres,
         cargo: row.cargo,
         empresa: row.empresa,
+        email: row.email,
         activo: true,
       });
       toast.success('Responsable reactivado.');
@@ -269,6 +283,11 @@ export default function ResponsablesPage() {
         key: 'empresa',
         header: 'Empresa',
         accessor: (row) => row?.empresa || '—',
+      },
+      {
+        key: 'email',
+        header: 'Correo',
+        accessor: (row) => row?.email || '—',
       },
       {
         key: 'tieneFirma',
@@ -468,6 +487,21 @@ export default function ResponsablesPage() {
                 }}
                 error={errors.empresa}
               />
+              <div className={styles.fullSpan}>
+                <TextField
+                  label="Correo electrónico"
+                  name="email"
+                  type="email"
+                  value={email}
+                  required
+                  maxLength={320}
+                  onChange={(v) => {
+                    setEmail(v);
+                    if (errors.email) setErrors((e) => ({ ...e, email: undefined }));
+                  }}
+                  error={errors.email}
+                />
+              </div>
             </div>
 
             <div className={styles.signatureSection}>

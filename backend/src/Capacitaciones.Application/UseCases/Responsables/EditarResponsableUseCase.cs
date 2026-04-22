@@ -28,10 +28,12 @@ public class EditarResponsableUseCase
         ResponsableValidator.ValidarNombres(input.Nombres);
         ResponsableValidator.ValidarCargo(input.Cargo);
         ResponsableValidator.ValidarEmpresa(input.Empresa);
+        ResponsableValidator.ValidarEmail(input.Email);
 
         entity.Nombres = input.Nombres.Trim();
         entity.Cargo = input.Cargo.Trim();
         entity.Empresa = input.Empresa.Trim();
+        entity.Email = input.Email.Trim();
 
         // Firma: null => no tocar; "" / whitespace => limpiar; valor => trim y aplicar.
         if (input.Firma is not null)

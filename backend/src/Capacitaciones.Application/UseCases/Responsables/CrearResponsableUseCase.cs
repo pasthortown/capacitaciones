@@ -26,6 +26,7 @@ public class CrearResponsableUseCase
         ResponsableValidator.ValidarNombres(input.Nombres);
         ResponsableValidator.ValidarCargo(input.Cargo);
         ResponsableValidator.ValidarEmpresa(input.Empresa);
+        ResponsableValidator.ValidarEmail(input.Email);
 
         var entity = new Domain.Entities.Responsable
         {
@@ -33,6 +34,7 @@ public class CrearResponsableUseCase
             Nombres = input.Nombres.Trim(),
             Cargo = input.Cargo.Trim(),
             Empresa = input.Empresa.Trim(),
+            Email = input.Email.Trim(),
             Firma = ResponsableValidator.TrimToNull(input.Firma),
             Activo = true,
             FechaCreacion = DateTime.UtcNow,

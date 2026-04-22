@@ -1,3 +1,5 @@
+using System.Net.Mail;
+
 namespace Capacitaciones.Application.UseCases.Responsables;
 
 /// <summary>
@@ -6,6 +8,7 @@ namespace Capacitaciones.Application.UseCases.Responsables;
 internal static class ResponsableValidator
 {
     public const int CampoMaxLength = 255;
+    public const int EmailMaxLength = 320;
 
     public static void ValidarNombres(string? nombres)
     {
@@ -29,6 +32,18 @@ internal static class ResponsableValidator
             throw new ResponsableServiceException("INVALID_EMPRESA", "'empresa' es requerido.");
         if (empresa.Length > CampoMaxLength)
             throw new ResponsableServiceException("INVALID_EMPRESA", $"'empresa' excede el máximo de {CampoMaxLength} caracteres.");
+    }
+
+    public static void ValidarEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ResponsableServiceException("INVALID_EMAIL", "'email' es requerido.");
+        if (email.Length > EmailMaxLength)
+            throw new ResponsableServiceException("INVALID_EMAIL", $"'email' excede el máximo de {EmailMaxLength} caracteres.");
+
+        // MailAddress.TryCreate valida formato RFC5321-ish: local@dominio.
+        if (!MailAddress.TryCreate(email.Trim(), out _))
+            throw new ResponsableServiceException("INVALID_EMAIL", "'email' no tiene formato válido.");
     }
 
     /// <summary>

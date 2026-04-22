@@ -27,6 +27,12 @@ public class ResponsableConfiguration : IEntityTypeConfiguration<Responsable>
             .HasMaxLength(255)
             .IsRequired();
 
+        // Email: límite 320 cubre el máximo RFC 5321 (64 local + @ + 255 dominio).
+        builder.Property(r => r.Email)
+            .HasMaxLength(320)
+            .IsRequired()
+            .HasDefaultValue(string.Empty);
+
         // Firma: base64/dataURL. Opcional — el responsable la carga desde su link firmado.
         builder.Property(r => r.Firma);
 
