@@ -85,12 +85,17 @@
       line-height: 1.35;
     }
 
-    /* ===== Metadata de la capacitación (solo pág 1) ===== */
+    /* ===== Metadata de la capacitación (solo pág 1) =====
+       Diseño de ALTO FIJO: la descripción siempre reserva el mismo bloque
+       vertical aunque sea corta (nunca colapsa), y si es muy larga se
+       recorta visualmente con overflow:hidden. Esto mantiene predecible
+       el presupuesto vertical desde JS (REPORTE_FILAS_PRIMERA_PAGINA). */
     .metadata {
       width: 100%;
       border: 1px solid #222;
       border-collapse: collapse;
       margin-bottom: 3mm;
+      table-layout: fixed;
     }
     .metadata td {
       border: 1px solid #222;
@@ -109,6 +114,17 @@
       min-height: 6mm;
       padding-top: 1mm;
       word-wrap: break-word;
+    }
+    /* La celda de descripción tiene altura FIJA (label + caja de valor).
+       El contenido se recorta con overflow:hidden si excede la caja. */
+    .metadata .descripcion-cell {
+      height: 32mm;
+    }
+    .metadata .descripcion-valor {
+      height: 22mm;
+      overflow: hidden;
+      white-space: pre-line;
+      line-height: 1.35;
     }
     .metadata .firma-cell {
       vertical-align: middle;

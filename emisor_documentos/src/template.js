@@ -278,15 +278,17 @@ function formatDuracion(duracionHoras) {
  * acumulados reales suman ~10-15mm más que el cálculo teórico.
  *
  * Presupuesto vertical (A4 portrait, margen 14mm top/bottom → 269mm útiles),
- * valores calibrados en vivo:
- *   Primera página: 7 filas de 18mm (126mm) + bloques fijos cabe en 269mm.
+ * valores calibrados en vivo contra descripción de altura fija (32mm total):
+ *   Primera página: 6 filas de 18mm (108mm) + bloques fijos cabe en 269mm.
+ *     (con 7 filas la última quedaba clipeada por el overflow:hidden de .pagina
+ *      cuando la metadata llega a su tope; 6 es seguro con margen).
  *   Páginas siguientes: 12 filas de 18mm (216mm) + header oficial + thead cabe.
  *
  * Cada `.pagina` tiene height:269mm + overflow:hidden (ver CSS) — si una fila
  * extra se cuela aquí, se corta visualmente pero NO se rompe el layout ni genera
  * una hoja intermedia sin header.
  */
-const REPORTE_FILAS_PRIMERA_PAGINA = 7;
+const REPORTE_FILAS_PRIMERA_PAGINA = 6;
 const REPORTE_FILAS_PAGINA_SIGUIENTE = 12;
 const REPORTE_FILAS_MINIMAS_HOJA_VACIA = 12;
 
@@ -440,7 +442,7 @@ function buildMetadataHtml(capacitacion) {
         </td>
       </tr>
       <tr>
-        <td colspan="2"><div class="label">Descripción de la Capacitación:</div><div class="value">${descripcion}</div></td>
+        <td colspan="2" class="descripcion-cell"><div class="label">Descripción de la Capacitación:</div><div class="value descripcion-valor">${descripcion}</div></td>
       </tr>
     </table>`;
 }
