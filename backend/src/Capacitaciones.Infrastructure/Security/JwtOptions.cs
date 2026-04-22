@@ -17,36 +17,33 @@ public class JwtOptions
     public int ExpirationHours { get; set; } = 8;
 
     /// <summary>
-    /// TTL (en días) del token de capacitador emitido por el admin en el link firmado (Fase 4).
-    /// Default: 90 días.
+    /// TTL (en horas) del token de capacitador emitido por el admin en el link firmado (Fase 4).
+    /// Default: 48 horas — los enlaces públicos son de corta vida por seguridad.
     /// </summary>
-    public int CapacitadorTokenDias { get; set; } = 90;
+    public int CapacitadorTokenHoras { get; set; } = 48;
 
     /// <summary>
-    /// TTL (en días) del token de inscripción pública emitido por el admin (Fase 5).
-    /// Default: 90 días. Mismo valor por defecto que el de capacitador porque ambos links
-    /// se distribuyen a personas externas y suelen permanecer activos durante todo el ciclo
-    /// de la capacitación.
+    /// TTL (en horas) del token de inscripción pública emitido por el admin (Fase 5).
+    /// Default: 48 horas.
     /// </summary>
-    public int InscripcionTokenDias { get; set; } = 90;
+    public int InscripcionTokenHoras { get; set; } = 48;
 
     /// <summary>
-    /// TTL (en días) del token del responsable emitido por el admin para que el responsable
+    /// TTL (en horas) del token del responsable emitido por el admin para que el responsable
     /// complete/actualice su perfil (nombre, cargo, empresa, firma) desde un link público.
-    /// Default: 90 días (mismo criterio que los otros tokens de recurso público).
+    /// Default: 48 horas.
     /// </summary>
-    public int ResponsableTokenDias { get; set; } = 90;
+    public int ResponsableTokenHoras { get; set; } = 48;
 
     /// <summary>
-    /// TTL (en días) del token de pase de lista emitido por el admin para que el capacitador
-    /// marque asistencia desde un link público (Fase 10). Default: 90 días.
+    /// TTL (en horas) del token de pase de lista emitido por el admin para que el capacitador
+    /// marque asistencia desde un link público (Fase 10). Default: 48 horas.
     /// </summary>
-    public int PaseListaTokenDias { get; set; } = 90;
+    public int PaseListaTokenHoras { get; set; } = 48;
 
     /// <summary>
-    /// TTL (en días) del token de calificaciones emitido por el admin para que el capacitador
-    /// registre notas desde un link público (Fase 11). Default: 90 días — mismo criterio que
-    /// pase de lista.
+    /// TTL (en horas) del token de calificaciones emitido por el admin para que el capacitador
+    /// registre notas desde un link público (Fase 11). Default: 48 horas.
     /// </summary>
-    public int CalificacionesTokenDias { get; set; } = 90;
+    public int CalificacionesTokenHoras { get; set; } = 48;
 }

@@ -30,7 +30,7 @@ public interface IJwtTokenGenerator
     /// Emite un JWT de capacitador para una capacitación dada.
     /// Claims: <c>sub</c> = capacitacionId, <c>role</c> = "Capacitador",
     /// <c>scope</c> = "capacitador", <c>cid</c> = capacitacionId.
-    /// TTL por defecto: 90 días (configurable vía <c>Jwt:CapacitadorTokenDias</c>).
+    /// TTL por defecto: 48 horas (configurable vía <c>Jwt:CapacitadorTokenHoras</c>).
     /// </summary>
     JwtTokenResult GenerateCapacitadorToken(Guid capacitacionId);
 
@@ -38,7 +38,7 @@ public interface IJwtTokenGenerator
     /// Emite un JWT para el link público de inscripción (Fase 5).
     /// Claims: <c>sub</c> = capacitacionId, <c>role</c> = "Inscripcion",
     /// <c>scope</c> = "inscripcion", <c>cid</c> = capacitacionId.
-    /// TTL por defecto: 90 días (configurable vía <c>Jwt:InscripcionTokenDias</c>).
+    /// TTL por defecto: 48 horas (configurable vía <c>Jwt:InscripcionTokenHoras</c>).
     /// Se mantiene separado del token de capacitador para que las policies de autorización
     /// sean excluyentes (un link de inscripción no puede llamar endpoints del capacitador).
     /// </summary>
@@ -48,7 +48,7 @@ public interface IJwtTokenGenerator
     /// Emite un JWT para el link público del responsable (refactor Responsables a catálogo global).
     /// Claims: <c>sub</c> = responsableId, <c>role</c> = "Responsable",
     /// <c>scope</c> = "responsable", <c>rid</c> = responsableId.
-    /// TTL por defecto: 90 días (configurable vía <c>Jwt:ResponsableTokenDias</c>).
+    /// TTL por defecto: 48 horas (configurable vía <c>Jwt:ResponsableTokenHoras</c>).
     /// </summary>
     JwtTokenResult GenerateResponsableToken(Guid responsableId);
 
@@ -58,7 +58,7 @@ public interface IJwtTokenGenerator
     /// <c>scope</c> = "pase-lista", <c>cid</c> = capacitacionId.
     /// Se mantiene separado del token de capacitador (descripción/firma) para que un
     /// link filtrado permita solo el flujo para el que fue emitido.
-    /// TTL por defecto: 90 días (configurable vía <c>Jwt:PaseListaTokenDias</c>).
+    /// TTL por defecto: 48 horas (configurable vía <c>Jwt:PaseListaTokenHoras</c>).
     /// </summary>
     JwtTokenResult GeneratePaseListaToken(Guid capacitacionId);
 
@@ -68,7 +68,7 @@ public interface IJwtTokenGenerator
     /// <c>scope</c> = "calificaciones", <c>cid</c> = capacitacionId.
     /// Se mantiene independiente del token de pase de lista y del de descripción/firma:
     /// cada link habilita un solo flujo.
-    /// TTL por defecto: 90 días (configurable vía <c>Jwt:CalificacionesTokenDias</c>).
+    /// TTL por defecto: 48 horas (configurable vía <c>Jwt:CalificacionesTokenHoras</c>).
     /// </summary>
     JwtTokenResult GenerateCalificacionesToken(Guid capacitacionId);
 }

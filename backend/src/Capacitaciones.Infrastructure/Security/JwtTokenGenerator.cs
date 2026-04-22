@@ -68,8 +68,8 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     /// </summary>
     public JwtTokenResult GenerateCapacitadorToken(Guid capacitacionId)
     {
-        var dias = _options.CapacitadorTokenDias > 0 ? _options.CapacitadorTokenDias : 90;
-        return GenerateResourceToken(capacitacionId, role: "Capacitador", scope: "capacitador", idClaim: "cid", dias: dias);
+        var horas = _options.CapacitadorTokenHoras > 0 ? _options.CapacitadorTokenHoras : 48;
+        return GenerateResourceToken(capacitacionId, role: "Capacitador", scope: "capacitador", idClaim: "cid", horas: horas);
     }
 
     /// <summary>
@@ -78,8 +78,8 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     /// </summary>
     public JwtTokenResult GenerateInscripcionToken(Guid capacitacionId)
     {
-        var dias = _options.InscripcionTokenDias > 0 ? _options.InscripcionTokenDias : 90;
-        return GenerateResourceToken(capacitacionId, role: "Inscripcion", scope: "inscripcion", idClaim: "cid", dias: dias);
+        var horas = _options.InscripcionTokenHoras > 0 ? _options.InscripcionTokenHoras : 48;
+        return GenerateResourceToken(capacitacionId, role: "Inscripcion", scope: "inscripcion", idClaim: "cid", horas: horas);
     }
 
     /// <summary>
@@ -89,8 +89,8 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     /// </summary>
     public JwtTokenResult GenerateResponsableToken(Guid responsableId)
     {
-        var dias = _options.ResponsableTokenDias > 0 ? _options.ResponsableTokenDias : 90;
-        return GenerateResourceToken(responsableId, role: "Responsable", scope: "responsable", idClaim: "rid", dias: dias);
+        var horas = _options.ResponsableTokenHoras > 0 ? _options.ResponsableTokenHoras : 48;
+        return GenerateResourceToken(responsableId, role: "Responsable", scope: "responsable", idClaim: "rid", horas: horas);
     }
 
     /// <summary>
@@ -100,8 +100,8 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     /// </summary>
     public JwtTokenResult GeneratePaseListaToken(Guid capacitacionId)
     {
-        var dias = _options.PaseListaTokenDias > 0 ? _options.PaseListaTokenDias : 90;
-        return GenerateResourceToken(capacitacionId, role: "PaseLista", scope: "pase-lista", idClaim: "cid", dias: dias);
+        var horas = _options.PaseListaTokenHoras > 0 ? _options.PaseListaTokenHoras : 48;
+        return GenerateResourceToken(capacitacionId, role: "PaseLista", scope: "pase-lista", idClaim: "cid", horas: horas);
     }
 
     /// <summary>
@@ -110,8 +110,8 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     /// </summary>
     public JwtTokenResult GenerateCalificacionesToken(Guid capacitacionId)
     {
-        var dias = _options.CalificacionesTokenDias > 0 ? _options.CalificacionesTokenDias : 90;
-        return GenerateResourceToken(capacitacionId, role: "Calificaciones", scope: "calificaciones", idClaim: "cid", dias: dias);
+        var horas = _options.CalificacionesTokenHoras > 0 ? _options.CalificacionesTokenHoras : 48;
+        return GenerateResourceToken(capacitacionId, role: "Calificaciones", scope: "calificaciones", idClaim: "cid", horas: horas);
     }
 
     /// <summary>
@@ -119,7 +119,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     /// firman un recurso (<paramref name="resourceId"/>) con los claims <c>sub</c> + <c>role</c> +
     /// <c>scope</c> + un claim específico (<paramref name="idClaim"/> = "cid" o "rid") que replica el id.
     /// </summary>
-    private JwtTokenResult GenerateResourceToken(Guid resourceId, string role, string scope, string idClaim, int dias)
+    private JwtTokenResult GenerateResourceToken(Guid resourceId, string role, string scope, string idClaim, int horas)
     {
         if (resourceId == Guid.Empty)
             throw new ArgumentException("resourceId requerido", nameof(resourceId));
@@ -130,7 +130,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         }
 
         var now = DateTime.UtcNow;
-        var expires = now.AddDays(dias);
+        var expires = now.AddHours(horas);
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
