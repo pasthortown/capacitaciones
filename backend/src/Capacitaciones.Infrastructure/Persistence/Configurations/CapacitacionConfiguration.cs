@@ -83,5 +83,10 @@ public class CapacitacionConfiguration : IEntityTypeConfiguration<Capacitacion>
 
         // La navegación a responsables ahora es N–N vía la pivote CapacitacionResponsable.
         // Las FKs y el cascade delete se configuran en CapacitacionResponsableConfiguration.
+
+        // Global query filter: las capacitaciones con Activo=false son invisibles para
+        // cualquier consulta EF (list, get, include, etc.). El soft-delete deja la fila
+        // accesible solo por BDD o por consultas que invoquen IgnoreQueryFilters().
+        builder.HasQueryFilter(c => c.Activo);
     }
 }

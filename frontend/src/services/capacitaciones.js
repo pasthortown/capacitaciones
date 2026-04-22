@@ -2,11 +2,12 @@
  * Servicio de Capacitaciones.
  *
  * Contrato API (ver instrucciones.md §7.1 y fase 3):
- *   GET    /api/capacitaciones?includeInactive=false|true  -> CapacitacionSummary[]
- *   GET    /api/capacitaciones/{id}                        -> CapacitacionDetail
- *   POST   /api/capacitaciones                             -> 201 CapacitacionDetail
- *   PUT    /api/capacitaciones/{id}                        -> 200 CapacitacionDetail
- *   DELETE /api/capacitaciones/{id}                        -> 204 (lógico)
+ *   GET    /api/capacitaciones             -> CapacitacionSummary[] (solo Activo=true)
+ *   GET    /api/capacitaciones/{id}        -> CapacitacionDetail
+ *   POST   /api/capacitaciones             -> 201 CapacitacionDetail
+ *   PUT    /api/capacitaciones/{id}        -> 200 CapacitacionDetail
+ *   DELETE /api/capacitaciones/{id}        -> 204 (soft-delete — las filas con
+ *                                              Activo=false solo son visibles vía BDD)
  *
  * Todos los endpoints requieren Bearer (policy Admin).
  */
@@ -47,14 +48,13 @@ export function getLogoExtension(filename) {
 }
 
 /**
- * Lista capacitaciones (resumen).
+ * Lista capacitaciones (resumen). El backend aplica un filter global y solo
+ * devuelve las que tienen Activo=true; las soft-deleted son invisibles desde la API.
  *
- * @param {boolean} [includeInactive=false]
  * @returns {Promise<Array>}
  */
-export function listCapacitaciones(includeInactive = false) {
-  const query = includeInactive ? '?includeInactive=true' : '?includeInactive=false';
-  return http.get(`${BASE}${query}`);
+export function listCapacitaciones() {
+  return http.get(BASE);
 }
 
 /**

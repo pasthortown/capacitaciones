@@ -18,7 +18,8 @@ import styles from './CapacitacionesPage.module.css';
  *
  * Acciones:
  *   - Nueva capacitación (modal).
- *   - Mostrar inactivas (toggle).
+ *   - Mostrar finalizadas (toggle): incluye las cuya fecha/hora fin ya pasó.
+ *     Las soft-deleted (Activo=false) nunca son visibles — el backend no las expone.
  *   - Por card: editar, eliminar, copiar links (capacitador/inscripción),
  *     navegar a asistentes.
  */
@@ -27,10 +28,9 @@ export default function CapacitacionesPage() {
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  // El check controla qué se muestra por *default*. El backend siempre devuelve TODO
-  // (incluyendo inactivas + finalizadas) para que el input de búsqueda pueda encontrar
-  // también capacitaciones pasadas, aunque el check esté desmarcado.
-  const [includeInactive, setIncludeInactive] = useState(false);
+  // Toggle de vista: controla si mostramos las capacitaciones finalizadas (hora fin ya
+  // pasada). El backend filtra por Activo automáticamente — nunca vemos soft-deleted.
+  const [showFinalizadas, setShowFinalizadas] = useState(false);
   const [search, setSearch] = useState('');
 
   // Modal crear/editar
@@ -54,8 +54,9 @@ export default function CapacitacionesPage() {
     async () => {
       setLoading(true);
       try {
-        // Siempre traemos todo; el filtrado (check + búsqueda) es client-side.
-        const data = await listCapacitaciones(true);
+        // El backend solo devuelve capacitaciones con Activo=true.
+        // El toggle de "finalizadas" y la búsqueda son client-side.
+        const data = await listCapacitaciones();
         if (mountedRef.current) {
           setItems(Array.isArray(data) ? data : []);
         }
@@ -75,18 +76,18 @@ export default function CapacitacionesPage() {
 
   // Vista filtrada.
   // Reglas:
-  //  - Si hay `search` → busca sobre TODAS las capacitaciones (ignora el check). Permite
-  //    encontrar por ejemplo una capacitación pasada aunque "Mostrar inactivas" esté off.
-  //  - Si no hay search y `includeInactive` está ON → mostrar todas.
-  //  - Si no hay search y `includeInactive` está OFF → ocultar finalizadas y las inactivas.
+  //  - Si hay `search` → busca sobre todas las recibidas (ignora el toggle).
+  //  - Si no hay search y `showFinalizadas` ON → mostrar todas (incluye finalizadas).
+  //  - Si no hay search y `showFinalizadas` OFF → ocultar las finalizadas.
+  // Nota: las soft-deleted (Activo=false) ya vienen filtradas desde el backend.
   const visibleItems = useMemo(() => {
     const q = search.trim();
     if (q) {
       return items.filter((x) => matchesSearch(x, q));
     }
-    if (includeInactive) return items;
-    return items.filter((x) => x.activo !== false && x.estado !== 'Finalizada');
-  }, [items, search, includeInactive]);
+    if (showFinalizadas) return items;
+    return items.filter((x) => x.estado !== 'Finalizada');
+  }, [items, search, showFinalizadas]);
 
   const openCreate = () => {
     setEditing(null);
@@ -148,9 +149,9 @@ export default function CapacitacionesPage() {
             />
           </div>
           <Toggle
-            label="Mostrar finalizadas e inactivas"
-            checked={includeInactive}
-            onChange={setIncludeInactive}
+            label="Mostrar finalizadas"
+            checked={showFinalizadas}
+            onChange={setShowFinalizadas}
           />
         </div>
         <div className="toolbar__actions">
@@ -181,7 +182,7 @@ export default function CapacitacionesPage() {
                   ? `Ningún campo coincide con "${search.trim()}". Prueba con otro término.`
                   : items.length === 0
                     ? 'Crea la primera capacitación para empezar a gestionar inscripciones y responsables.'
-                    : 'Marca "Mostrar finalizadas e inactivas" para verlas aquí.'}
+                    : 'Marca "Mostrar finalizadas" para verlas aquí.'}
               </p>
             </div>
           </div>
@@ -241,8 +242,8 @@ export default function CapacitacionesPage() {
           <strong>{deleteTarget?.codigo}</strong> — {deleteTarget?.tema}?
         </p>
         <p className="text-sm text-secondary">
-          La eliminación es lógica: la capacitación se marcará como inactiva y
-          no aparecerá por defecto en el listado.
+          La capacitación dejará de estar accesible desde la aplicación.
+          Esta acción no puede deshacerse desde la interfaz.
         </p>
       </Modal>
     </div>
