@@ -5,8 +5,6 @@ namespace Capacitaciones.Application.UseCases.PreguntasEncuesta;
 
 public class EditarPreguntaEncuestaUseCase
 {
-    public const int MaxTextoLength = 500;
-
     private readonly IPreguntaEncuestaRepository _repo;
     private readonly ITipoActividadRepository _tiposActividad;
 
@@ -26,17 +24,11 @@ public class EditarPreguntaEncuestaUseCase
         var entity = await _repo.GetByIdAsync(id, ct)
             ?? throw new PreguntaEncuestaNotFoundException(id);
 
-        var texto = (input.Texto ?? string.Empty).Trim();
-        if (string.IsNullOrEmpty(texto))
-        {
-            throw new PreguntaEncuestaServiceException("TEXTO_VACIO", "El texto de la pregunta es obligatorio.");
-        }
-        if (texto.Length > MaxTextoLength)
-        {
-            throw new PreguntaEncuestaServiceException(
-                "TEXTO_DEMASIADO_LARGO",
-                $"El texto de la pregunta no puede exceder {MaxTextoLength} caracteres.");
-        }
+        PreguntaEncuestaValidator.ValidarTexto(input.Texto);
+        var tipoPregunta = PreguntaEncuestaValidator.ParseTipoPregunta(input.TipoPregunta);
+        var opcionesNormalizadas = PreguntaEncuestaValidator.ValidarYNormalizarOpciones(
+            tipoPregunta, input.Opciones);
+
         if (input.TipoActividadId == Guid.Empty)
         {
             throw new PreguntaEncuestaServiceException(
@@ -57,7 +49,9 @@ public class EditarPreguntaEncuestaUseCase
             entity.TipoActividad = tipo;
         }
 
-        entity.Texto = texto;
+        entity.Texto = input.Texto.Trim();
+        entity.TipoPregunta = tipoPregunta;
+        entity.OpcionesJson = PreguntaEncuestaMapper.SerializeOpciones(opcionesNormalizadas);
         entity.Activo = input.Activo;
         entity.FechaActualizacion = DateTime.UtcNow;
 

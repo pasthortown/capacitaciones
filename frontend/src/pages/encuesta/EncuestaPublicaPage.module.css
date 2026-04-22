@@ -55,7 +55,7 @@
 .subtitle {
   color: #555;
   font-size: 14px;
-  margin: 0 0 0;
+  margin: 0;
   line-height: 1.45;
 }
 
@@ -86,6 +86,7 @@
   font-weight: 500;
   margin-bottom: 12px;
   color: #222;
+  line-height: 1.4;
 }
 
 .questionIndex {
@@ -94,67 +95,122 @@
   margin-right: 4px;
 }
 
-.scale {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+/* ===== Selección múltiple ===== */
+.optionsList {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-@media (max-width: 600px) {
-  .scale {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.scaleOption {
+.optionButton {
   background: #fff;
   border: 1px solid #d3d5db;
   border-radius: 8px;
-  padding: 10px 6px;
+  padding: 10px 16px;
   cursor: pointer;
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
   transition: all 0.15s ease;
-  color: #555;
-  font-family: inherit;
-}
-
-.scaleOption:hover:not(:disabled) {
-  border-color: #7a8bff;
   color: #333;
+  font-family: inherit;
+  font-size: 14px;
+  min-width: 90px;
 }
 
-.scaleOption:disabled {
+.optionButton:hover:not(:disabled) {
+  border-color: #7a8bff;
+  background: #f3f5ff;
+}
+
+.optionButton:disabled {
   cursor: not-allowed;
   opacity: 0.65;
 }
 
-.scaleOptionSelected {
+.optionButtonSelected {
   background: #4b5fff;
   border-color: #4b5fff;
   color: #fff;
   font-weight: 600;
 }
 
-.scaleOptionSelected:hover:not(:disabled) {
-  border-color: #3a4be0;
+.optionButtonSelected:hover:not(:disabled) {
   background: #3a4be0;
+  border-color: #3a4be0;
   color: #fff;
 }
 
-.scaleValor {
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
+/* ===== Sí / No ===== */
+.sinoList {
+  display: flex;
+  gap: 10px;
 }
 
-.scaleLabel {
-  font-size: 10.5px;
-  line-height: 1.2;
-  letter-spacing: 0.2px;
+.sinoButton {
+  flex: 1;
+  max-width: 180px;
+  background: #fff;
+  border: 1px solid #d3d5db;
+  border-radius: 8px;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  transition: all 0.15s ease;
+}
+
+.sinoButton:hover:not(:disabled) {
+  border-color: #aaa;
+  background: #f7f7f9;
+}
+
+.sinoButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.sinoButtonYes {
+  background: #1ea97c;
+  border-color: #1ea97c;
+  color: #fff;
+}
+
+.sinoButtonYes:hover:not(:disabled) {
+  background: #188a65;
+  border-color: #188a65;
+  color: #fff;
+}
+
+.sinoButtonNo {
+  background: #d0413a;
+  border-color: #d0413a;
+  color: #fff;
+}
+
+.sinoButtonNo:hover:not(:disabled) {
+  background: #b6362f;
+  border-color: #b6362f;
+  color: #fff;
+}
+
+/* ===== Texto largo ===== */
+.textarea {
+  width: 100%;
+  border: 1px solid #d3d5db;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #4b5fff;
+  box-shadow: 0 0 0 2px rgba(75, 95, 255, 0.15);
 }
 
 .actions {

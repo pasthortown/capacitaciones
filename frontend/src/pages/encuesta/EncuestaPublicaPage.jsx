@@ -15,19 +15,17 @@ import styles from './EncuestaPublicaPage.module.css';
  *  - Lee el id de la capacitación desde la URL (`/encuesta/:capacitacionId`).
  *  - GET /publico/encuesta/:capacitacionId → header + preguntas aplicables.
  *  - El asistente se autoidentifica con su cédula y responde cada pregunta
- *    en escala Likert 1..5 (Muy insatisfecho → Muy satisfecho).
+ *    según su tipo:
+ *     * SeleccionMultiple: radio buttons con las opciones del admin.
+ *     * SiNo: botones Sí / No.
+ *     * TextoLargo: textarea.
  *  - POST → NoContent. Éxito → pantalla de agradecimiento.
  *  - Si ya respondió antes (409 ENCUESTA_YA_RESPONDIDA) se muestra un mensaje
  *    "ya registramos tus respuestas, gracias".
  */
 
-const ESCALA = [
-  { valor: 1, label: 'Muy insatisfecho' },
-  { valor: 2, label: 'Insatisfecho' },
-  { valor: 3, label: 'Neutral' },
-  { valor: 4, label: 'Satisfecho' },
-  { valor: 5, label: 'Muy satisfecho' },
-];
+const SINO_OPCIONES = ['Si', 'No'];
+const SINO_LABELS = { Si: 'Sí', No: 'No' };
 
 export default function EncuestaPublicaPage() {
   const { capacitacionId } = useParams();
@@ -38,7 +36,7 @@ export default function EncuestaPublicaPage() {
   const [capacitacion, setCapacitacion] = useState(null);
   const [preguntas, setPreguntas] = useState([]);
   const [identificacion, setIdentificacion] = useState('');
-  const [respuestas, setRespuestas] = useState({}); // preguntaId -> valor
+  const [respuestas, setRespuestas] = useState({}); // preguntaId -> string
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [successMode, setSuccessMode] = useState(null); // 'submitted' | 'already'
@@ -71,15 +69,19 @@ export default function EncuestaPublicaPage() {
     cargar();
   }, [cargar]);
 
-  const setValor = (preguntaId, valor) => {
+  const setRespuesta = (preguntaId, valor) => {
     setRespuestas((prev) => ({ ...prev, [preguntaId]: valor }));
     if (formError) setFormError('');
   };
 
-  const todasRespondidas = useMemo(
-    () => preguntas.every((p) => Boolean(respuestas[p.id])),
-    [preguntas, respuestas],
-  );
+  const todasRespondidas = useMemo(() => {
+    return preguntas.every((p) => {
+      const v = respuestas[p.id];
+      if (typeof v !== 'string') return false;
+      if (p.tipoPregunta === 'TextoLargo') return v.trim().length > 0;
+      return v.length > 0;
+    });
+  }, [preguntas, respuestas]);
 
   const handleSubmit = async (event) => {
     event?.preventDefault?.();
@@ -98,7 +100,7 @@ export default function EncuestaPublicaPage() {
         identificacion: ced,
         respuestas: preguntas.map((p) => ({
           preguntaEncuestaId: p.id,
-          valor: respuestas[p.id],
+          respuesta: (respuestas[p.id] ?? '').trim(),
         })),
       });
       setSuccessMode('submitted');
@@ -189,8 +191,8 @@ export default function EncuestaPublicaPage() {
           </div>
           <h2 className={styles.sectionTitle}>Encuesta de satisfacción</h2>
           <p className={styles.subtitle}>
-            Ayúdanos con una breve evaluación. Marca la opción que mejor refleje tu experiencia en cada
-            pregunta.
+            Ayúdanos con una breve evaluación. Responde cada pregunta según el formato
+            indicado.
           </p>
         </div>
 
@@ -223,25 +225,7 @@ export default function EncuestaPublicaPage() {
                   <div className={styles.questionText}>
                     <span className={styles.questionIndex}>{idx + 1}.</span> {p.texto}
                   </div>
-                  <div className={styles.scale} role="radiogroup" aria-label={p.texto}>
-                    {ESCALA.map((op) => {
-                      const selected = respuestas[p.id] === op.valor;
-                      return (
-                        <button
-                          key={op.valor}
-                          type="button"
-                          role="radio"
-                          aria-checked={selected}
-                          disabled={submitting}
-                          onClick={() => setValor(p.id, op.valor)}
-                          className={`${styles.scaleOption}${selected ? ` ${styles.scaleOptionSelected}` : ''}`}
-                        >
-                          <span className={styles.scaleValor}>{op.valor}</span>
-                          <span className={styles.scaleLabel}>{op.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {renderInput(p, respuestas[p.id], (v) => setRespuesta(p.id, v), submitting)}
                 </li>
               ))}
             </ol>
@@ -268,5 +252,73 @@ export default function EncuestaPublicaPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+function renderInput(pregunta, value, onChange, disabled) {
+  if (pregunta.tipoPregunta === 'SeleccionMultiple') {
+    const opciones = Array.isArray(pregunta.opciones) ? pregunta.opciones : [];
+    return (
+      <div className={styles.optionsList} role="radiogroup" aria-label={pregunta.texto}>
+        {opciones.map((op) => {
+          const selected = value === op;
+          return (
+            <button
+              key={op}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              disabled={disabled}
+              onClick={() => onChange(op)}
+              className={`${styles.optionButton}${selected ? ` ${styles.optionButtonSelected}` : ''}`}
+            >
+              {op}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (pregunta.tipoPregunta === 'SiNo') {
+    return (
+      <div className={styles.sinoList} role="radiogroup" aria-label={pregunta.texto}>
+        {SINO_OPCIONES.map((op) => {
+          const selected = value === op;
+          return (
+            <button
+              key={op}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              disabled={disabled}
+              onClick={() => onChange(op)}
+              className={`${styles.sinoButton} ${
+                selected
+                  ? op === 'Si'
+                    ? styles.sinoButtonYes
+                    : styles.sinoButtonNo
+                  : ''
+              }`}
+            >
+              {SINO_LABELS[op]}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // TextoLargo
+  return (
+    <textarea
+      className={styles.textarea}
+      rows={4}
+      maxLength={2000}
+      value={value ?? ''}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      placeholder="Escribe tu comentario..."
+    />
   );
 }

@@ -1,6 +1,8 @@
 using Capacitaciones.Application.Dtos.Encuesta;
 using Capacitaciones.Application.Ports;
 using Capacitaciones.Application.UseCases.Capacitaciones;
+using Capacitaciones.Application.UseCases.PreguntasEncuesta;
+using Capacitaciones.Domain.Entities;
 
 namespace Capacitaciones.Application.UseCases.Encuesta;
 
@@ -52,8 +54,16 @@ public class ObtenerEncuestaPublicaUseCase
             DuracionMinutos = cap.DuracionMinutos,
             TipoActividadNombre = cap.TipoActividad?.Nombre ?? string.Empty,
             Preguntas = preguntas
-                .Select(p => new EncuestaPreguntaDto { Id = p.Id, Texto = p.Texto })
+                .Select(MapPregunta)
                 .ToArray()
         };
     }
+
+    private static EncuestaPreguntaDto MapPregunta(PreguntaEncuesta p) => new()
+    {
+        Id = p.Id,
+        Texto = p.Texto,
+        TipoPregunta = p.TipoPregunta.ToString(),
+        Opciones = PreguntaEncuestaMapper.ParseOpciones(p.OpcionesJson)
+    };
 }

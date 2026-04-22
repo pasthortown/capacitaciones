@@ -15,6 +15,13 @@ public class PreguntaEncuestaConfiguration : IEntityTypeConfiguration<PreguntaEn
             .HasMaxLength(500)
             .IsRequired();
 
+        builder.Property(p => p.TipoPregunta)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(TipoPregunta.SeleccionMultiple);
+
+        builder.Property(p => p.OpcionesJson);
+
         builder.Property(p => p.Activo)
             .IsRequired()
             .HasDefaultValue(true);

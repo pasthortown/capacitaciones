@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Pencil, Trash2, RotateCcw } from 'lucide-react';
+import { Plus, Pencil, Trash2, RotateCcw, X, GripVertical } from 'lucide-react';
 import DataTable from '../../components/Table/DataTable.jsx';
 import Modal from '../../components/Modal/Modal.jsx';
 import Toggle from '../../components/Forms/Toggle.jsx';
@@ -15,9 +15,18 @@ import {
 
 /**
  * CRUD de preguntas de encuesta de satisfacción. Cada pregunta está asociada
- * a un Tipo de Actividad — al finalizar una capacitación, se muestran a los
- * asistentes las preguntas activas cuyo tipo coincida con el de la capacitación.
+ * a un Tipo de Actividad y tiene un tipo propio (Selección múltiple, Texto largo
+ * o Sí/No). Para Selección múltiple el admin define la lista de opciones.
  */
+
+const TIPOS_PREGUNTA = [
+  { value: 'SeleccionMultiple', label: 'Selección múltiple' },
+  { value: 'TextoLargo', label: 'Texto largo (comentarios)' },
+  { value: 'SiNo', label: 'Sí / No' },
+];
+
+const TIPO_LABEL = Object.fromEntries(TIPOS_PREGUNTA.map((t) => [t.value, t.label]));
+
 export default function PreguntasEncuestaPage() {
   const toast = useToast();
 
@@ -31,6 +40,8 @@ export default function PreguntasEncuestaPage() {
   const [editing, setEditing] = useState(null);
   const [tipoActividadId, setTipoActividadId] = useState('');
   const [texto, setTexto] = useState('');
+  const [tipoPregunta, setTipoPregunta] = useState('SeleccionMultiple');
+  const [opciones, setOpciones] = useState(['', '']);
   const [activo, setActivo] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -71,12 +82,18 @@ export default function PreguntasEncuestaPage() {
     refresh();
   }, [refresh]);
 
-  const openCreate = () => {
-    setEditing(null);
+  const resetForm = () => {
     setTipoActividadId(filtroTipoId || '');
     setTexto('');
+    setTipoPregunta('SeleccionMultiple');
+    setOpciones(['', '']);
     setActivo(true);
     setErrors({});
+  };
+
+  const openCreate = () => {
+    setEditing(null);
+    resetForm();
     setFormOpen(true);
   };
 
@@ -84,6 +101,9 @@ export default function PreguntasEncuestaPage() {
     setEditing(row);
     setTipoActividadId(row?.tipoActividadId || '');
     setTexto(row?.texto || '');
+    setTipoPregunta(row?.tipoPregunta || 'SeleccionMultiple');
+    const ops = Array.isArray(row?.opciones) ? row.opciones.slice() : [];
+    setOpciones(ops.length > 0 ? ops : ['', '']);
     setActivo(Boolean(row?.activo));
     setErrors({});
     setFormOpen(true);
@@ -94,12 +114,44 @@ export default function PreguntasEncuestaPage() {
     setFormOpen(false);
   };
 
+  const handleTipoPreguntaChange = (next) => {
+    setTipoPregunta(next);
+    if (errors.opciones) setErrors((prev) => ({ ...prev, opciones: '' }));
+    // Al cambiar a Selección múltiple y no hay opciones, precargar 2 vacías.
+    if (next === 'SeleccionMultiple' && (!opciones || opciones.length < 2)) {
+      setOpciones(['', '']);
+    }
+  };
+
+  const setOpcion = (idx, value) => {
+    setOpciones((prev) => prev.map((op, i) => (i === idx ? value : op)));
+    if (errors.opciones) setErrors((prev) => ({ ...prev, opciones: '' }));
+  };
+
+  const agregarOpcion = () => {
+    setOpciones((prev) => [...prev, '']);
+  };
+
+  const quitarOpcion = (idx) => {
+    setOpciones((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   const validate = () => {
     const next = {};
     if (!tipoActividadId) next.tipoActividadId = 'Selecciona un tipo de actividad.';
     const t = (texto || '').trim();
     if (!t) next.texto = 'El texto de la pregunta es obligatorio.';
     else if (t.length > 500) next.texto = 'Máximo 500 caracteres.';
+
+    if (tipoPregunta === 'SeleccionMultiple') {
+      const limpias = opciones.map((o) => (o || '').trim()).filter((o) => o.length > 0);
+      const setOpts = new Set(limpias.map((o) => o.toLowerCase()));
+      if (limpias.length < 2) next.opciones = 'Agrega al menos 2 opciones.';
+      else if (setOpts.size !== limpias.length) next.opciones = 'Las opciones no pueden repetirse.';
+      else if (limpias.some((o) => o.length > 200))
+        next.opciones = 'Cada opción admite máximo 200 caracteres.';
+    }
+
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -109,7 +161,16 @@ export default function PreguntasEncuestaPage() {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      const payload = { tipoActividadId, texto: texto.trim(), activo };
+      const payload = {
+        tipoActividadId,
+        texto: texto.trim(),
+        tipoPregunta,
+        opciones:
+          tipoPregunta === 'SeleccionMultiple'
+            ? opciones.map((o) => (o || '').trim()).filter((o) => o.length > 0)
+            : [],
+        activo,
+      };
       if (editing) {
         await updatePregunta(editing.id, payload);
         toast.success('Pregunta actualizada.');
@@ -150,6 +211,8 @@ export default function PreguntasEncuestaPage() {
       await updatePregunta(row.id, {
         tipoActividadId: row.tipoActividadId,
         texto: row.texto,
+        tipoPregunta: row.tipoPregunta,
+        opciones: Array.isArray(row.opciones) ? row.opciones : [],
         activo: true,
       });
       toast.success('Pregunta reactivada.');
@@ -164,13 +227,28 @@ export default function PreguntasEncuestaPage() {
       {
         key: 'tipoActividad',
         header: 'Tipo de actividad',
-        width: '200px',
+        width: '180px',
         accessor: (row) => row?.tipoActividadNombre || '—',
+      },
+      {
+        key: 'tipoPregunta',
+        header: 'Formato',
+        width: '170px',
+        accessor: (row) => TIPO_LABEL[row?.tipoPregunta] || row?.tipoPregunta || '—',
       },
       {
         key: 'texto',
         header: 'Pregunta',
-        accessor: (row) => row?.texto || '—',
+        accessor: (row) => (
+          <div>
+            <div>{row?.texto || '—'}</div>
+            {row?.tipoPregunta === 'SeleccionMultiple' && Array.isArray(row?.opciones) && row.opciones.length > 0 && (
+              <div className="text-xs text-secondary" style={{ marginTop: 4 }}>
+                Opciones: {row.opciones.join(' · ')}
+              </div>
+            )}
+          </div>
+        ),
       },
       {
         key: 'activo',
@@ -192,8 +270,8 @@ export default function PreguntasEncuestaPage() {
         <div>
           <h1 className="page-header__title">Preguntas de encuesta</h1>
           <p className="page-header__subtitle">
-            Banco de preguntas de satisfacción por tipo de actividad. Al finalizar una
-            capacitación, los asistentes verán las preguntas activas cuyo tipo coincida.
+            Banco de preguntas de satisfacción por tipo de actividad. Cada pregunta puede
+            ser de selección múltiple (con opciones), texto largo (comentarios) o Sí/No.
           </p>
         </div>
       </div>
@@ -319,11 +397,35 @@ export default function PreguntasEncuestaPage() {
 
           <div className="form-group" style={{ position: 'static', marginTop: 12 }}>
             <label className="form-label form-label--required" style={{ position: 'static' }}>
+              Formato de la pregunta
+            </label>
+            <select
+              className="form-input"
+              value={tipoPregunta}
+              onChange={(e) => handleTipoPreguntaChange(e.target.value)}
+            >
+              {TIPOS_PREGUNTA.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+            <div className="form-helper">
+              {tipoPregunta === 'SeleccionMultiple'
+                ? 'El asistente elige una de las opciones que definas.'
+                : tipoPregunta === 'TextoLargo'
+                ? 'El asistente escribe un comentario libre.'
+                : 'El asistente responde "Sí" o "No".'}
+            </div>
+          </div>
+
+          <div className="form-group" style={{ position: 'static', marginTop: 12 }}>
+            <label className="form-label form-label--required" style={{ position: 'static' }}>
               Pregunta
             </label>
             <textarea
               className={`form-input${errors.texto ? ' form-input--error' : ''}`}
-              rows={4}
+              rows={3}
               maxLength={500}
               value={texto}
               onChange={(e) => {
@@ -338,6 +440,55 @@ export default function PreguntasEncuestaPage() {
               <div className="form-helper">Máximo 500 caracteres.</div>
             )}
           </div>
+
+          {tipoPregunta === 'SeleccionMultiple' && (
+            <div className="form-group" style={{ position: 'static', marginTop: 12 }}>
+              <label className="form-label form-label--required" style={{ position: 'static' }}>
+                Opciones
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {opciones.map((op, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <GripVertical width={14} height={14} style={{ color: '#999', flexShrink: 0 }} />
+                    <input
+                      className="form-input"
+                      value={op}
+                      onChange={(e) => setOpcion(idx, e.target.value)}
+                      placeholder={`Opción ${idx + 1}`}
+                      maxLength={200}
+                    />
+                    {opciones.length > 2 && (
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--sm btn--icon"
+                        onClick={() => quitarOpcion(idx)}
+                        aria-label="Quitar opción"
+                        title="Quitar"
+                      >
+                        <X width={14} height={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={agregarOpcion}
+                  disabled={opciones.length >= 10}
+                >
+                  <Plus width={14} height={14} />
+                  <span>Agregar opción</span>
+                </button>
+              </div>
+              {errors.opciones ? (
+                <div className="form-helper form-helper--error">{errors.opciones}</div>
+              ) : (
+                <div className="form-helper">Entre 2 y 10 opciones. Máximo 200 caracteres cada una.</div>
+              )}
+            </div>
+          )}
 
           <div style={{ marginTop: 12 }}>
             <Toggle

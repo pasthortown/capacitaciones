@@ -11,7 +11,7 @@ public class RespuestaEncuestaConfiguration : IEntityTypeConfiguration<Respuesta
         builder.ToTable("RespuestaEncuesta", "dbo");
         builder.HasKey(r => r.Id);
 
-        builder.Property(r => r.Valor)
+        builder.Property(r => r.Respuesta)
             .IsRequired();
 
         builder.Property(r => r.FechaRespuesta)
@@ -28,7 +28,6 @@ public class RespuestaEncuestaConfiguration : IEntityTypeConfiguration<Respuesta
             .HasForeignKey(r => r.PreguntaEncuestaId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Una respuesta por (asistente, pregunta). Usado para reforzar "encuesta única".
         builder.HasIndex(r => new { r.AsistenteId, r.PreguntaEncuestaId })
             .IsUnique()
             .HasDatabaseName("UX_RespuestaEncuesta_Asistente_Pregunta");

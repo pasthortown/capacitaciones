@@ -21,4 +21,6 @@ public class EncuestaPreguntaDto
 {
     public Guid Id { get; set; }
     public string Texto { get; set; } = string.Empty;
+    public string TipoPregunta { get; set; } = string.Empty;
+    public IReadOnlyList<string> Opciones { get; set; } = Array.Empty<string>();
 }

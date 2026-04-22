@@ -7,6 +7,7 @@ namespace Capacitaciones.Application.UseCases.PreguntasEncuesta;
 public class CrearPreguntaEncuestaUseCase
 {
     public const int MaxTextoLength = 500;
+    public const int MaxOpcionLength = 200;
 
     private readonly IPreguntaEncuestaRepository _repo;
     private readonly ITipoActividadRepository _tiposActividad;
@@ -23,17 +24,11 @@ public class CrearPreguntaEncuestaUseCase
         UpsertPreguntaEncuestaDto input,
         CancellationToken ct)
     {
-        var texto = (input.Texto ?? string.Empty).Trim();
-        if (string.IsNullOrEmpty(texto))
-        {
-            throw new PreguntaEncuestaServiceException("TEXTO_VACIO", "El texto de la pregunta es obligatorio.");
-        }
-        if (texto.Length > MaxTextoLength)
-        {
-            throw new PreguntaEncuestaServiceException(
-                "TEXTO_DEMASIADO_LARGO",
-                $"El texto de la pregunta no puede exceder {MaxTextoLength} caracteres.");
-        }
+        PreguntaEncuestaValidator.ValidarTexto(input.Texto);
+        var tipoPregunta = PreguntaEncuestaValidator.ParseTipoPregunta(input.TipoPregunta);
+        var opcionesNormalizadas = PreguntaEncuestaValidator.ValidarYNormalizarOpciones(
+            tipoPregunta, input.Opciones);
+
         if (input.TipoActividadId == Guid.Empty)
         {
             throw new PreguntaEncuestaServiceException(
@@ -53,7 +48,9 @@ public class CrearPreguntaEncuestaUseCase
         {
             Id = Guid.NewGuid(),
             TipoActividadId = tipo.Id,
-            Texto = texto,
+            Texto = input.Texto.Trim(),
+            TipoPregunta = tipoPregunta,
+            OpcionesJson = PreguntaEncuestaMapper.SerializeOpciones(opcionesNormalizadas),
             Activo = input.Activo,
             FechaCreacion = DateTime.UtcNow,
             FechaActualizacion = null
@@ -61,7 +58,6 @@ public class CrearPreguntaEncuestaUseCase
 
         await _repo.AddAsync(entity, ct);
 
-        // Re-hidratamos para traer el nombre del tipo de actividad (navegación).
         var created = await _repo.GetByIdAsync(entity.Id, ct) ?? entity;
         if (created.TipoActividad is null)
         {

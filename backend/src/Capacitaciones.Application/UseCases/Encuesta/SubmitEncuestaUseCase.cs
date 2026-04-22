@@ -1,6 +1,7 @@
 using Capacitaciones.Application.Dtos.Encuesta;
 using Capacitaciones.Application.Ports;
 using Capacitaciones.Application.UseCases.Capacitaciones;
+using Capacitaciones.Application.UseCases.PreguntasEncuesta;
 using Capacitaciones.Domain.Entities;
 
 namespace Capacitaciones.Application.UseCases.Encuesta;
@@ -12,13 +13,15 @@ namespace Capacitaciones.Application.UseCases.Encuesta;
 ///  - La capacitación debe existir, estar activa y en estado Finalizada.
 ///  - El asistente se identifica por (capacitacionId, identificacion); si no existe → 404.
 ///  - No se permite responder dos veces (409 ENCUESTA_YA_RESPONDIDA).
-///  - Cada respuesta debe ser entero 1..5.
-///  - Todas las preguntas activas del tipo de actividad deben tener respuesta (no se acepta parcial).
+///  - Todas las preguntas activas del tipo de actividad deben tener respuesta.
+///  - Validación por tipo:
+///     * SeleccionMultiple → valor debe ser una de las opciones.
+///     * SiNo → valor debe ser "Si" | "No" (case-insensitive, normalizado a "Si"/"No").
+///     * TextoLargo → se trimea; respuesta no vacía obligatoria (máx 2000 chars).
 /// </summary>
 public class SubmitEncuestaUseCase
 {
-    public const int ValorMinimo = 1;
-    public const int ValorMaximo = 5;
+    public const int MaxRespuestaTextoLength = 2000;
 
     private readonly ICapacitacionRepository _capacitaciones;
     private readonly IAsistenteRepository _asistentes;
@@ -89,41 +92,100 @@ public class SubmitEncuestaUseCase
                 "Aún no hay preguntas configuradas para este tipo de actividad.");
         }
 
-        var preguntasValidasIds = preguntas.Select(p => p.Id).ToHashSet();
-        var respuestasById = (input.Respuestas ?? Array.Empty<RespuestaItemDto>())
+        var respuestasIn = (input.Respuestas ?? Array.Empty<RespuestaItemDto>())
             .GroupBy(r => r.PreguntaEncuestaId)
             .ToDictionary(g => g.Key, g => g.First());
 
+        var ahora = DateTime.UtcNow;
+        var entidades = new List<RespuestaEncuesta>(preguntas.Count);
+
         foreach (var p in preguntas)
         {
-            if (!respuestasById.TryGetValue(p.Id, out var r))
+            if (!respuestasIn.TryGetValue(p.Id, out var r))
             {
                 throw new EncuestaServiceException(
                     "RESPUESTA_FALTANTE",
                     "Debes responder todas las preguntas antes de enviar.");
             }
-            if (r.Valor < ValorMinimo || r.Valor > ValorMaximo)
-            {
-                throw new EncuestaServiceException(
-                    "VALOR_FUERA_DE_RANGO",
-                    $"Las respuestas deben ser enteros entre {ValorMinimo} y {ValorMaximo}.");
-            }
-        }
 
-        // Si el cliente envía respuestas para preguntas que no aplican al tipo, las ignoramos.
-        var ahora = DateTime.UtcNow;
-        var entidades = respuestasById.Values
-            .Where(r => preguntasValidasIds.Contains(r.PreguntaEncuestaId))
-            .Select(r => new RespuestaEncuesta
+            var respuestaNormalizada = NormalizarRespuesta(p, r.Respuesta);
+
+            entidades.Add(new RespuestaEncuesta
             {
                 Id = Guid.NewGuid(),
                 AsistenteId = asistente.Id,
-                PreguntaEncuestaId = r.PreguntaEncuestaId,
-                Valor = r.Valor,
+                PreguntaEncuestaId = p.Id,
+                Respuesta = respuestaNormalizada,
                 FechaRespuesta = ahora
-            })
-            .ToList();
+            });
+        }
 
         await _respuestas.AddRangeAsync(entidades, ct);
+    }
+
+    /// <summary>
+    /// Valida y normaliza la respuesta según el tipo de pregunta. Lanza
+    /// <see cref="EncuestaServiceException"/> con códigos específicos si el valor
+    /// no es válido.
+    /// </summary>
+    private static string NormalizarRespuesta(PreguntaEncuesta pregunta, string? respuesta)
+    {
+        var raw = (respuesta ?? string.Empty).Trim();
+
+        switch (pregunta.TipoPregunta)
+        {
+            case TipoPregunta.SeleccionMultiple:
+            {
+                if (string.IsNullOrEmpty(raw))
+                {
+                    throw new EncuestaServiceException(
+                        "RESPUESTA_FALTANTE",
+                        "Debes seleccionar una opción.");
+                }
+                var opciones = PreguntaEncuestaMapper.ParseOpciones(pregunta.OpcionesJson);
+                var match = opciones.FirstOrDefault(
+                    o => string.Equals(o, raw, StringComparison.OrdinalIgnoreCase));
+                if (match is null)
+                {
+                    throw new EncuestaServiceException(
+                        "OPCION_INVALIDA",
+                        "La opción seleccionada no está entre las permitidas.");
+                }
+                return match;
+            }
+
+            case TipoPregunta.SiNo:
+            {
+                // Aceptamos "Si" / "Sí" / "No" en cualquier capitalización.
+                var lower = raw.ToLowerInvariant();
+                if (lower is "si" or "sí") return "Si";
+                if (lower == "no") return "No";
+                throw new EncuestaServiceException(
+                    "OPCION_INVALIDA",
+                    "La respuesta debe ser 'Si' o 'No'.");
+            }
+
+            case TipoPregunta.TextoLargo:
+            {
+                if (string.IsNullOrEmpty(raw))
+                {
+                    throw new EncuestaServiceException(
+                        "RESPUESTA_FALTANTE",
+                        "Este campo es obligatorio.");
+                }
+                if (raw.Length > MaxRespuestaTextoLength)
+                {
+                    throw new EncuestaServiceException(
+                        "RESPUESTA_DEMASIADO_LARGA",
+                        $"El comentario no puede exceder {MaxRespuestaTextoLength} caracteres.");
+                }
+                return raw;
+            }
+
+            default:
+                throw new EncuestaServiceException(
+                    "TIPO_PREGUNTA_INVALIDO",
+                    "Tipo de pregunta no soportado.");
+        }
     }
 }

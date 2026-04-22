@@ -2,8 +2,9 @@ namespace Capacitaciones.Domain.Entities;
 
 /// <summary>
 /// Respuesta de un asistente a una pregunta de la encuesta de satisfacción.
-/// Escala Likert 1..5 (1=Muy insatisfecho, 5=Muy satisfecho). Un asistente
-/// responde a cada pregunta exactamente una vez por capacitación.
+/// El contenido se guarda como string: para SeleccionMultiple el texto de la
+/// opción elegida, para SiNo "Si" | "No", para TextoLargo el comentario libre.
+/// Un asistente responde a cada pregunta exactamente una vez por capacitación.
 /// </summary>
 public class RespuestaEncuesta
 {
@@ -17,7 +18,8 @@ public class RespuestaEncuesta
 
     public PreguntaEncuesta? PreguntaEncuesta { get; set; }
 
-    public int Valor { get; set; }
+    /// <summary>Respuesta como texto. Interpretación depende de PreguntaEncuesta.TipoPregunta.</summary>
+    public string Respuesta { get; set; } = string.Empty;
 
     public DateTime FechaRespuesta { get; set; }
 }

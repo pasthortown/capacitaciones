@@ -14,5 +14,5 @@ public class SubmitEncuestaDto
 public class RespuestaItemDto
 {
     public Guid PreguntaEncuestaId { get; set; }
-    public int Valor { get; set; }
+    public string Respuesta { get; set; } = string.Empty;
 }
