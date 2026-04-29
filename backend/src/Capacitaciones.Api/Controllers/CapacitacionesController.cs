@@ -177,10 +177,10 @@ public class CapacitacionesController : ControllerBase
         {
             return ToProblem(ex);
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (IsMailSenderFailure(ex, ct))
         {
             _logger.LogWarning(ex, "mail_sender falló al enviar la invitación de inscripción de la capacitación {CapacitacionId}.", id);
-            return new ObjectResult(new { error = "MAIL_SENDER_NO_DISPONIBLE", message = "No se pudo enviar el correo: el servicio de correos no respondió." })
+            return new ObjectResult(new { error = "MAIL_SENDER_NO_DISPONIBLE", message = "No se pudo enviar el correo: el servicio de correos no respondió a tiempo." })
             {
                 StatusCode = StatusCodes.Status502BadGateway
             };
@@ -203,12 +203,13 @@ public class CapacitacionesController : ControllerBase
         {
             return ToProblem(ex);
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (IsMailSenderFailure(ex, ct))
         {
-            // Falla del servicio mail_sender (red o 5xx). Mapeamos a 502 para
-            // que el front muestre un error claro y el admin pueda reintentar.
+            // Falla del servicio mail_sender (red, 5xx, timeout, o SMTP egress
+            // bloqueado). Mapeamos a 502 para que el front muestre un error
+            // claro y el admin pueda reintentar.
             _logger.LogWarning(ex, "mail_sender falló al notificar al capacitador de la capacitación {CapacitacionId}.", id);
-            return new ObjectResult(new { error = "MAIL_SENDER_NO_DISPONIBLE", message = "No se pudo enviar el correo: el servicio de correos no respondió." })
+            return new ObjectResult(new { error = "MAIL_SENDER_NO_DISPONIBLE", message = "No se pudo enviar el correo: el servicio de correos no respondió a tiempo." })
             {
                 StatusCode = StatusCodes.Status502BadGateway
             };
@@ -461,6 +462,24 @@ public class CapacitacionesController : ControllerBase
         {
             return ToProblem(ex);
         }
+    }
+
+    /// <summary>
+    /// Decide si una excepción capturada en los endpoints de notificación
+    /// proviene del cliente HTTP a <c>mail_sender</c> y por tanto debe
+    /// mapearse a 502, o si fue una cancelación real del request por parte
+    /// del cliente (token <paramref name="userCt"/> cancelado), en cuyo caso
+    /// se deja propagar.
+    /// </summary>
+    private static bool IsMailSenderFailure(Exception ex, CancellationToken userCt)
+    {
+        // Si el cliente abortó la petición HTTP entrante, la respuesta ya no
+        // importa — dejamos que el framework lo maneje.
+        if (userCt.IsCancellationRequested) return false;
+
+        return ex is HttpRequestException
+            || ex is TaskCanceledException
+            || ex is OperationCanceledException;
     }
 
     private static ObjectResult ToProblem(CapacitacionServiceException ex)
