@@ -69,6 +69,8 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       EmisorDocumentos__BaseUrl: http://emisor_documentos:3000
       EmisorReportes__BaseUrl: http://emisor_reportes:5000
+      MailSender__BaseUrl: http://mail_sender:8000
+      Notifications__PublicBaseUrl: ${PUBLIC_BASE_URL}
       REPOSITORIO_DIR: /repository
       IMAGEN_CAPACITACIONES_DIR: /imagen_capacitaciones
     volumes:
@@ -151,6 +153,7 @@ services:
       SMTP_FROM: ${SMTP_FROM}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_USE_TLS: ${SMTP_USE_TLS}
+      LOGO_URL: ${LOGO_URL}
     volumes:
       - ./mail_sender/plantillas:/app/plantillas
     networks:

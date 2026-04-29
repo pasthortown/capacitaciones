@@ -1,9 +1,11 @@
+using System.Security.Claims;
 using Capacitaciones.Application.Dtos.Capacitaciones;
 using Capacitaciones.Application.UseCases.Calificaciones;
 using Capacitaciones.Application.UseCases.Capacitaciones;
 using Capacitaciones.Application.UseCases.Capacitador;
 using Capacitaciones.Application.UseCases.Certificados;
 using Capacitaciones.Application.UseCases.Inscripcion;
+using Capacitaciones.Application.UseCases.Notifications;
 using Capacitaciones.Application.UseCases.PaseLista;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,6 +43,8 @@ public class CapacitacionesController : ControllerBase
     private readonly EliminarLogoCapacitacionUseCase _eliminarLogo;
     private readonly GenerarLinkPaseListaUseCase _generarLinkPaseLista;
     private readonly GenerarLinkCalificacionesUseCase _generarLinkCalificaciones;
+    private readonly NotificarResumenCapacitacionUseCase _notificarResumen;
+    private readonly ILogger<CapacitacionesController> _logger;
 
     public CapacitacionesController(
         ListarCapacitacionesUseCase listar,
@@ -54,7 +58,9 @@ public class CapacitacionesController : ControllerBase
         SubirLogoCapacitacionUseCase subirLogo,
         EliminarLogoCapacitacionUseCase eliminarLogo,
         GenerarLinkPaseListaUseCase generarLinkPaseLista,
-        GenerarLinkCalificacionesUseCase generarLinkCalificaciones)
+        GenerarLinkCalificacionesUseCase generarLinkCalificaciones,
+        NotificarResumenCapacitacionUseCase notificarResumen,
+        ILogger<CapacitacionesController> logger)
     {
         _listar = listar;
         _obtener = obtener;
@@ -68,6 +74,8 @@ public class CapacitacionesController : ControllerBase
         _eliminarLogo = eliminarLogo;
         _generarLinkPaseLista = generarLinkPaseLista;
         _generarLinkCalificaciones = generarLinkCalificaciones;
+        _notificarResumen = notificarResumen;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -96,6 +104,7 @@ public class CapacitacionesController : ControllerBase
         try
         {
             var dto = await _crear.ExecuteAsync(input, ct);
+            await NotificarAdminAsync(dto.Id, isCreate: true, ct);
             var location = Url.Action("GetById", new { id = dto.Id }) ?? string.Empty;
             return Created(location, dto);
         }
@@ -115,6 +124,7 @@ public class CapacitacionesController : ControllerBase
         try
         {
             var dto = await _editar.ExecuteAsync(id, input, ct);
+            await NotificarAdminAsync(dto.Id, isCreate: false, ct);
             return Ok(dto);
         }
         catch (CapacitacionNotFoundException)
@@ -124,6 +134,36 @@ public class CapacitacionesController : ControllerBase
         catch (CapacitacionServiceException ex)
         {
             return ToProblem(ex);
+        }
+    }
+
+    /// <summary>
+    /// Dispara el correo "resumen del evento" al admin que está autenticado.
+    /// Es no-bloqueante en el sentido de que jamás revierte el create/update:
+    /// captura cualquier excepción del cliente HTTP a <c>mail_sender</c> y
+    /// la registra como warning. La operación principal ya se persistió.
+    /// </summary>
+    private async Task NotificarAdminAsync(Guid capacitacionId, bool isCreate, CancellationToken ct)
+    {
+        var adminEmail = User.FindFirstValue(ClaimTypes.Email)
+            ?? User.FindFirstValue("email");
+        if (string.IsNullOrWhiteSpace(adminEmail))
+        {
+            return;
+        }
+
+        try
+        {
+            await _notificarResumen.ExecuteAsync(capacitacionId, adminEmail, isCreate, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "No se pudo enviar el correo de resumen ({Operacion}) de la capacitación {CapacitacionId} al admin {AdminEmail}.",
+                isCreate ? "creación" : "edición",
+                capacitacionId,
+                adminEmail);
         }
     }
 

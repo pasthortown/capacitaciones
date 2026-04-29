@@ -11,6 +11,7 @@ using Capacitaciones.Application.UseCases.Certificados;
 using Capacitaciones.Application.UseCases.Configuracion;
 using Capacitaciones.Application.UseCases.Encuesta;
 using Capacitaciones.Application.UseCases.Inscripcion;
+using Capacitaciones.Application.UseCases.Notifications;
 using Capacitaciones.Application.UseCases.PaseLista;
 using Capacitaciones.Application.UseCases.PreguntasEncuesta;
 using Capacitaciones.Application.UseCases.Recursos;
@@ -192,6 +193,35 @@ builder.Services.AddScoped<EditarCapacitacionUseCase>();
 builder.Services.AddScoped<EliminarCapacitacionUseCase>();
 builder.Services.AddScoped<SubirLogoCapacitacionUseCase>();
 builder.Services.AddScoped<EliminarLogoCapacitacionUseCase>();
+
+// Notificaciones por correo (mail_sender) — usadas por el controller después
+// de operaciones admin (ej. crear/editar capacitación) para enviar al admin
+// que disparó la acción un resumen con QR + link de inscripción pública.
+builder.Services.AddSingleton<IQrGenerator, QrCoderQrGenerator>();
+var mailSenderOptions = builder.Configuration.GetSection(MailSenderOptions.SectionName)
+    .Get<MailSenderOptions>() ?? new MailSenderOptions();
+if (string.IsNullOrWhiteSpace(mailSenderOptions.BaseUrl))
+{
+    mailSenderOptions.BaseUrl = "http://mail_sender:8000";
+}
+if (mailSenderOptions.TimeoutSeconds <= 0)
+{
+    mailSenderOptions.TimeoutSeconds = 60;
+}
+builder.Services.AddSingleton(mailSenderOptions);
+builder.Services.AddHttpClient<IMailSenderClient, MailSenderHttpClient>(client =>
+{
+    var baseUrl = mailSenderOptions.BaseUrl;
+    if (!baseUrl.EndsWith('/')) baseUrl += "/";
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(mailSenderOptions.TimeoutSeconds);
+});
+
+var notificationsConfig = builder.Configuration.GetSection(NotificationsConfigOptions.SectionName)
+    .Get<NotificationsConfigOptions>() ?? new NotificationsConfigOptions();
+builder.Services.AddSingleton<INotificationsConfig>(notificationsConfig);
+
+builder.Services.AddScoped<NotificarResumenCapacitacionUseCase>();
 
 // Fase 4 — flujo del capacitador (link firmado + GET/PUT sobre su propia capacitación).
 builder.Services.AddScoped<GenerarLinkCapacitadorUseCase>();

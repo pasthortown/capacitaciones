@@ -25,6 +25,21 @@ def load_logo_base64() -> str:
         return ""
 
 
+def resolve_logo_src() -> str:
+    """
+    Resuelve el src del logo a usar en las plantillas:
+    - Si LOGO_URL está definida, retorna esa URL pública (se usa cuando el
+      sistema esté publicado en un dominio accesible desde clientes de email).
+    - En caso contrario, embebe assets/logo.png como data URI base64 (fallback
+      útil mientras la app no es pública).
+    """
+    url = os.environ.get("LOGO_URL", "").strip()
+    if url:
+        return url
+    b64 = load_logo_base64()
+    return f"data:image/png;base64,{b64}" if b64 else ""
+
+
 def load_smtp_config() -> Dict[str, str]:
     required = ["SMTP_HOST", "SMTP_PORT", "SMTP_FROM", "SMTP_PASSWORD"]
     missing = [k for k in required if not os.environ.get(k)]
@@ -43,7 +58,7 @@ jinja_env = Environment(
     loader=FileSystemLoader(TEMPLATES_DIR),
     autoescape=select_autoescape(["html", "xml"]),
 )
-jinja_env.globals["logo_base64"] = load_logo_base64()
+jinja_env.globals["logo_src"] = resolve_logo_src()
 
 
 class Attachment(BaseModel):
