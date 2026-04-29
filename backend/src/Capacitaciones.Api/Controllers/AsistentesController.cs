@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Capacitaciones.Application.Dtos.Calificaciones;
 using Capacitaciones.Application.Dtos.PaseLista;
 using Capacitaciones.Application.UseCases.Asistentes;
@@ -5,6 +6,7 @@ using Capacitaciones.Application.UseCases.Calificaciones;
 using Capacitaciones.Application.UseCases.Capacitaciones;
 using Capacitaciones.Application.UseCases.Capacitador;
 using Capacitaciones.Application.UseCases.Certificados;
+using Capacitaciones.Application.UseCases.Notifications;
 using Capacitaciones.Application.UseCases.PaseLista;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,19 +27,25 @@ public class AsistentesController : ControllerBase
     private readonly MarcarAsistenciaUseCase _marcarAsistencia;
     private readonly CalificarAsistenteUseCase _calificar;
     private readonly DescargarReporteAsistenciaUseCase _descargarReporte;
+    private readonly EnviarReporteAsistenciaAdminUseCase _enviarReporte;
+    private readonly ILogger<AsistentesController> _logger;
 
     public AsistentesController(
         ListarAsistentesUseCase listar,
         DescargarCertificadoUseCase descargarCertificado,
         MarcarAsistenciaUseCase marcarAsistencia,
         CalificarAsistenteUseCase calificar,
-        DescargarReporteAsistenciaUseCase descargarReporte)
+        DescargarReporteAsistenciaUseCase descargarReporte,
+        EnviarReporteAsistenciaAdminUseCase enviarReporte,
+        ILogger<AsistentesController> logger)
     {
         _listar = listar;
         _descargarCertificado = descargarCertificado;
         _marcarAsistencia = marcarAsistencia;
         _calificar = calificar;
         _descargarReporte = descargarReporte;
+        _enviarReporte = enviarReporte;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -64,7 +72,43 @@ public class AsistentesController : ControllerBase
         try
         {
             var descarga = await _descargarReporte.ExecuteAsync(capacitacionId, ct);
-            return File(descarga.FileStream, descarga.ContentType, descarga.Filename);
+
+            // Cargamos el PDF en memoria una sola vez. Lo necesitamos dos veces:
+            // (a) servirlo al cliente como descarga, (b) anexarlo en el correo al admin.
+            byte[] pdfBytes;
+            await using (descarga.FileStream)
+            {
+                using var ms = new MemoryStream();
+                await descarga.FileStream.CopyToAsync(ms, ct);
+                pdfBytes = ms.ToArray();
+            }
+
+            // Email al admin (no-bloqueante en términos de éxito: si falla, la
+            // descarga sale igual; el error se loggea como warning).
+            var adminEmail = User.FindFirstValue(ClaimTypes.Email)
+                ?? User.FindFirstValue("email");
+            if (!string.IsNullOrWhiteSpace(adminEmail))
+            {
+                try
+                {
+                    await _enviarReporte.ExecuteAsync(
+                        capacitacionId,
+                        pdfBytes,
+                        descarga.Filename,
+                        adminEmail,
+                        ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "No se pudo enviar el reporte de asistencia al admin {Email} para la capacitación {CapacitacionId}.",
+                        adminEmail,
+                        capacitacionId);
+                }
+            }
+
+            return File(pdfBytes, descarga.ContentType, descarga.Filename);
         }
         catch (CapacitacionNotFoundException)
         {

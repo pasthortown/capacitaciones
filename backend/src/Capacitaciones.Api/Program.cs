@@ -224,6 +224,7 @@ builder.Services.AddSingleton<INotificationsConfig>(notificationsConfig);
 builder.Services.AddScoped<NotificarLinksCapacitadorUseCase>();
 builder.Services.AddScoped<NotificarResponsableFirmaUseCase>();
 builder.Services.AddScoped<EnviarInvitacionInscripcionUseCase>();
+builder.Services.AddScoped<EnviarReporteAsistenciaAdminUseCase>();
 builder.Services.AddScoped<GenerarYEnviarCertificadosUseCase>();
 
 // Fase 4 — flujo del capacitador (link firmado + GET/PUT sobre su propia capacitación).

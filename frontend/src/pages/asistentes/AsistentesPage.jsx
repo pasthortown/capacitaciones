@@ -183,7 +183,7 @@ export default function AsistentesPage() {
         ? `Reporte_Asistencia_${capacitacion.codigo}.pdf`
         : 'Reporte_Asistencia.pdf';
       await descargarReporteAsistencia(id, fallback);
-      toast.success('Reporte de asistencia descargado.');
+      toast.success('Reporte de asistencia descargado y enviado por correo.');
     } catch (err) {
       if (err instanceof HttpError) {
         if (err.status === 503) {
