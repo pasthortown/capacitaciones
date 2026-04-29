@@ -133,6 +133,30 @@ services:
       capacitaciones-net:
         ipv4_address: 192.168.56.18
 
+  # Servicio FastAPI para envío de correos (SMTP + plantillas Jinja2).
+  # No se expone al host: lo consume el backend por red interna en :8000.
+  # Credenciales SMTP via .env global; `plantillas/` montado como volumen
+  # para edición en caliente sin reconstruir la imagen.
+  mail_sender:
+    build:
+      context: ./mail_sender
+      dockerfile: Dockerfile
+    container_name: capacitaciones-mail-sender
+    restart: unless-stopped
+    environment:
+      TZ: America/Guayaquil
+      TEMPLATES_DIR: /app/plantillas
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_USE_TLS: ${SMTP_USE_TLS}
+    volumes:
+      - ./mail_sender/plantillas:/app/plantillas
+    networks:
+      capacitaciones-net:
+        ipv4_address: 192.168.56.19
+
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: capacitaciones-sqlserver

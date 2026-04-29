@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ subject | default('Notificación') }}</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px;">
+    <table align="center" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <tr>
+            <td style="background-color: #0052cc; color: #ffffff; padding: 20px; text-align: center;">
+                <h1 style="margin: 0;">{{ titulo | default('Hola') }}</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 30px; color: #333333;">
+                <p>Estimado(a) <strong>{{ nombre | default('usuario') }}</strong>,</p>
+                <p>{{ mensaje | default('Este es un mensaje de prueba.') }}</p>
+
+                {% if items %}
+                <ul>
+                    {% for item in items %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+                {% if enlace %}
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="{{ enlace }}" style="background-color: #0052cc; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Ver más</a>
+                </p>
+                {% endif %}
+
+                <p>Saludos cordiales,<br>{{ firma | default('El equipo') }}</p>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 12px; color: #888;">
+                Este correo fue generado automáticamente.
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
