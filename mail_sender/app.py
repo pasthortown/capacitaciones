@@ -13,6 +13,16 @@ from pydantic import BaseModel, EmailStr, Field
 
 
 TEMPLATES_DIR = os.environ.get("TEMPLATES_DIR", "plantillas")
+ASSETS_DIR = os.environ.get("ASSETS_DIR", "assets")
+
+
+def load_logo_base64() -> str:
+    path = os.path.join(ASSETS_DIR, "logo.png")
+    try:
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode("ascii")
+    except FileNotFoundError:
+        return ""
 
 
 def load_smtp_config() -> Dict[str, str]:
@@ -33,6 +43,7 @@ jinja_env = Environment(
     loader=FileSystemLoader(TEMPLATES_DIR),
     autoescape=select_autoescape(["html", "xml"]),
 )
+jinja_env.globals["logo_base64"] = load_logo_base64()
 
 
 class Attachment(BaseModel):
