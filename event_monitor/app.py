@@ -107,7 +107,7 @@ def find_capacitaciones_pre_event() -> List[dict]:
     sql = (
         "SELECT c.Id, c.Codigo, c.Tema, c.FechaHoraInicio, c.DuracionMinutos, "
         "       m.Nombre AS Modalidad "
-        "FROM Capacitaciones c "
+        "FROM Capacitacion c "
         "LEFT JOIN Modalidad m ON c.ModalidadId = m.Id "
         "WHERE c.Activo = 1 "
         "  AND c.FechaHoraInicio > SYSUTCDATETIME() "
@@ -124,7 +124,7 @@ def find_capacitaciones_inicio() -> List[dict]:
     sql = (
         "SELECT c.Id, c.Codigo, c.Tema, c.FechaHoraInicio, c.DuracionMinutos, "
         "       m.Nombre AS Modalidad "
-        "FROM Capacitaciones c "
+        "FROM Capacitacion c "
         "LEFT JOIN Modalidad m ON c.ModalidadId = m.Id "
         "WHERE c.Activo = 1 "
         "  AND c.FechaHoraInicio <= SYSUTCDATETIME() "
@@ -141,7 +141,7 @@ def find_capacitaciones_finalizadas() -> List[dict]:
     sql = (
         "SELECT c.Id, c.Codigo, c.Tema, c.FechaHoraInicio, c.DuracionMinutos, "
         "       m.Nombre AS Modalidad "
-        "FROM Capacitaciones c "
+        "FROM Capacitacion c "
         "LEFT JOIN Modalidad m ON c.ModalidadId = m.Id "
         "WHERE c.Activo = 1 "
         "  AND DATEADD(MINUTE, c.DuracionMinutos, c.FechaHoraInicio) <= SYSUTCDATETIME() "
@@ -156,7 +156,7 @@ def find_capacitaciones_finalizadas() -> List[dict]:
 def find_asistentes(capacitacion_id) -> List[dict]:
     sql = (
         "SELECT Id, Nombres, Apellidos, EmailUsuario "
-        "FROM Asistentes WHERE CapacitacionId = %s"
+        "FROM Asistente WHERE CapacitacionId = %s"
     )
     with db() as conn:
         cur = conn.cursor()
