@@ -1,5 +1,6 @@
 import os
 import smtplib
+import socket
 from email.mime.text import MIMEText
 
 
@@ -7,7 +8,7 @@ def send_mail(to_address: str, subject: str, body: str) -> None:
     smtp_host = os.environ["SMTP_HOST"]
     smtp_port = int(os.environ["SMTP_PORT"])
     sender = os.environ["SMTP_FROM"]
-    password = os.environ["SMTP_PASSWORD"]
+    password = os.environ.get("SMTP_PASSWORD", "")
     use_tls = os.environ.get("SMTP_USE_TLS", "true").lower() == "true"
 
     msg = MIMEText(body, "plain", "utf-8")
@@ -15,12 +16,17 @@ def send_mail(to_address: str, subject: str, body: str) -> None:
     msg["From"] = sender
     msg["To"] = to_address
 
+    fqdn = socket.getfqdn()
     with smtplib.SMTP(smtp_host, smtp_port) as server:
-        server.ehlo()
+        server.ehlo(fqdn)
         if use_tls:
-            server.starttls()
-            server.ehlo()
-        server.login(sender, password)
+            try:
+                server.starttls()
+                server.ehlo(fqdn)
+            except smtplib.SMTPNotSupportedError:
+                pass
+        if password:
+            server.login(sender, password)
         server.sendmail(sender, [to_address], msg.as_string())
 
 

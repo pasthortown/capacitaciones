@@ -43,9 +43,9 @@ public class CapacitacionesController : ControllerBase
     private readonly EliminarLogoCapacitacionUseCase _eliminarLogo;
     private readonly GenerarLinkPaseListaUseCase _generarLinkPaseLista;
     private readonly GenerarLinkCalificacionesUseCase _generarLinkCalificaciones;
-    private readonly NotificarResumenCapacitacionUseCase _notificarResumen;
     private readonly NotificarLinksCapacitadorUseCase _notificarCapacitador;
     private readonly EnviarInvitacionInscripcionUseCase _enviarInvitacion;
+    private readonly GenerarYEnviarCertificadosUseCase _generarYEnviarCertificados;
     private readonly ILogger<CapacitacionesController> _logger;
 
     public CapacitacionesController(
@@ -61,9 +61,9 @@ public class CapacitacionesController : ControllerBase
         EliminarLogoCapacitacionUseCase eliminarLogo,
         GenerarLinkPaseListaUseCase generarLinkPaseLista,
         GenerarLinkCalificacionesUseCase generarLinkCalificaciones,
-        NotificarResumenCapacitacionUseCase notificarResumen,
         NotificarLinksCapacitadorUseCase notificarCapacitador,
         EnviarInvitacionInscripcionUseCase enviarInvitacion,
+        GenerarYEnviarCertificadosUseCase generarYEnviarCertificados,
         ILogger<CapacitacionesController> logger)
     {
         _listar = listar;
@@ -78,9 +78,9 @@ public class CapacitacionesController : ControllerBase
         _eliminarLogo = eliminarLogo;
         _generarLinkPaseLista = generarLinkPaseLista;
         _generarLinkCalificaciones = generarLinkCalificaciones;
-        _notificarResumen = notificarResumen;
         _notificarCapacitador = notificarCapacitador;
         _enviarInvitacion = enviarInvitacion;
+        _generarYEnviarCertificados = generarYEnviarCertificados;
         _logger = logger;
     }
 
@@ -110,7 +110,7 @@ public class CapacitacionesController : ControllerBase
         try
         {
             var dto = await _crear.ExecuteAsync(input, ct);
-            await NotificarAdminAsync(dto.Id, isCreate: true, ct);
+            await NotificarAdminInvitacionAsync(dto.Id, InvitacionContexto.CapacitacionCreada, ct);
             await NotificarCapacitadorSilencioAsync(dto.Id, ct);
             var location = Url.Action("GetById", new { id = dto.Id }) ?? string.Empty;
             return Created(location, dto);
@@ -131,7 +131,7 @@ public class CapacitacionesController : ControllerBase
         try
         {
             var dto = await _editar.ExecuteAsync(id, input, ct);
-            await NotificarAdminAsync(dto.Id, isCreate: false, ct);
+            await NotificarAdminInvitacionAsync(dto.Id, InvitacionContexto.CapacitacionActualizada, ct);
             return Ok(dto);
         }
         catch (CapacitacionNotFoundException)
@@ -217,12 +217,16 @@ public class CapacitacionesController : ControllerBase
     }
 
     /// <summary>
-    /// Dispara el correo "resumen del evento" al admin que está autenticado.
-    /// Es no-bloqueante en el sentido de que jamás revierte el create/update:
-    /// captura cualquier excepción del cliente HTTP a <c>mail_sender</c> y
-    /// la registra como warning. La operación principal ya se persistió.
+    /// Dispara la invitación al admin autenticado tras crear o editar la
+    /// capacitación. Subject: <c>"{TipoActividad} Creado"</c> o
+    /// <c>"{TipoActividad} Actualizado"</c>. Cuerpo: la plantilla de invitación
+    /// con link + QR de inscripción pública para que el admin reenvíe.
+    ///
+    /// Es no-bloqueante: jamás revierte el create/update — captura cualquier
+    /// excepción del cliente HTTP a <c>mail_sender</c> y la registra como
+    /// warning. La operación principal ya se persistió.
     /// </summary>
-    private async Task NotificarAdminAsync(Guid capacitacionId, bool isCreate, CancellationToken ct)
+    private async Task NotificarAdminInvitacionAsync(Guid capacitacionId, InvitacionContexto contexto, CancellationToken ct)
     {
         var adminEmail = User.FindFirstValue(ClaimTypes.Email)
             ?? User.FindFirstValue("email");
@@ -233,14 +237,14 @@ public class CapacitacionesController : ControllerBase
 
         try
         {
-            await _notificarResumen.ExecuteAsync(capacitacionId, adminEmail, isCreate, ct);
+            await _enviarInvitacion.ExecuteAsync(capacitacionId, adminEmail, contexto, ct);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(
                 ex,
-                "No se pudo enviar el correo de resumen ({Operacion}) de la capacitación {CapacitacionId} al admin {AdminEmail}.",
-                isCreate ? "creación" : "edición",
+                "No se pudo enviar la invitación ({Contexto}) de la capacitación {CapacitacionId} al admin {AdminEmail}.",
+                contexto,
                 capacitacionId,
                 adminEmail);
         }
@@ -391,6 +395,35 @@ public class CapacitacionesController : ControllerBase
         try
         {
             var resultado = await _generarCertificados.ExecuteAsync(id, ct);
+            return Ok(resultado);
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CertificadoNoDisponibleException ex)
+        {
+            return new ObjectResult(new { error = ex.Codigo, message = ex.Message })
+            {
+                StatusCode = StatusCodes.Status409Conflict
+            };
+        }
+    }
+
+    /// <summary>
+    /// Genera todos los certificados de una capacitación y luego se los envía
+    /// por correo a cada asistente con el PDF como adjunto. Procesa en bloques
+    /// de 5 con pausa entre bloques para no saturar el SMTP.
+    /// Devuelve <c>200 OK</c> con el resumen agregado (Total / Emitidos /
+    /// NoElegibles / Enviados / errores). Si un asistente no tiene email se
+    /// reporta en <c>erroresEnvio</c> sin afectar al resto.
+    /// </summary>
+    [HttpPost("{id:guid}/certificados/generar-y-enviar")]
+    public async Task<IActionResult> GenerarYEnviarCertificados(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var resultado = await _generarYEnviarCertificados.ExecuteAsync(id, ct);
             return Ok(resultado);
         }
         catch (CapacitacionNotFoundException)

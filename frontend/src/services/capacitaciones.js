@@ -167,6 +167,22 @@ export function generarCertificados(capacitacionId) {
 }
 
 /**
+ * Genera todos los certificados y los envía por correo a cada asistente con
+ * el PDF como adjunto. Procesa en bloques de 5 con pausa entre bloques.
+ *
+ * POST /api/capacitaciones/{id}/certificados/generar-y-enviar
+ *   → 200 { total, emitidos, noElegibles, errores, enviados, erroresEnvio }
+ *   → 409 { error: 'CAPACITACION_NO_FINALIZADA', message } si la capacitación
+ *     aún no está finalizada.
+ *
+ * @param {string} capacitacionId
+ * @returns {Promise<{ total: number, emitidos: number, noElegibles: number, enviados: number, errores: any[], erroresEnvio: any[], noElegiblesDetalle: any[] }>}
+ */
+export function generarYEnviarCertificados(capacitacionId) {
+  return http.post(`${BASE}/${capacitacionId}/certificados/generar-y-enviar`);
+}
+
+/**
  * Sube (o reemplaza) el logo de una capacitación.
  *
  * POST /api/capacitaciones/{id}/logo (multipart, campo `archivo`)
@@ -207,6 +223,7 @@ export default {
   enviarInvitacionInscripcion,
   generateLinkCalificaciones,
   generarCertificados,
+  generarYEnviarCertificados,
   uploadLogoCapacitacion,
   deleteLogoCapacitacion,
   LOGO_ALLOWED_EXTENSIONS,

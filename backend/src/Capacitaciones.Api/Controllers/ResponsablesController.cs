@@ -1,4 +1,5 @@
 using Capacitaciones.Application.Dtos.Responsables;
+using Capacitaciones.Application.UseCases.Notifications;
 using Capacitaciones.Application.UseCases.Responsables;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,6 +24,8 @@ public class ResponsablesController : ControllerBase
     private readonly EditarResponsableUseCase _editar;
     private readonly EliminarResponsableUseCase _eliminar;
     private readonly GenerarLinkResponsableUseCase _generarLink;
+    private readonly NotificarResponsableFirmaUseCase _notificarFirma;
+    private readonly ILogger<ResponsablesController> _logger;
 
     public ResponsablesController(
         ListarResponsablesUseCase listar,
@@ -30,7 +33,9 @@ public class ResponsablesController : ControllerBase
         CrearResponsableUseCase crear,
         EditarResponsableUseCase editar,
         EliminarResponsableUseCase eliminar,
-        GenerarLinkResponsableUseCase generarLink)
+        GenerarLinkResponsableUseCase generarLink,
+        NotificarResponsableFirmaUseCase notificarFirma,
+        ILogger<ResponsablesController> logger)
     {
         _listar = listar;
         _obtener = obtener;
@@ -38,6 +43,8 @@ public class ResponsablesController : ControllerBase
         _editar = editar;
         _eliminar = eliminar;
         _generarLink = generarLink;
+        _notificarFirma = notificarFirma;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -70,6 +77,7 @@ public class ResponsablesController : ControllerBase
         try
         {
             var dto = await _crear.ExecuteAsync(input, ct);
+            await NotificarFirmaAsync(dto.Id, ct);
             var location = Url.Action("GetById", new { id = dto.Id }) ?? string.Empty;
             return Created(location, dto);
         }
@@ -86,6 +94,7 @@ public class ResponsablesController : ControllerBase
         try
         {
             var dto = await _editar.ExecuteAsync(id, input, ct);
+            await NotificarFirmaAsync(dto.Id, ct);
             return Ok(dto);
         }
         catch (ResponsableNotFoundException)
@@ -131,6 +140,26 @@ public class ResponsablesController : ControllerBase
         catch (ResponsableServiceException ex)
         {
             return ToProblem(ex);
+        }
+    }
+
+    /// <summary>
+    /// Dispara el correo "Carga tus datos y firma" al responsable. No-bloqueante:
+    /// captura cualquier error de mail_sender y lo loggea como warning. Si el
+    /// responsable no tiene email, sale en silencio sin fallar el endpoint.
+    /// </summary>
+    private async Task NotificarFirmaAsync(Guid responsableId, CancellationToken ct)
+    {
+        try
+        {
+            await _notificarFirma.ExecuteAsync(responsableId, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "No se pudo enviar el correo de firma al responsable {ResponsableId}.",
+                responsableId);
         }
     }
 

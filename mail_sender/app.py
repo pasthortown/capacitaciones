@@ -1,6 +1,7 @@
 import base64
 import os
 import smtplib
+import socket
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -41,17 +42,48 @@ def resolve_logo_src() -> str:
 
 
 def load_smtp_config() -> Dict[str, str]:
-    required = ["SMTP_HOST", "SMTP_PORT", "SMTP_FROM", "SMTP_PASSWORD"]
+    """
+    Lee la configuración SMTP del entorno.
+
+    Obligatorias: `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` (email mostrado en el
+    header `From` y dirección que firma los mensajes).
+
+    Opcionales:
+    - `SMTP_FROM_NAME`: display name del remitente. Si está, el header `From`
+      se construye como `"{name} <{email}>"`; si no, va solo el email.
+    - `SMTP_USER`: usuario de autenticación SMTP cuando difiere del email del
+      `From` (caso típico: alias con permiso *Send As* en Office 365). Si está
+      vacío, se autentica con `SMTP_FROM`.
+    - `SMTP_PASSWORD`: si está vacío, se omite el `LOGIN` (modo connector MX
+      directo, sin auth).
+    - `SMTP_USE_TLS=true`: intenta `STARTTLS` y se degrada con gracia si el
+      servidor no lo anuncia (`SMTPNotSupportedError`).
+    """
+    required = ["SMTP_HOST", "SMTP_PORT", "SMTP_FROM"]
     missing = [k for k in required if not os.environ.get(k)]
     if missing:
         raise RuntimeError(f"Variables SMTP faltantes en el entorno: {', '.join(missing)}")
+    from_email = os.environ["SMTP_FROM"]
     return {
         "host": os.environ["SMTP_HOST"],
         "port": os.environ["SMTP_PORT"],
-        "from": os.environ["SMTP_FROM"],
-        "password": os.environ["SMTP_PASSWORD"],
+        "from_email": from_email,
+        "from_name": os.environ.get("SMTP_FROM_NAME", "").strip(),
+        "user": os.environ.get("SMTP_USER", "").strip() or from_email,
+        "password": os.environ.get("SMTP_PASSWORD", ""),
         "use_tls": os.environ.get("SMTP_USE_TLS", "true"),
     }
+
+
+def format_from_header(cfg: Dict[str, str]) -> str:
+    """Devuelve el header `From` final: `"Display <email>"` si hay nombre, si no solo el email."""
+    name = cfg.get("from_name", "")
+    email = cfg["from_email"]
+    if not name:
+        return email
+    # `formataddr` se encarga del encoding correcto si el nombre tiene caracteres no-ASCII.
+    from email.utils import formataddr
+    return formataddr((name, email))
 
 
 jinja_env = Environment(
@@ -141,17 +173,29 @@ def send_via_smtp(message: MIMEMultipart, recipients: List[str]) -> None:
     cfg = load_smtp_config()
     host = cfg["host"]
     port = int(cfg["port"])
-    sender = cfg["from"]
+    auth_user = cfg["user"]            # usuario que autentica
+    envelope_from = cfg["from_email"]  # MAIL FROM del envelope (suele ser el alias)
     password = cfg["password"]
     use_tls = cfg["use_tls"].lower() == "true"
 
+    # `socket.getfqdn()` permite que el connector MX (Office 365 inbound) vea
+    # el FQDN del cliente en el EHLO, igual que las impresoras corporativas.
+    fqdn = socket.getfqdn()
+
     with smtplib.SMTP(host, port, timeout=30) as server:
-        server.ehlo()
+        server.ehlo(fqdn)
         if use_tls:
-            server.starttls()
-            server.ehlo()
-        server.login(sender, password)
-        server.sendmail(sender, recipients, message.as_string())
+            try:
+                server.starttls()
+                server.ehlo(fqdn)
+            except smtplib.SMTPNotSupportedError:
+                # El connector MX (puerto 25 sin auth) puede no anunciar
+                # STARTTLS — se degrada a envío en claro, comportamiento
+                # idéntico al script `send_mail_direct.py` de referencia.
+                pass
+        if password:
+            server.login(auth_user, password)
+        server.sendmail(envelope_from, recipients, message.as_string())
 
 
 app = FastAPI(title="Mail API", version="1.0.0")
@@ -175,9 +219,9 @@ def send_mail(request: SendMailRequest) -> SendMailResponse:
     html_body = render_template(request.template, request.parameters)
 
     cfg = load_smtp_config()
-    sender = cfg["from"]
+    from_header = format_from_header(cfg)
 
-    message = build_message(sender, request, html_body)
+    message = build_message(from_header, request, html_body)
 
     all_recipients = list(request.recipients)
     if request.cc:

@@ -9,7 +9,7 @@ import { useToast } from '../../components/Toast/useToast.js';
 import { HttpError } from '../../services/http.js';
 import {
   getCapacitacion,
-  generarCertificados,
+  generarYEnviarCertificados,
 } from '../../services/capacitaciones.js';
 import {
   listByCapacitacion,
@@ -204,26 +204,32 @@ export default function AsistentesPage() {
   const confirmGenerarLote = async () => {
     setGenerating(true);
     try {
-      const resp = await generarCertificados(id);
+      const resp = await generarYEnviarCertificados(id);
       if (!mountedRef.current) return;
       const total = Number(resp?.total ?? 0);
       const emitidos = Number(resp?.emitidos ?? 0);
+      const enviados = Number(resp?.enviados ?? 0);
       // Fase 12: los no-elegibles (ausentes / sin marcar) son estado esperado, no error.
       const noElegibles = Number(resp?.noElegibles ?? 0);
       const noElegiblesDetalle = Array.isArray(resp?.noElegiblesDetalle)
         ? resp.noElegiblesDetalle
         : [];
       const errores = Array.isArray(resp?.errores) ? resp.errores : [];
+      const erroresEnvio = Array.isArray(resp?.erroresEnvio) ? resp.erroresEnvio : [];
       setConfirmOpen(false);
-      if (errores.length === 0 && emitidos + noElegibles === total) {
-        // Cubierta completa: todo lo elegible salió y los que no eran elegibles se omitieron ok.
+      if (
+        errores.length === 0 &&
+        erroresEnvio.length === 0 &&
+        emitidos + noElegibles === total &&
+        enviados === emitidos
+      ) {
         const extra = noElegibles > 0
           ? ` (${noElegibles} omitidos por ausencia o falta de marcación)`
           : '';
-        toast.success(`Se emitieron ${emitidos} certificados${extra}.`);
+        toast.success(`Se emitieron y enviaron ${enviados} certificados${extra}.`);
         setLoteResult(null);
       } else {
-        setLoteResult({ total, emitidos, noElegibles, noElegiblesDetalle, errores });
+        setLoteResult({ total, emitidos, enviados, noElegibles, noElegiblesDetalle, errores, erroresEnvio });
       }
     } catch (err) {
       if (!mountedRef.current) return;
@@ -499,7 +505,7 @@ export default function AsistentesPage() {
               title={
                 asistentes.length === 0
                   ? 'No hay asistentes inscritos'
-                  : 'Generar todos los certificados'
+                  : 'Generar y Enviar todos los certificados'
               }
             >
               {generating ? (
@@ -507,7 +513,7 @@ export default function AsistentesPage() {
               ) : (
                 <FileCheck2 width={16} height={16} />
               )}
-              <span>Generar todos los certificados</span>
+              <span>Generar y Enviar todos los certificados</span>
             </button>
           )}
           <button
@@ -539,7 +545,7 @@ export default function AsistentesPage() {
       <Modal
         isOpen={confirmOpen}
         onClose={() => !generating && setConfirmOpen(false)}
-        title="Generar todos los certificados"
+        title="Generar y Enviar todos los certificados"
         footer={
           <>
             <button
@@ -562,12 +568,14 @@ export default function AsistentesPage() {
         }
       >
         <p>
-          Se generarán los certificados de todos los asistentes inscritos a{' '}
-          <strong>{capacitacion?.codigo}</strong>
+          Se generarán y enviarán por correo los certificados de todos los
+          asistentes inscritos a <strong>{capacitacion?.codigo}</strong>
           {capacitacion?.tema ? ` — ${capacitacion.tema}` : ''}.
         </p>
         <p className="text-sm text-secondary">
-          La operación puede tardar unos segundos. ¿Deseas continuar?
+          El envío se hace en bloques de 5 con pausa entre bloques para no
+          saturar el SMTP, así que la operación puede tardar varios segundos
+          en cohortes grandes. ¿Deseas continuar?
         </p>
       </Modal>
 
@@ -590,7 +598,8 @@ export default function AsistentesPage() {
           <>
             <p>
               Se emitieron <strong>{loteResult.emitidos}</strong> de{' '}
-              <strong>{loteResult.total}</strong> certificados.
+              <strong>{loteResult.total}</strong> certificados, y se enviaron
+              por correo <strong>{loteResult.enviados ?? 0}</strong>.
             </p>
             {loteResult.noElegibles > 0 && (
               <p className="text-sm text-secondary">
@@ -626,6 +635,42 @@ export default function AsistentesPage() {
                         return (
                           <tr key={`${e.asistenteId || e.codigo || idx}-${idx}`}>
                             <td>{label}</td>
+                            <td>{e.mensaje || '—'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+            {Array.isArray(loteResult.erroresEnvio) && loteResult.erroresEnvio.length > 0 && (
+              <>
+                <p className="text-sm text-secondary">
+                  Los siguientes correos no pudieron enviarse:
+                </p>
+                <div className="table-container">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left' }}>Asistente</th>
+                        <th style={{ textAlign: 'left' }}>Email</th>
+                        <th style={{ textAlign: 'left' }}>Motivo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loteResult.erroresEnvio.map((e, idx) => {
+                        const asist = e.asistenteId
+                          ? asistentesById.get(e.asistenteId)
+                          : null;
+                        const label = asist
+                          ? `${asist.nombres ?? ''} ${asist.apellidos ?? ''}`.trim() ||
+                            e.asistenteId
+                          : e.asistenteId || '—';
+                        return (
+                          <tr key={`envio-${e.asistenteId || idx}-${idx}`}>
+                            <td>{label}</td>
+                            <td>{e.email || '—'}</td>
                             <td>{e.mensaje || '—'}</td>
                           </tr>
                         );
