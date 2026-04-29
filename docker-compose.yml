@@ -135,6 +135,37 @@ services:
       capacitaciones-net:
         ipv4_address: 192.168.56.18
 
+  # Daemon Python que monitorea capacitaciones y dispara correos masivos:
+  # recordatorio pre-evento, aviso de inicio y encuesta de satisfacción.
+  # Antiduplicado vía tabla `mail_control` en la BD (auto-creada).
+  event_monitor:
+    build:
+      context: ./event_monitor
+      dockerfile: Dockerfile
+    container_name: capacitaciones-event-monitor
+    restart: unless-stopped
+    depends_on:
+      - sqlserver
+      - mail_sender
+    environment:
+      TZ: America/Guayaquil
+      SQL_SERVER: sqlserver
+      SQL_PORT: 1433
+      SQL_DATABASE: Capacitaciones
+      SQL_USER: sa
+      SQL_PASSWORD: ${SA_PASSWORD}
+      MAIL_SENDER_URL: http://mail_sender:8000
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+      EMAIL_DOMAIN: "@dos.com.ec"
+      POLL_INTERVAL_SECONDS: 60
+      BATCH_SIZE: 5
+      WINDOW_PRE_EVENT_MIN: 30
+      WINDOW_POST_START_MIN: 30
+      WINDOW_POST_END_HOURS: 24
+    networks:
+      capacitaciones-net:
+        ipv4_address: 192.168.56.20
+
   # Servicio FastAPI para envío de correos (SMTP + plantillas Jinja2).
   # No se expone al host: lo consume el backend por red interna en :8000.
   # Credenciales SMTP via .env global; `plantillas/` montado como volumen

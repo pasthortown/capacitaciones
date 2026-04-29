@@ -81,6 +81,9 @@ Sistema de registro y gestión de capacitaciones. El equipo está compuesto por 
 | owasp-zap           | 192.168.56.15 | 8090          |
 | emisor_documentos   | 192.168.56.16 | 3000 (interno)|
 | repository_httpd    | 192.168.56.17 | 80 (interno)  |
+| emisor_reportes     | 192.168.56.18 | 5000 (interno)|
+| mail_sender         | 192.168.56.19 | 8000 (interno)|
+| event_monitor       | 192.168.56.20 | (sin puerto)  |
 
 > `repository_httpd` sirve dos volúmenes distintos bajo un mismo httpd:
 > - `/repository/` (alias raíz `/`) — material del módulo Repositorio.
