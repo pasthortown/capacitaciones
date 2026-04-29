@@ -222,6 +222,8 @@ var notificationsConfig = builder.Configuration.GetSection(NotificationsConfigOp
 builder.Services.AddSingleton<INotificationsConfig>(notificationsConfig);
 
 builder.Services.AddScoped<NotificarResumenCapacitacionUseCase>();
+builder.Services.AddScoped<NotificarLinksCapacitadorUseCase>();
+builder.Services.AddScoped<EnviarInvitacionInscripcionUseCase>();
 
 // Fase 4 — flujo del capacitador (link firmado + GET/PUT sobre su propia capacitación).
 builder.Services.AddScoped<GenerarLinkCapacitadorUseCase>();

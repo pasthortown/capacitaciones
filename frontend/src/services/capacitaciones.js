@@ -99,51 +99,35 @@ export function deleteCapacitacion(id) {
 }
 
 /**
- * Genera (o regenera) el link firmado para la página del capacitador.
+ * Envía al capacitador (a su email registrado) los dos correos con link + QR
+ * para los flujos de "cargar descripción/firma" y "pase de lista". El admin
+ * dispara este endpoint desde el botón "Enviar correos para capacitador".
  *
- * POST /api/capacitaciones/{id}/link-capacitador
- *   → 200 { url, token, expiresAt }
- *
- * `url` es relativa (ej. `/capacitador?token=...`). El caller la
- * concatena con `window.location.origin` para obtener la URL completa.
+ * POST /api/capacitaciones/{id}/notificar-capacitador
+ *   → 200 { recipient, templates: ['capacitador_descripcion','capacitador_pase_lista'] }
+ *   → 422 { error: 'EMAIL_CAPACITADOR_REQUERIDO' } si la capacitación no tiene email del capacitador.
+ *   → 502 { error: 'MAIL_SENDER_NO_DISPONIBLE' } si el servicio de correos falló.
  *
  * @param {string} id
- * @returns {Promise<{ url: string, token: string, expiresAt: string }>}
+ * @returns {Promise<{ recipient: string, templates: string[] }>}
  */
-export function generateLinkCapacitador(id) {
-  return http.post(`${BASE}/${id}/link-capacitador`);
+export function notificarCapacitador(id) {
+  return http.post(`${BASE}/${id}/notificar-capacitador`);
 }
 
 /**
- * Genera (o regenera) el link firmado para la página pública de inscripción.
+ * Envía al admin autenticado el correo "invitación a inscribirse" para que
+ * lo reenvíe a los interesados. Lleva tono de invitación + link público + QR.
  *
- * POST /api/capacitaciones/{id}/link-inscripcion
- *   → 200 { url, token, expiresAt }
- *
- * `url` es relativa (ej. `/inscripcion?token=...`). El caller la
- * concatena con `window.location.origin` para obtener la URL completa.
- *
- * @param {string} id
- * @returns {Promise<{ url: string, token: string, expiresAt: string }>}
- */
-export function generateLinkInscripcion(id) {
-  return http.post(`${BASE}/${id}/link-inscripcion`);
-}
-
-/**
- * Genera (o regenera) el link firmado para la pantalla pública de pase de lista.
- *
- * POST /api/capacitaciones/{id}/link-pase-lista
- *   → 200 { url, token, expiresAt }
- *
- * `url` es relativa (ej. `/capacitador/pase-lista?token=...`). El caller la
- * concatena con `window.location.origin` para obtener la URL completa.
+ * POST /api/capacitaciones/{id}/enviar-invitacion-inscripcion
+ *   → 200 { recipient, linkInscripcion }
+ *   → 502 { error: 'MAIL_SENDER_NO_DISPONIBLE' }
  *
  * @param {string} id
- * @returns {Promise<{ url: string, token: string, expiresAt: string }>}
+ * @returns {Promise<{ recipient: string, linkInscripcion: string }>}
  */
-export function generateLinkPaseLista(id) {
-  return http.post(`${BASE}/${id}/link-pase-lista`);
+export function enviarInvitacionInscripcion(id) {
+  return http.post(`${BASE}/${id}/enviar-invitacion-inscripcion`);
 }
 
 /**
@@ -219,9 +203,8 @@ export default {
   createCapacitacion,
   updateCapacitacion,
   deleteCapacitacion,
-  generateLinkCapacitador,
-  generateLinkInscripcion,
-  generateLinkPaseLista,
+  notificarCapacitador,
+  enviarInvitacionInscripcion,
   generateLinkCalificaciones,
   generarCertificados,
   uploadLogoCapacitacion,

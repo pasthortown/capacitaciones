@@ -44,6 +44,8 @@ public class CapacitacionesController : ControllerBase
     private readonly GenerarLinkPaseListaUseCase _generarLinkPaseLista;
     private readonly GenerarLinkCalificacionesUseCase _generarLinkCalificaciones;
     private readonly NotificarResumenCapacitacionUseCase _notificarResumen;
+    private readonly NotificarLinksCapacitadorUseCase _notificarCapacitador;
+    private readonly EnviarInvitacionInscripcionUseCase _enviarInvitacion;
     private readonly ILogger<CapacitacionesController> _logger;
 
     public CapacitacionesController(
@@ -60,6 +62,8 @@ public class CapacitacionesController : ControllerBase
         GenerarLinkPaseListaUseCase generarLinkPaseLista,
         GenerarLinkCalificacionesUseCase generarLinkCalificaciones,
         NotificarResumenCapacitacionUseCase notificarResumen,
+        NotificarLinksCapacitadorUseCase notificarCapacitador,
+        EnviarInvitacionInscripcionUseCase enviarInvitacion,
         ILogger<CapacitacionesController> logger)
     {
         _listar = listar;
@@ -75,6 +79,8 @@ public class CapacitacionesController : ControllerBase
         _generarLinkPaseLista = generarLinkPaseLista;
         _generarLinkCalificaciones = generarLinkCalificaciones;
         _notificarResumen = notificarResumen;
+        _notificarCapacitador = notificarCapacitador;
+        _enviarInvitacion = enviarInvitacion;
         _logger = logger;
     }
 
@@ -105,6 +111,7 @@ public class CapacitacionesController : ControllerBase
         {
             var dto = await _crear.ExecuteAsync(input, ct);
             await NotificarAdminAsync(dto.Id, isCreate: true, ct);
+            await NotificarCapacitadorSilencioAsync(dto.Id, ct);
             var location = Url.Action("GetById", new { id = dto.Id }) ?? string.Empty;
             return Created(location, dto);
         }
@@ -138,6 +145,77 @@ public class CapacitacionesController : ControllerBase
     }
 
     /// <summary>
+    /// Endpoint manual para reenviar al capacitador los correos con los enlaces +
+    /// QR de "cargar descripción/firma" y "pase de lista". Lo dispara el botón
+    /// "Enviar correos para capacitador" del dashboard. También se ejecuta en
+    /// automático cuando se crea la capacitación (vía
+    /// <see cref="NotificarCapacitadorSilencioAsync"/>); este endpoint queda
+    /// para reenvíos posteriores o cuando el email del capacitador se agregue
+    /// más tarde.
+    /// </summary>
+    /// <summary>
+    /// Genera y envía al admin autenticado el correo de "invitación a
+    /// inscribirse". El admin lo recibe en su buzón y lo reenvía a quienes
+    /// quiera invitar — el email lleva tono de invitación, datos del evento,
+    /// link público y QR de inscripción.
+    /// </summary>
+    [HttpPost("{id:guid}/enviar-invitacion-inscripcion")]
+    public async Task<IActionResult> EnviarInvitacionInscripcion(Guid id, CancellationToken ct)
+    {
+        var adminEmail = User.FindFirstValue(ClaimTypes.Email)
+            ?? User.FindFirstValue("email");
+        try
+        {
+            var resultado = await _enviarInvitacion.ExecuteAsync(id, adminEmail ?? string.Empty, ct);
+            return Ok(resultado);
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CapacitacionServiceException ex)
+        {
+            return ToProblem(ex);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning(ex, "mail_sender falló al enviar la invitación de inscripción de la capacitación {CapacitacionId}.", id);
+            return new ObjectResult(new { error = "MAIL_SENDER_NO_DISPONIBLE", message = "No se pudo enviar el correo: el servicio de correos no respondió." })
+            {
+                StatusCode = StatusCodes.Status502BadGateway
+            };
+        }
+    }
+
+    [HttpPost("{id:guid}/notificar-capacitador")]
+    public async Task<IActionResult> NotificarCapacitador(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var resultado = await _notificarCapacitador.ExecuteAsync(id, ct);
+            return Ok(resultado);
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CapacitacionServiceException ex)
+        {
+            return ToProblem(ex);
+        }
+        catch (HttpRequestException ex)
+        {
+            // Falla del servicio mail_sender (red o 5xx). Mapeamos a 502 para
+            // que el front muestre un error claro y el admin pueda reintentar.
+            _logger.LogWarning(ex, "mail_sender falló al notificar al capacitador de la capacitación {CapacitacionId}.", id);
+            return new ObjectResult(new { error = "MAIL_SENDER_NO_DISPONIBLE", message = "No se pudo enviar el correo: el servicio de correos no respondió." })
+            {
+                StatusCode = StatusCodes.Status502BadGateway
+            };
+        }
+    }
+
+    /// <summary>
     /// Dispara el correo "resumen del evento" al admin que está autenticado.
     /// Es no-bloqueante en el sentido de que jamás revierte el create/update:
     /// captura cualquier excepción del cliente HTTP a <c>mail_sender</c> y
@@ -164,6 +242,32 @@ public class CapacitacionesController : ControllerBase
                 isCreate ? "creación" : "edición",
                 capacitacionId,
                 adminEmail);
+        }
+    }
+
+    /// <summary>
+    /// Versión silenciosa del notificar-capacitador: la dispara el flujo de
+    /// creación. Si la capacitación todavía no tiene email del capacitador,
+    /// simplemente no envía nada (no es error: el admin podrá reenviar luego
+    /// con el endpoint manual). Cualquier otro fallo se loggea como warning
+    /// y nunca afecta al 201.
+    /// </summary>
+    private async Task NotificarCapacitadorSilencioAsync(Guid capacitacionId, CancellationToken ct)
+    {
+        try
+        {
+            await _notificarCapacitador.ExecuteAsync(capacitacionId, ct);
+        }
+        catch (CapacitacionServiceException ex) when (ex.Codigo == "EMAIL_CAPACITADOR_REQUERIDO")
+        {
+            // Capacitador sin email aún: no hay correo que mandar — sale en silencio.
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "No se pudieron enviar los correos al capacitador de la capacitación {CapacitacionId}.",
+                capacitacionId);
         }
     }
 
@@ -374,6 +478,8 @@ public class CapacitacionesController : ControllerBase
             "LOGO_CONTENT_TYPE_INVALIDO" => StatusCodes.Status400BadRequest,
             "LOGO_CONTENT_TYPE_INCOHERENTE" => StatusCodes.Status400BadRequest,
             "ESTADO_ASISTENCIA_INVALIDO" => StatusCodes.Status400BadRequest,
+            "EMAIL_CAPACITADOR_REQUERIDO" => StatusCodes.Status422UnprocessableEntity,
+            "ADMIN_EMAIL_REQUERIDO" => StatusCodes.Status401Unauthorized,
             "CALIFICACIONES_NO_APLICA" => StatusCodes.Status409Conflict,
             "ASISTENTE_NO_PRESENTE" => StatusCodes.Status409Conflict,
             "CALIFICACION_FUERA_DE_RANGO" => StatusCodes.Status400BadRequest,

@@ -4,13 +4,12 @@ import {
   User,
   Clock,
   Calendar,
-  Link2,
+  Mail,
   Users,
-  Share2,
+  Send,
   Pencil,
   Trash2,
   Building2,
-  ClipboardCheck,
   Award,
   MessagesSquare,
   Tag,
@@ -21,9 +20,8 @@ import { HttpError } from '../../services/http.js';
 import { formatFechaHora, formatDuracion } from '../../utils/formatters.js';
 import { buildPublicUrl } from '../../utils/urls.js';
 import {
-  generateLinkCapacitador,
-  generateLinkInscripcion,
-  generateLinkPaseLista,
+  notificarCapacitador,
+  enviarInvitacionInscripcion,
   generateLinkCalificaciones,
 } from '../../services/capacitaciones.js';
 import styles from './CapacitacionCard.module.css';
@@ -43,9 +41,8 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
   const navigate = useNavigate();
   const toast = useToast();
 
-  const [generandoLink, setGenerandoLink] = useState(false);
-  const [generandoInscripcion, setGenerandoInscripcion] = useState(false);
-  const [generandoPaseLista, setGenerandoPaseLista] = useState(false);
+  const [enviandoCorreoCapacitador, setEnviandoCorreoCapacitador] = useState(false);
+  const [enviandoInvitacion, setEnviandoInvitacion] = useState(false);
   const [generandoCalificaciones, setGenerandoCalificaciones] = useState(false);
 
   const {
@@ -94,43 +91,30 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
     return formatFechaHora(date);
   };
 
-  const handleCopyCapacitadorLink = async () => {
-    if (!id || generandoLink) return;
-    setGenerandoLink(true);
+  const handleEnviarCorreosCapacitador = async () => {
+    if (!id || enviandoCorreoCapacitador) return;
+    setEnviandoCorreoCapacitador(true);
     try {
-      const { url, expiresAt } = await generateLinkCapacitador(id);
-      const fullUrl = buildPublicUrl(url);
-      await copyToClipboard(fullUrl);
-      const fecha = formatExpiresAt(expiresAt);
-      toast.success(
-        fecha
-          ? `Enlace del capacitador copiado (expira: ${fecha})`
-          : 'Enlace del capacitador copiado',
-      );
+      const { recipient } = await notificarCapacitador(id);
+      toast.success(`Correos enviados a ${recipient}.`);
     } catch (error) {
-      toast.error(error?.message || 'No se pudo generar el enlace del capacitador.');
+      // El backend devuelve 422 con EMAIL_CAPACITADOR_REQUERIDO si la capacitación
+      // no tiene email del capacitador registrado.
+      if (
+        error instanceof HttpError &&
+        error.body?.error === 'EMAIL_CAPACITADOR_REQUERIDO'
+      ) {
+        toast.error('Esta capacitación no tiene email del capacitador. Edítala y agrega uno antes de reenviar.');
+      } else if (
+        error instanceof HttpError &&
+        error.body?.error === 'MAIL_SENDER_NO_DISPONIBLE'
+      ) {
+        toast.error('El servicio de correos no respondió. Intenta de nuevo en unos minutos.');
+      } else {
+        toast.error(error?.message || 'No se pudieron enviar los correos al capacitador.');
+      }
     } finally {
-      setGenerandoLink(false);
-    }
-  };
-
-  const handleCopyPaseListaLink = async () => {
-    if (!id || generandoPaseLista) return;
-    setGenerandoPaseLista(true);
-    try {
-      const { url, expiresAt } = await generateLinkPaseLista(id);
-      const fullUrl = buildPublicUrl(url);
-      await copyToClipboard(fullUrl);
-      const fecha = formatExpiresAt(expiresAt);
-      toast.success(
-        fecha
-          ? `Enlace de pase de lista copiado (expira: ${fecha})`
-          : 'Enlace de pase de lista copiado',
-      );
-    } catch (error) {
-      toast.error(error?.message || 'No se pudo generar el enlace de pase de lista.');
-    } finally {
-      setGenerandoPaseLista(false);
+      setEnviandoCorreoCapacitador(false);
     }
   };
 
@@ -182,23 +166,23 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
     }
   };
 
-  const handleCopyInscripcionLink = async () => {
-    if (!id || generandoInscripcion) return;
-    setGenerandoInscripcion(true);
+  const handleEnviarInvitacion = async () => {
+    if (!id || enviandoInvitacion) return;
+    setEnviandoInvitacion(true);
     try {
-      const { url, expiresAt } = await generateLinkInscripcion(id);
-      const fullUrl = buildPublicUrl(url);
-      await copyToClipboard(fullUrl);
-      const fecha = formatExpiresAt(expiresAt);
-      toast.success(
-        fecha
-          ? `Enlace de inscripción copiado (expira: ${fecha})`
-          : 'Enlace de inscripción copiado',
-      );
+      const { recipient } = await enviarInvitacionInscripcion(id);
+      toast.success(`Invitación enviada a ${recipient}. Reenvíala desde tu correo a quienes desees invitar.`);
     } catch (error) {
-      toast.error(error?.message || 'No se pudo generar el enlace de inscripción.');
+      if (
+        error instanceof HttpError &&
+        error.body?.error === 'MAIL_SENDER_NO_DISPONIBLE'
+      ) {
+        toast.error('El servicio de correos no respondió. Intenta de nuevo en unos minutos.');
+      } else {
+        toast.error(error?.message || 'No se pudo enviar la invitación.');
+      }
     } finally {
-      setGenerandoInscripcion(false);
+      setEnviandoInvitacion(false);
     }
   };
 
@@ -263,22 +247,12 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
         <button
           type="button"
           className={styles.iconBtn}
-          onClick={handleCopyCapacitadorLink}
-          disabled={generandoLink}
-          title="Copiar enlace para el capacitador"
-          aria-label="Copiar enlace para el capacitador"
+          onClick={handleEnviarCorreosCapacitador}
+          disabled={enviandoCorreoCapacitador}
+          title="Enviar correos para capacitador"
+          aria-label="Enviar correos para capacitador"
         >
-          <Link2 width={16} height={16} />
-        </button>
-        <button
-          type="button"
-          className={styles.iconBtn}
-          onClick={handleCopyPaseListaLink}
-          disabled={generandoPaseLista}
-          title="Copiar enlace para pasar lista"
-          aria-label="Copiar enlace para pasar lista"
-        >
-          <ClipboardCheck width={16} height={16} />
+          <Mail width={16} height={16} />
         </button>
         {esAprobacion && (
           <button
@@ -304,12 +278,12 @@ export default function CapacitacionCard({ capacitacion, onEdit, onDelete }) {
         <button
           type="button"
           className={styles.iconBtn}
-          onClick={handleCopyInscripcionLink}
-          disabled={generandoInscripcion}
-          title="Copiar enlace de inscripción"
-          aria-label="Copiar enlace de inscripción"
+          onClick={handleEnviarInvitacion}
+          disabled={enviandoInvitacion}
+          title="Enviar email de inscripción"
+          aria-label="Enviar email de inscripción"
         >
-          <Share2 width={16} height={16} />
+          <Send width={16} height={16} />
         </button>
         {esFinalizada && (
           <button
