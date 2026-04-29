@@ -40,6 +40,12 @@ Sistema de registro y gestión de capacitaciones. El equipo está compuesto por 
 - El build (`npm run build`) se publica en el volumen compartido `/html` del contenedor Nginx.
 - **Página inicial:** layout con `Sidebar` (navegación) + `Body` (área de trabajo). El contenido del body se define a medida que se soliciten módulos.
 
+> ⚠️ **Build de producción — env vars obligatorias.** El SPA en producción se sirve bajo el prefijo `/capacitados/` (ver `/Docker/web/conf/capacitados.conf`) y el backend está expuesto en `/capacitados/api/...`. Cualquier rebuild que se vaya a desplegar al server debe ejecutarse con:
+> ```bash
+> VITE_BASE_PATH=/capacitados/ VITE_API_BASE=/capacitados/api npm run build
+> ```
+> Si se omite `VITE_BASE_PATH`, el `index.html` referencia assets en `/assets/...` y no se cargan; si se omite `VITE_API_BASE`, el bundle pega contra `/api/...` (que no existe en el ingress) y todas las llamadas — **incluido login** — fallan con 404.
+
 ### 3.3 Agente Backend
 
 **Misión:** implementar la API en .NET Core 8 bajo arquitectura hexagonal.
