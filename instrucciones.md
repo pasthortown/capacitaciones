@@ -40,11 +40,11 @@ Sistema de registro y gestión de capacitaciones. El equipo está compuesto por 
 - El build (`npm run build`) se publica en el volumen compartido `/html` del contenedor Nginx.
 - **Página inicial:** layout con `Sidebar` (navegación) + `Body` (área de trabajo). El contenido del body se define a medida que se soliciten módulos.
 
-> ⚠️ **Build de producción — env vars obligatorias.** El SPA en producción se sirve bajo el prefijo `/capacitados/` (ver `/Docker/web/conf/capacitados.conf`) y el backend está expuesto en `/capacitados/api/...`. Cualquier rebuild que se vaya a desplegar al server debe ejecutarse con:
+> ⚠️ **Build de producción.** Desde 2026-05-04 el SPA se sirve en raíz del dominio `capacitados.dos.com.ec` (HTTPS, GoDaddy) — el prefijo `/capacitados/` quedó solo como redirect 301 de compatibilidad. El build prod se ejecuta sin env vars de prefijo:
 > ```bash
-> VITE_BASE_PATH=/capacitados/ VITE_API_BASE=/capacitados/api npm run build
+> npm run build   # base = '/', API_BASE = '/api'
 > ```
-> Si se omite `VITE_BASE_PATH`, el `index.html` referencia assets en `/assets/...` y no se cargan; si se omite `VITE_API_BASE`, el bundle pega contra `/api/...` (que no existe en el ingress) y todas las llamadas — **incluido login** — fallan con 404.
+> nginx (ver `/Docker/web/conf/locations-capacitados.inc`) proxia `/api/` → `backend:8080/api/` y `/imagenes/` → `repository_httpd`. Si se reintroduce un prefijo, hay que setear `VITE_BASE_PATH` y `VITE_API_BASE` coherentes.
 
 ### 3.3 Agente Backend
 

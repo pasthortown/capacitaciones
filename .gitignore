@@ -74,6 +74,13 @@ Thumbs.db
 .claude/settings.local.json
 **/.claude/settings.local.json
 
+# ----- Claves privadas TLS / SSL — NUNCA committear -----
+*.key
+*-private-key.*
+*private-key*
+SSL/generated-private-key.txt
+SSL/generated-csr.txt
+
 # ----- Otros -----
 *.tmp
 *.bak
