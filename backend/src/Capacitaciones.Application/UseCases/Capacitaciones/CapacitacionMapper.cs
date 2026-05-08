@@ -34,6 +34,7 @@ internal static class CapacitacionMapper
         LogoUrl = BuildLogoUrl(c.LogoPath),
         Estado = CapacitacionEstadoCalculator.Calcular(c),
         TotalAsistentes = totalAsistentes,
+        EmiteCertificado = c.EmiteCertificado,
         Activo = c.Activo
     };
 
@@ -57,6 +58,7 @@ internal static class CapacitacionMapper
         LogoUrl = BuildLogoUrl(c.LogoPath),
         Estado = CapacitacionEstadoCalculator.Calcular(c),
         TotalAsistentes = totalAsistentes,
+        EmiteCertificado = c.EmiteCertificado,
         Activo = c.Activo,
         FechaCreacion = c.FechaCreacion,
         FechaActualizacion = c.FechaActualizacion,

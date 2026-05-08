@@ -70,6 +70,7 @@ public class EditarCapacitacionUseCase
         entity.DuracionMinutos = input.DuracionMinutos;
         // Fase 9: al cambiar a Participacion se limpia el puntaje previo para evitar datos huérfanos.
         entity.PuntajeMinimo = tipoCert == TipoCertificacion.Aprobacion ? input.PuntajeMinimo : null;
+        entity.EmiteCertificado = input.EmiteCertificado;
         entity.FechaActualizacion = DateTime.UtcNow;
 
         var nuevasRelaciones = (input.ResponsableIds ?? new List<Guid>())

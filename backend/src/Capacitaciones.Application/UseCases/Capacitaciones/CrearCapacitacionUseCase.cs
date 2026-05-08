@@ -76,6 +76,7 @@ public class CrearCapacitacionUseCase
             // El logo se carga aparte vía POST /api/capacitaciones/{id}/logo.
             LogoPath = null,
             LogoContentType = null,
+            EmiteCertificado = input.EmiteCertificado,
             Activo = true,
             FechaCreacion = now,
             FechaActualizacion = null,

@@ -38,6 +38,9 @@ public class CapacitacionDetailDto
     public string Estado { get; set; } = string.Empty;
     public int TotalAsistentes { get; set; }
 
+    /// <summary>Indica si la capacitación emite certificados a sus asistentes.</summary>
+    public bool EmiteCertificado { get; set; } = true;
+
     public bool Activo { get; set; }
 
     public DateTime FechaCreacion { get; set; }

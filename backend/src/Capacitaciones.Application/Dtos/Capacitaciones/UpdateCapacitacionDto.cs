@@ -30,5 +30,11 @@ public class UpdateCapacitacionDto
 
     public string? Descripcion { get; set; }
 
+    /// <summary>
+    /// Indica si la capacitación emite certificados. Si el cliente no envía valor,
+    /// el backend asume <c>true</c> (default histórico).
+    /// </summary>
+    public bool EmiteCertificado { get; set; } = true;
+
     public List<Guid> ResponsableIds { get; set; } = new();
 }

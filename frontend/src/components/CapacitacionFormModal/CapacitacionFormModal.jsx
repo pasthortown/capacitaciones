@@ -63,6 +63,10 @@ export default function CapacitacionFormModal({
   const [modalidadId, setModalidadId] = useState('');
   const [tipoActividadId, setTipoActividadId] = useState('');
   const [tipoCertificacion, setTipoCertificacion] = useState('Participacion');
+  // Bandera "emite certificado". Default true: el evento generará certificados.
+  // Si el admin lo deja en false, todos los flujos de emisión/envío/descarga
+  // quedan deshabilitados — útil para charlas o reuniones que no certifican.
+  const [emiteCertificado, setEmiteCertificado] = useState(true);
   const [fechaHoraInicio, setFechaHoraInicio] = useState(''); // "YYYY-MM-DDTHH:mm"
   const [duracionHoras, setDuracionHoras] = useState(1);
   const [duracionExtraMin, setDuracionExtraMin] = useState(0); // 0 | 30
@@ -162,6 +166,7 @@ export default function CapacitacionFormModal({
       setModalidadId('');
       setTipoActividadId('');
       setTipoCertificacion('Participacion');
+      setEmiteCertificado(true);
       setFechaHoraInicio('');
       setDuracionHoras(1);
       setDuracionExtraMin(0);
@@ -187,6 +192,8 @@ export default function CapacitacionFormModal({
         setModalidadId(detail.modalidad?.id || '');
         setTipoActividadId(detail.tipoActividad?.id || '');
         setTipoCertificacion(detail.tipoCertificacion || 'Participacion');
+        // Default true cuando el backend no lo manda (capacitaciones legacy).
+        setEmiteCertificado(detail.emiteCertificado !== false);
         setFechaHoraInicio(isoToLocalInput(detail.fechaHoraInicio));
         const mins = Number(detail.duracionMinutos || 0);
         setDuracionHoras(Math.floor(mins / 60));
@@ -379,6 +386,7 @@ export default function CapacitacionFormModal({
         tipoCertificacion === 'Aprobacion'
           ? Number(String(puntajeMinimo).replace(',', '.'))
           : null,
+      emiteCertificado,
     };
     setSubmitting(true);
     try {
@@ -610,6 +618,41 @@ export default function CapacitacionFormModal({
                   />
                   Aprobación
                 </label>
+              </div>
+            </div>
+
+            {/* Emite certificado — bandera global del evento */}
+            <div>
+              <label className={styles.smallLabel} data-required="true">
+                ¿Emite certificado?
+              </label>
+              <div className={styles.radioGroup}>
+                <label className={styles.radioItem}>
+                  <input
+                    type="radio"
+                    name="emiteCertificado"
+                    value="si"
+                    checked={emiteCertificado === true}
+                    onChange={() => setEmiteCertificado(true)}
+                  />
+                  Sí
+                </label>
+                <label className={styles.radioItem}>
+                  <input
+                    type="radio"
+                    name="emiteCertificado"
+                    value="no"
+                    checked={emiteCertificado === false}
+                    onChange={() => setEmiteCertificado(false)}
+                  />
+                  No
+                </label>
+              </div>
+              <div
+                className={styles.errorText}
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Si seleccionas "No", el evento no generará certificados ni los enviará por correo.
               </div>
             </div>
 

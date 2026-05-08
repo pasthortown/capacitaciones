@@ -43,6 +43,12 @@ public class GenerarCertificadosCapacitacionUseCase
             throw CertificadoNoDisponibleException.CapacitacionNoFinalizada();
         }
 
+        // Si el admin marcó el evento como "no emite certificado", abortamos sin iterar.
+        if (!capacitacion.EmiteCertificado)
+        {
+            throw CertificadoNoDisponibleException.CapacitacionNoEmiteCertificado();
+        }
+
         var asistentes = await _asistentes.ListByCapacitacionAsync(capacitacionId, ct);
 
         var resultado = new GeneracionLoteResultadoDto

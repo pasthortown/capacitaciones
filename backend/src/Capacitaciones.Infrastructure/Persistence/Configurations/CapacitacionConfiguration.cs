@@ -64,6 +64,12 @@ public class CapacitacionConfiguration : IEntityTypeConfiguration<Capacitacion>
         builder.Property(c => c.LogoContentType)
             .HasMaxLength(100);
 
+        // Bandera "emite certificado". Default true a nivel de BD para que las filas
+        // existentes (creadas antes de esta migración) hereden el comportamiento previo.
+        builder.Property(c => c.EmiteCertificado)
+            .IsRequired()
+            .HasDefaultValue(true);
+
         builder.Property(c => c.Activo)
             .IsRequired()
             .HasDefaultValue(true);

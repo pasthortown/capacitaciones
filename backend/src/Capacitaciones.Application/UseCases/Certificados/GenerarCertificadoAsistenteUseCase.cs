@@ -56,6 +56,14 @@ public class GenerarCertificadoAsistenteUseCase
             throw CertificadoNoDisponibleException.CapacitacionNoFinalizada();
         }
 
+        // Bandera de negocio: si el evento no emite certificado, abortamos antes de
+        // tocar firmas o llamar al emisor. Se evalúa tras "finalizada" para mantener
+        // el orden de chequeos consistente con el resto del flujo.
+        if (!capacitacion.EmiteCertificado)
+        {
+            throw CertificadoNoDisponibleException.CapacitacionNoEmiteCertificado();
+        }
+
         // Fase 12 — validación de elegibilidad por asistencia (aplica a todos los tipos de certificación).
         // Decisión 10: ausente o sin marcar ⇒ sin certificado, punto.
         if (asistente.EstadoAsistencia == EstadoAsistencia.Ausente)

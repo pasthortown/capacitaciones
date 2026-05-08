@@ -17,6 +17,10 @@ public class CertificadoNoDisponibleException : CapacitacionServiceException
     public static CertificadoNoDisponibleException CapacitacionNoFinalizada() =>
         new("CAPACITACION_NO_FINALIZADA",
             "El certificado solo puede emitirse cuando la capacitación esté finalizada.");
+
+    public static CertificadoNoDisponibleException CapacitacionNoEmiteCertificado() =>
+        new("CAPACITACION_NO_EMITE_CERTIFICADO",
+            "Esta capacitación está configurada para no emitir certificados.");
 }
 
 /// <summary>

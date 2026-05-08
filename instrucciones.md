@@ -202,6 +202,7 @@ Las fuentes canónicas del proyecto viven en `./Tipografía/` y son obligatorias
 **Capacitacion**
 - `Id` (GUID)
 - `Codigo` — formato `CAP-PC-REG-###` con **3 dígitos fijos** (generado por contador, ver 7.4).
+- `EmiteCertificado` (bool, default `true`) — si `false`, el evento no genera certificados y todos los endpoints de emisión/envío/descarga responden 409.
 - `Tema` (string, requerido)
 - `Capacitador` (**varchar(255), texto libre** — no es catálogo). Siempre figura como firmante en el certificado.
 - `ModalidadId` → Catálogo Modalidad
@@ -571,3 +572,29 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 | 10| Ausentes           | Sin certificado, independientemente del `TipoCertificacion`.                                   |
 | 11| Cert. efectivo     | `Aprobacion` + `Calificacion < PuntajeMinimo` → cert. tipo **Asistencia** (sin mutar el tipo original de la capacitación). |
 | 12| AttendanceToggle   | Split button radio (gris → verde/rojo), no desmarcable ambos. Reusado en pantalla pública y tabla admin. |
+| 13| Emite certificado  | Bandera `Capacitacion.EmiteCertificado` (bit, default `1`). Editable en crear y editar. Si está en `false`, los endpoints de generación / envío / descarga responden 409 `CAPACITACION_NO_EMITE_CERTIFICADO` y el UI oculta el botón "Generar y Enviar todos los certificados" + la acción individual de descarga en la página de asistentes. |
+
+## 11. Despliegue en producción
+
+El sistema está en producción en el server **`iados@10.1.1.174`** (hostname `DOSIA`). El server **no es repo git**: la sincronización local→prod se hace por `scp`/`rsync`. Cualquier cambio aplicado en el working copy local debe replicarse al server y commitearse a git.
+
+**Acceso SSH:**
+- Usuario `iados`: password en `/home/lsalazar/clave_server.txt`.
+- Root: password en `/home/lsalazar/clave_server_root.txt`.
+- Son archivos de **password** (no llaves SSH). Uso: `sshpass -f /home/lsalazar/clave_server.txt ssh iados@10.1.1.174 "<comando>"`.
+
+**Layout del despliegue:**
+
+| Componente | Path en server | Detalle |
+| ---------- | -------------- | ------- |
+| Frontend (SPA + nginx público con SSL) | `iados@DOSIA:/Docker/web/` | Container `web-nginx` (nginx:alpine), red `web-net` 192.168.52.0/24. SPA en `html/capacitados/`, vhosts en `conf/`, certificados en `ssl/`. Sirve `capacitados.dos.com.ec` (HTTPS, cert GoDaddy multi-dominio vence 2026-11-18). Reverse proxy `/api/` → `backend:8080/api/` y `/imagenes/` → `repository_httpd`. |
+| Backend + servicios (compose principal) | `iados@DOSIA:/Proyectos/RegistroCapacitaciones/` | `docker-compose.yml` con backend .NET, sqlserver, emisor_documentos, repository_httpd, emisor_reportes, mail_sender, event_monitor en red `capacitaciones-net`. |
+
+**Flujo de sincronización (obligatorio en cada cambio):**
+1. Aplicar el cambio en `/home/lsalazar/Proyectos/RegistroCapacitaciones/` (local).
+2. Replicar al server vía `scp`/`rsync`:
+   - Frontend: `npm run build` local → copiar `frontend/dist/*` a `/Docker/web/html/capacitados/`.
+   - Backend / emisor: copiar fuentes a `/Proyectos/RegistroCapacitaciones/` y rebuild con `docker compose build && docker compose up -d` desde ese path.
+3. `git commit` + `git push` desde local al cerrar la feature.
+
+**⚠️ Regla crítica para `.env`:** **NUNCA hacer `scp` ciego del `.env` local al server.** El `.env` del server diverge intencionalmente en al menos `SA_PASSWORD`, `CONNECTION_STRING`, `BACKEND_HTTP_PORT` (8090 en server vs 8080 local), `SQLSERVER_PORT` (1435 vs 1433) y `PUBLIC_BASE_URL`. Antes de tocar el `.env` del server: `ssh ... cat .env`, hacer diff manual y aplicar solo las claves que se quieren cambiar (vía `sed -i` puntual o heredoc). La pwd de SA en data files no se puede recuperar si se pierde.

@@ -52,6 +52,13 @@ public class DescargarCertificadoUseCase
         var capacitacion = await _capacitaciones.GetByIdWithResponsablesAsync(capacitacionId, ct)
             ?? throw new CapacitacionNotFoundException(capacitacionId);
 
+        // Si el evento no emite certificados, bloqueamos la descarga aunque el PDF
+        // exista físicamente (puede haber quedado de una emisión previa al cambio de flag).
+        if (!capacitacion.EmiteCertificado)
+        {
+            throw CertificadoNoDisponibleException.CapacitacionNoEmiteCertificado();
+        }
+
         var asistente = await _asistentes.GetByIdAsync(asistenteId, ct);
         if (asistente is null || asistente.CapacitacionId != capacitacionId)
         {

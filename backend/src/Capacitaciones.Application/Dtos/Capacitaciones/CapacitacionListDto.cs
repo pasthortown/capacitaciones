@@ -35,5 +35,8 @@ public class CapacitacionListDto
     /// <summary>TODO Fase 5: contar filas de Asistente por capacitacionId.</summary>
     public int TotalAsistentes { get; set; }
 
+    /// <summary>Indica si la capacitación emite certificados a sus asistentes.</summary>
+    public bool EmiteCertificado { get; set; } = true;
+
     public bool Activo { get; set; }
 }

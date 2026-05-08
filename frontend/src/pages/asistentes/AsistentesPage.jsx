@@ -256,6 +256,10 @@ export default function AsistentesPage() {
   };
 
   const esFinalizada = capacitacion?.estado === 'Finalizada';
+  // Bandera global del evento: si está en false, ocultamos toda la maquinaria
+  // de certificados (botón de lote y acción individual de descarga).
+  // Default true cuando el backend no manda el campo (capacitaciones legacy).
+  const emiteCertificado = capacitacion?.emiteCertificado !== false;
 
   /**
    * Corrige la asistencia de un asistente desde la tabla admin (Fase 10).
@@ -422,6 +426,10 @@ export default function AsistentesPage() {
   ];
 
   const renderActions = (row) => {
+    // Si el evento no emite certificado, no mostramos la acción de descarga.
+    if (!emiteCertificado) {
+      return null;
+    }
     const isDownloading = downloadingId === row?.id;
     // Fase 12: ausentes o no marcados no son elegibles para certificado; deshabilitamos
     // el botón para evitar un 409 evitable y dejamos claro por qué en el tooltip.
@@ -496,7 +504,7 @@ export default function AsistentesPage() {
             )}
             <span>Reporte de asistencia</span>
           </button>
-          {esFinalizada && (
+          {esFinalizada && emiteCertificado && (
             <button
               type="button"
               className="btn btn--primary"

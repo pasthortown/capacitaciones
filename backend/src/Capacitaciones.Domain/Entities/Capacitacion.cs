@@ -54,6 +54,13 @@ public class Capacitacion
     /// <summary>MIME original (ej. "image/png").</summary>
     public string? LogoContentType { get; set; }
 
+    /// <summary>
+    /// Indica si la capacitación emite certificados a los asistentes. Default <c>true</c>.
+    /// Si es <c>false</c>, los endpoints de generación/envío de certificados rechazan la
+    /// solicitud con 409 y el UI oculta las acciones relacionadas.
+    /// </summary>
+    public bool EmiteCertificado { get; set; } = true;
+
     public bool Activo { get; set; } = true;
 
     public DateTime FechaCreacion { get; set; }
