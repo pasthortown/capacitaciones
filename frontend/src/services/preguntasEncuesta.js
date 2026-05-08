@@ -18,12 +18,12 @@ export function get(id) {
   return http.get(`${BASE}/${id}`);
 }
 
-export function create({ tipoActividadId, texto, activo = true }) {
-  return http.post(BASE, { tipoActividadId, texto, activo });
+export function create({ tipoActividadId, texto, tipoPregunta = 'SeleccionMultiple', opciones = [], activo = true }) {
+  return http.post(BASE, { tipoActividadId, texto, tipoPregunta, opciones, activo });
 }
 
-export function update(id, { tipoActividadId, texto, activo }) {
-  return http.put(`${BASE}/${id}`, { tipoActividadId, texto, activo });
+export function update(id, { tipoActividadId, texto, tipoPregunta = 'SeleccionMultiple', opciones = [], activo }) {
+  return http.put(`${BASE}/${id}`, { tipoActividadId, texto, tipoPregunta, opciones, activo });
 }
 
 export function remove(id) {
