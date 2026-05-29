@@ -130,7 +130,11 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         }
 
         var now = DateTime.UtcNow;
-        var expires = now.AddHours(horas);
+        // Requerimiento: los enlaces (capacitador/inscripción/responsable/pase-lista/calificaciones)
+        // NO deben caducar. Se emiten sin claim `exp`, por lo que la validación de lifetime del
+        // backend no los rechaza (ver RequireExpirationTime=false en Program.cs). El parámetro
+        // `horas` se conserva por compatibilidad de firma pero ya no limita la vigencia.
+        _ = horas;
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -150,7 +154,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             audience: string.IsNullOrWhiteSpace(_options.Audience) ? null : _options.Audience,
             claims: claims,
             notBefore: now,
-            expires: expires,
+            expires: null,
             signingCredentials: creds);
 
         var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
@@ -158,7 +162,8 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         return new JwtTokenResult
         {
             Token = tokenString,
-            ExpiresAt = expires
+            // Sin caducidad real; se reporta DateTime.MaxValue para señalar "no expira" al frontend.
+            ExpiresAt = DateTime.MaxValue
         };
     }
 }

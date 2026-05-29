@@ -130,6 +130,11 @@ builder.Services
             ValidateAudience = true,
             ValidAudience = jwtOptions.Audience,
             ValidateLifetime = true,
+            // Los tokens de enlaces (capacitador/inscripción/responsable/pase-lista/calificaciones)
+            // se emiten sin claim `exp` para que NO caduquen. Con RequireExpirationTime=false la
+            // validación de lifetime los acepta; el token de admin sigue trayendo `exp` y, por tanto,
+            // sigue caducando normalmente.
+            RequireExpirationTime = false,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret)),
             ClockSkew = TimeSpan.FromSeconds(30)
