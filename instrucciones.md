@@ -218,6 +218,8 @@ Las fuentes canónicas del proyecto viven en `./Tipografía/` y son obligatorias
   - `Iniciada` — entre `FechaHoraInicio` y `FechaHoraInicio + DuracionMinutos`.
   - `Finalizada` — después de `FechaHoraInicio + DuracionMinutos`.
 
+> **Corte de inscripción (regla de negocio).** Las inscripciones **NO** se cierran al iniciar el evento; permanecen abiertas durante el estado `Iniciada` y solo se cierran cuando la capacitación pasa a `Finalizada` (el **punto de cierre por horario** = `FechaHoraInicio + DuracionMinutos`). El estado `Iniciada` es solo una etiqueta de avance: la página pública de inscripción sigue operativa y muestra un aviso explícito de que aún se puede registrar. Backend: `InscribirAsistenteUseCase` y `ObtenerInscripcionPublicaUseCase` solo rechazan (`409 INSCRIPCION_CERRADA`) cuando el estado es `Finalizada`.
+
 **Responsable** (firmantes adicionales del certificado — 0..N por capacitación)
 - `Id` (GUID)
 - `CapacitacionId` (FK)
@@ -573,6 +575,7 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 | 11| Cert. efectivo     | `Aprobacion` + `Calificacion < PuntajeMinimo` → cert. tipo **Asistencia** (sin mutar el tipo original de la capacitación). |
 | 12| AttendanceToggle   | Split button radio (gris → verde/rojo), no desmarcable ambos. Reusado en pantalla pública y tabla admin. |
 | 13| Emite certificado  | Bandera `Capacitacion.EmiteCertificado` (bit, default `1`). Editable en crear y editar. Si está en `false`, los endpoints de generación / envío / descarga responden 409 `CAPACITACION_NO_EMITE_CERTIFICADO` y el UI oculta el botón "Generar y Enviar todos los certificados" + la acción individual de descarga en la página de asistentes. |
+| 14| Corte de inscripción | Las inscripciones quedan abiertas hasta el **punto de cierre por horario** (`FechaHoraInicio + DuracionMinutos`), no al iniciar el evento. Durante el estado `Iniciada` el público aún puede registrarse; la página pública muestra un aviso explícito. Solo `Finalizada` cierra (`409 INSCRIPCION_CERRADA`). |
 
 ## 11. Despliegue en producción
 

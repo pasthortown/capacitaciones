@@ -256,6 +256,8 @@ public class CalificarAsistenteUseCaseTests
 
         public Task AddAsync(Asistente entity, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<IReadOnlyList<Asistente>> ListByCapacitacionAsync(Guid capacitacionId, CancellationToken ct = default) => throw new NotImplementedException();
+        public Task<Asistente?> GetByCapacitacionAndIdentificacionAsync(Guid capacitacionId, string identificacion, CancellationToken ct = default) => throw new NotImplementedException();
+
         public Task<bool> ExistsByCapacitacionAndIdentificacionAsync(Guid capacitacionId, string identificacion, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<int> CountByCapacitacionAsync(Guid capacitacionId, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<IReadOnlyDictionary<Guid, int>> CountByCapacitacionesAsync(IEnumerable<Guid> capacitacionIds, CancellationToken ct = default) => throw new NotImplementedException();

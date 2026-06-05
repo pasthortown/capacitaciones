@@ -12,12 +12,15 @@ namespace Capacitaciones.Tests;
 /// </summary>
 public class InscribirAsistenteUseCaseTests
 {
-    private static Capacitacion BuildCapacitacion(bool activo = true, bool finalizada = false)
+    private static Capacitacion BuildCapacitacion(bool activo = true, bool finalizada = false, bool iniciada = false)
     {
         // finalizada = true → fecha+duración ya en el pasado.
+        // iniciada   = true → inicio en el pasado pero aún dentro de la duración (estado "Iniciada").
         var fecha = finalizada
             ? DateTime.UtcNow.AddHours(-5)
-            : DateTime.UtcNow.AddDays(1);
+            : iniciada
+                ? DateTime.UtcNow.AddMinutes(-10)
+                : DateTime.UtcNow.AddDays(1);
 
         return new Capacitacion
         {
@@ -145,6 +148,26 @@ public class InscribirAsistenteUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_CapacitacionIniciada_PermiteInscripcion()
+    {
+        // Regla de negocio: las inscripciones siguen abiertas durante el evento
+        // (estado "Iniciada") y solo se cierran al finalizar (punto de cierre por horario).
+        var capacitacion = BuildCapacitacion(iniciada: true);
+        var area = new Area { Id = Guid.NewGuid(), Nombre = "TI", Activo = true, FechaCreacion = DateTime.UtcNow };
+        var asisRepo = new FakeAsistenteRepo();
+
+        var useCase = new InscribirAsistenteUseCase(
+            new FakeCapacitacionRepo(capacitacion),
+            new FakeAreaRepo(area),
+            asisRepo);
+
+        var dto = await useCase.ExecuteAsync(capacitacion.Id, BuildInput(area.Id));
+
+        Assert.Single(asisRepo.Added);
+        Assert.Equal("juan.perez@dos.com.ec", dto.Email);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_EmailConArroba_LanzaValidacion()
     {
         var capacitacion = BuildCapacitacion();
@@ -261,6 +284,8 @@ public class InscribirAsistenteUseCaseTests
 
         public Task<IReadOnlyList<Asistente>> ListByCapacitacionAsync(Guid capacitacionId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<Asistente>>(Added.Where(a => a.CapacitacionId == capacitacionId).ToList());
+
+        public Task<Asistente?> GetByCapacitacionAndIdentificacionAsync(Guid capacitacionId, string identificacion, CancellationToken ct = default) => throw new NotImplementedException();
 
         public Task<bool> ExistsByCapacitacionAndIdentificacionAsync(Guid capacitacionId, string identificacion, CancellationToken ct = default)
         {

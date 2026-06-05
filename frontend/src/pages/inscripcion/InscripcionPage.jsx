@@ -244,6 +244,13 @@ export default function InscripcionPage() {
       </header>
 
       <div className={styles.container}>
+        {capacitacion?.estado === 'Iniciada' && (
+          <div className={styles.noticeStarted} role="status">
+            Esta capacitación ya <strong>inició</strong>, pero las inscripciones
+            siguen <strong>abiertas</strong> hasta que finalice. Aún puedes
+            registrarte.
+          </div>
+        )}
         {/* Card 1: datos read-only de la capacitación */}
         <section className={styles.card} aria-label="Datos de la capacitación">
           <h2 className={styles.sectionTitle}>Datos de la capacitación</h2>

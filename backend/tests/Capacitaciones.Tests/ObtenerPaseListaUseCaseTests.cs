@@ -171,6 +171,8 @@ public class ObtenerPaseListaUseCaseTests
 
         public Task AddAsync(Asistente entity, CancellationToken ct = default)
             => throw new NotImplementedException();
+        public Task<Asistente?> GetByCapacitacionAndIdentificacionAsync(Guid capacitacionId, string identificacion, CancellationToken ct = default) => throw new NotImplementedException();
+
         public Task<bool> ExistsByCapacitacionAndIdentificacionAsync(Guid capacitacionId, string identificacion, CancellationToken ct = default)
             => throw new NotImplementedException();
         public Task<Asistente?> GetByIdAsync(Guid id, CancellationToken ct = default)

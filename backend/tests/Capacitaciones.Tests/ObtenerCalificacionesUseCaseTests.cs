@@ -215,6 +215,8 @@ public class ObtenerCalificacionesUseCaseTests
             => Task.FromResult<IReadOnlyList<Asistente>>(_items.Where(a => a.CapacitacionId == capacitacionId).ToList());
 
         public Task AddAsync(Asistente entity, CancellationToken ct = default) => throw new NotImplementedException();
+        public Task<Asistente?> GetByCapacitacionAndIdentificacionAsync(Guid capacitacionId, string identificacion, CancellationToken ct = default) => throw new NotImplementedException();
+
         public Task<bool> ExistsByCapacitacionAndIdentificacionAsync(Guid capacitacionId, string identificacion, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<Asistente?> GetByIdAsync(Guid id, CancellationToken ct = default) => throw new NotImplementedException();
         public Task UpdateAsync(Asistente entity, CancellationToken ct = default) => throw new NotImplementedException();
