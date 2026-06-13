@@ -1,4 +1,5 @@
 using System.Globalization;
+using Capacitaciones.Application.Common;
 using Capacitaciones.Application.Dtos.Notifications;
 using Capacitaciones.Application.Ports;
 using Capacitaciones.Application.UseCases.Capacitaciones;
@@ -79,9 +80,7 @@ public class EnviarInvitacionInscripcionUseCase
         var modalidad = entity.Modalidad?.Nombre ?? string.Empty;
 
         var cultura = new CultureInfo("es-EC");
-        var fechaLocal = entity.FechaHoraInicio.Kind == DateTimeKind.Utc
-            ? entity.FechaHoraInicio.ToLocalTime()
-            : entity.FechaHoraInicio;
+        var fechaLocal = EcuadorTime.FromUtc(entity.FechaHoraInicio);
 
         var horas = entity.DuracionMinutos / 60;
         var minutosRestantes = entity.DuracionMinutos % 60;

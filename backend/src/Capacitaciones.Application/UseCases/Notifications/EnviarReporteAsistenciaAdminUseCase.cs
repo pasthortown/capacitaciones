@@ -1,4 +1,5 @@
 using System.Globalization;
+using Capacitaciones.Application.Common;
 using Capacitaciones.Application.Dtos.Notifications;
 using Capacitaciones.Application.Ports;
 using Capacitaciones.Application.UseCases.Capacitaciones;
@@ -52,9 +53,7 @@ public class EnviarReporteAsistenciaAdminUseCase
         var presentes = asistentes.Count(a => a.EstadoAsistencia == EstadoAsistencia.Presente);
         var ausentes = asistentes.Count(a => a.EstadoAsistencia == EstadoAsistencia.Ausente);
 
-        var fechaLocal = capacitacion.FechaHoraInicio.Kind == DateTimeKind.Utc
-            ? capacitacion.FechaHoraInicio.ToLocalTime()
-            : capacitacion.FechaHoraInicio;
+        var fechaLocal = EcuadorTime.FromUtc(capacitacion.FechaHoraInicio);
         var fechaTexto = fechaLocal.ToString("dd 'de' MMMM 'de' yyyy", new CultureInfo("es-EC"));
 
         var subject = $"Registro de asistencia: {capacitacion.Tema}";

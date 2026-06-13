@@ -1,4 +1,5 @@
 using System.Globalization;
+using Capacitaciones.Application.Common;
 using Capacitaciones.Application.Dtos.Certificados;
 using Capacitaciones.Application.Dtos.Notifications;
 using Capacitaciones.Application.Ports;
@@ -148,9 +149,7 @@ public class GenerarYEnviarCertificadosUseCase
             var tipoEfectivo = GenerarCertificadoAsistenteUseCase.CalcularCertificadoEfectivo(capacitacion, asistente);
             var tipoLegible = LegibleTipoCertificado(tipoEfectivo);
 
-            var fechaLocal = capacitacion.FechaHoraInicio.Kind == DateTimeKind.Utc
-                ? capacitacion.FechaHoraInicio.ToLocalTime()
-                : capacitacion.FechaHoraInicio;
+            var fechaLocal = EcuadorTime.FromUtc(capacitacion.FechaHoraInicio);
             var cultura = new CultureInfo("es-EC");
             var fechaTexto = fechaLocal.ToString("dd 'de' MMMM 'de' yyyy", cultura);
 
