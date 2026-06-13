@@ -83,6 +83,11 @@ public class CrearCapacitacionUseCase
             CapacitacionResponsables = BuildPivotRelations(input.ResponsableIds)
         };
 
+        // Reuso de firma del capacitador: si este profesor ya firmó en un curso previo, traemos
+        // esa firma por defecto para no volver a pedírsela. Solo la firma — cargo y empresa se
+        // capturan/editan aparte. Si no hay coincidencia, queda null y firmará por el link.
+        entity.FirmaCapacitador = await _repo.GetLatestFirmaCapacitadorByNombreAsync(entity.Capacitador, null, ct);
+
         // El repositorio orquesta IExecutionStrategy + transacción y llama a nuestro factory
         // (que delega en INumeracionService) dentro de la misma transacción, garantizando que
         // si falla el insert nunca se "queme" un número.

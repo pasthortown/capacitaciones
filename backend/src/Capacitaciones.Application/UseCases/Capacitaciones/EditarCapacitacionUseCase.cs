@@ -62,6 +62,12 @@ public class EditarCapacitacionUseCase
         entity.EmpresaCapacitador = string.IsNullOrWhiteSpace(input.EmpresaCapacitador) ? null : input.EmpresaCapacitador.Trim();
         entity.EmailCapacitador = string.IsNullOrWhiteSpace(input.EmailCapacitador) ? null : input.EmailCapacitador.Trim();
         entity.FirmaCapacitador = string.IsNullOrWhiteSpace(input.FirmaCapacitador) ? entity.FirmaCapacitador : input.FirmaCapacitador;
+        // Reuso de firma: si tras la edición el capacitador sigue sin firma (p.ej. se cambió el
+        // nombre a uno que ya firmó en otro curso), la traemos por defecto en vez de pedirla de nuevo.
+        if (string.IsNullOrWhiteSpace(entity.FirmaCapacitador))
+        {
+            entity.FirmaCapacitador = await _repo.GetLatestFirmaCapacitadorByNombreAsync(entity.Capacitador, entity.Id, ct);
+        }
         entity.Descripcion = string.IsNullOrWhiteSpace(input.Descripcion) ? null : input.Descripcion;
         entity.ModalidadId = input.ModalidadId;
         entity.TipoActividadId = input.TipoActividadId;

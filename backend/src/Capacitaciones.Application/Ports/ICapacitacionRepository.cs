@@ -57,4 +57,16 @@ public interface ICapacitacionRepository
     /// lógicamente eliminadas — el código es único global y no se reutiliza.
     /// </summary>
     Task<int> GetMaxCodigoNumberAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Devuelve la <c>FirmaCapacitador</c> más reciente registrada para un capacitador con el
+    /// mismo nombre (comparación tolerante a mayúsculas/minúsculas y espacios al inicio/fin), o
+    /// <c>null</c> si ningún curso de ese capacitador tiene firma. Se usa para reutilizar la firma
+    /// de un profesor que ya firmó antes y no volver a pedírsela al registrarlo en un curso nuevo.
+    /// <paramref name="excludeId"/> excluye una capacitación concreta (la propia, al editar).
+    /// </summary>
+    Task<string?> GetLatestFirmaCapacitadorByNombreAsync(
+        string capacitador,
+        Guid? excludeId = null,
+        CancellationToken ct = default);
 }

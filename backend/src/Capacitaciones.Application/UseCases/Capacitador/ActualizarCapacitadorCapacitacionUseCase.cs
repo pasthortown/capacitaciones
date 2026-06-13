@@ -58,7 +58,16 @@ public class ActualizarCapacitadorCapacitacionUseCase
         entity.CargoCapacitador = NormalizeEmptyToNull(input.CargoCapacitador);
         entity.EmpresaCapacitador = NormalizeEmptyToNull(input.EmpresaCapacitador);
         entity.EmailCapacitador = NormalizeEmptyToNull(input.EmailCapacitador);
-        entity.FirmaCapacitador = NormalizeEmptyToNull(input.FirmaCapacitador);
+
+        // Firma: actualizarla es OPCIONAL. Si el capacitador ya tiene firma (reusada de un curso
+        // previo o cargada antes) y no envía una nueva, conservamos la existente en lugar de
+        // borrarla. Solo se sobrescribe cuando llega una firma no vacía.
+        var nuevaFirma = NormalizeEmptyToNull(input.FirmaCapacitador);
+        if (nuevaFirma is not null)
+        {
+            entity.FirmaCapacitador = nuevaFirma;
+        }
+
         entity.FechaActualizacion = DateTime.UtcNow;
 
         await _repo.UpdateAsync(entity, ct);

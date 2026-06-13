@@ -237,4 +237,28 @@ FROM dbo.Capacitacion")
         }
         return max;
     }
+
+    public async Task<string?> GetLatestFirmaCapacitadorByNombreAsync(
+        string capacitador,
+        Guid? excludeId = null,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(capacitador)) return null;
+
+        var nombre = capacitador.Trim();
+
+        // Comparación case-insensitive + tolerante a espacios: la colación por defecto de SQL Server
+        // es CI y `=` ignora espacios al final; aplicamos Trim() en ambos lados para cubrir también
+        // los espacios al inicio. Tomamos la firma de la capacitación con actividad más reciente.
+        return await _db.Capacitaciones
+            .AsNoTracking()
+            .Where(c => c.FirmaCapacitador != null
+                        && c.FirmaCapacitador != ""
+                        && c.Capacitador != null
+                        && c.Capacitador.Trim() == nombre
+                        && (excludeId == null || c.Id != excludeId.Value))
+            .OrderByDescending(c => c.FechaActualizacion ?? c.FechaCreacion)
+            .Select(c => c.FirmaCapacitador)
+            .FirstOrDefaultAsync(ct);
+    }
 }
