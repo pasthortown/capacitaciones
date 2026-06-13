@@ -127,4 +127,13 @@ public class CertificadosOptions
 
     /// <summary>Directorio montado en el contenedor backend donde residen los PDFs emitidos.</summary>
     public string OutputDir { get; set; } = "/output";
+
+    /// <summary>
+    /// Firma por defecto (data URI, ej. <c>data:image/svg+xml;base64,...</c>) que se usa para
+    /// cualquier firmante — capacitador o responsable — que no tenga firma cargada, evitando que
+    /// la emisión del certificado se detenga por <c>FIRMAS_FALTANTES</c>. La carga
+    /// <c>Program.cs</c> al arrancar desde el asset <c>Assets/firma-capacitador-default.svg</c>.
+    /// Si queda vacía, se conserva el comportamiento anterior (faltantes ⇒ 409).
+    /// </summary>
+    public string? FirmaPorDefecto { get; set; }
 }

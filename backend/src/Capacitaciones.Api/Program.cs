@@ -264,6 +264,35 @@ if (string.IsNullOrWhiteSpace(certificadosOptions.OutputDir))
 {
     certificadosOptions.OutputDir = "/output";
 }
+
+// Firma por defecto: logo DOS embebido como data URI. Se usa para cualquier firmante
+// (capacitador o responsable) que no tenga firma cargada, evitando que la emisión se
+// detenga por FIRMAS_FALTANTES. Precedencia: env FIRMA_POR_DEFECTO_PATH > asset bundleado.
+if (string.IsNullOrWhiteSpace(certificadosOptions.FirmaPorDefecto))
+{
+    var firmaDefaultPath = Environment.GetEnvironmentVariable("FIRMA_POR_DEFECTO_PATH");
+    if (string.IsNullOrWhiteSpace(firmaDefaultPath))
+    {
+        firmaDefaultPath = Path.Combine(builder.Environment.ContentRootPath, "Assets", "firma-capacitador-default.svg");
+    }
+    try
+    {
+        if (File.Exists(firmaDefaultPath))
+        {
+            var svgBytes = File.ReadAllBytes(firmaDefaultPath);
+            var mime = firmaDefaultPath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
+                ? "image/svg+xml"
+                : "image/png";
+            certificadosOptions.FirmaPorDefecto = $"data:{mime};base64,{Convert.ToBase64String(svgBytes)}";
+        }
+    }
+    catch
+    {
+        // Si no se puede leer el asset, dejamos FirmaPorDefecto nula y se conserva el
+        // comportamiento anterior (faltantes ⇒ 409). No bloqueamos el arranque por esto.
+    }
+}
+
 builder.Services.AddSingleton(certificadosOptions);
 
 builder.Services.AddHttpClient<IEmisorDocumentosClient, EmisorDocumentosHttpClient>(client =>

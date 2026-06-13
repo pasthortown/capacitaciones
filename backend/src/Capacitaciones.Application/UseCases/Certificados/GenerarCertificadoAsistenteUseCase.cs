@@ -1,5 +1,6 @@
 using Capacitaciones.Application.Dtos.Certificados;
 using Capacitaciones.Application.Ports;
+using Capacitaciones.Application.UseCases.Asistentes;
 using Capacitaciones.Application.UseCases.Capacitaciones;
 using Capacitaciones.Domain.Entities;
 
@@ -24,15 +25,18 @@ public class GenerarCertificadoAsistenteUseCase
     private readonly ICapacitacionRepository _capacitaciones;
     private readonly IAsistenteRepository _asistentes;
     private readonly IEmisorDocumentosClient _emisor;
+    private readonly CertificadosOptions _options;
 
     public GenerarCertificadoAsistenteUseCase(
         ICapacitacionRepository capacitaciones,
         IAsistenteRepository asistentes,
-        IEmisorDocumentosClient emisor)
+        IEmisorDocumentosClient emisor,
+        CertificadosOptions options)
     {
         _capacitaciones = capacitaciones;
         _asistentes = asistentes;
         _emisor = emisor;
+        _options = options;
     }
 
     public async Task<CertificadoEmitidoDto> ExecuteAsync(
@@ -75,10 +79,16 @@ public class GenerarCertificadoAsistenteUseCase
             throw CertificadoAsistenteNoElegibleException.SinMarcar();
         }
 
+        // Firma por defecto (logo DOS): si está configurada, cualquier firmante sin firma la usa
+        // y NO se considera faltante, de modo que la emisión no se detenga. Si no hay default
+        // configurado, se conserva el comportamiento anterior (recolectar faltantes ⇒ 409).
+        var firmaPorDefecto = _options.FirmaPorDefecto;
+        var hayFirmaPorDefecto = !string.IsNullOrWhiteSpace(firmaPorDefecto);
+
         // Validación de firmas: recolectamos todas las faltantes para que el UI pueda mostrarlas
         // de una sola vez en vez de obligar al admin a intentar varias veces.
         var faltantes = new List<string>();
-        if (string.IsNullOrWhiteSpace(capacitacion.FirmaCapacitador))
+        if (string.IsNullOrWhiteSpace(capacitacion.FirmaCapacitador) && !hayFirmaPorDefecto)
         {
             faltantes.Add(string.IsNullOrWhiteSpace(capacitacion.Capacitador)
                 ? "Capacitador"
@@ -94,11 +104,12 @@ public class GenerarCertificadoAsistenteUseCase
             var resp = cr.Responsable;
             if (resp is null)
             {
-                // Defensivo: si el ThenInclude no trajo la entidad, lo reportamos como faltante.
+                // Defensivo: si el ThenInclude no trajo la entidad, lo reportamos como faltante
+                // (no podemos sustituir firma de un responsable que ni siquiera cargó).
                 faltantes.Add($"Responsable {cr.ResponsableId}");
                 continue;
             }
-            if (string.IsNullOrWhiteSpace(resp.Firma))
+            if (string.IsNullOrWhiteSpace(resp.Firma) && !hayFirmaPorDefecto)
             {
                 faltantes.Add(string.IsNullOrWhiteSpace(resp.Nombres) ? "Responsable" : resp.Nombres);
             }
@@ -109,7 +120,7 @@ public class GenerarCertificadoAsistenteUseCase
             throw new CertificadoFirmasFaltantesException(faltantes);
         }
 
-        var payload = BuildPayload(capacitacion, asistente, responsablesOrdenados);
+        var payload = BuildPayload(capacitacion, asistente, responsablesOrdenados, firmaPorDefecto);
         var resultado = await _emisor.EmitirAsync(payload, ct);
 
         var filename = ExtractFilename(resultado.Ruta);
@@ -123,8 +134,13 @@ public class GenerarCertificadoAsistenteUseCase
     private static EmisionRequest BuildPayload(
         Capacitacion capacitacion,
         Asistente asistente,
-        IReadOnlyList<CapacitacionResponsable> responsablesOrdenados)
+        IReadOnlyList<CapacitacionResponsable> responsablesOrdenados,
+        string? firmaPorDefecto)
     {
+        // Sustituye por la firma por defecto (logo) cuando el firmante no tiene firma propia.
+        static string ResolverFirma(string? firma, string? porDefecto) =>
+            !string.IsNullOrWhiteSpace(firma) ? firma! : (porDefecto ?? string.Empty);
+
         var firmantes = new List<EmisionFirmanteDto>(responsablesOrdenados.Count + 1)
         {
             new EmisionFirmanteDto
@@ -132,7 +148,7 @@ public class GenerarCertificadoAsistenteUseCase
                 Nombres = capacitacion.Capacitador ?? string.Empty,
                 Cargo = capacitacion.CargoCapacitador ?? string.Empty,
                 Empresa = capacitacion.EmpresaCapacitador ?? string.Empty,
-                FirmaBase64 = capacitacion.FirmaCapacitador ?? string.Empty
+                FirmaBase64 = ResolverFirma(capacitacion.FirmaCapacitador, firmaPorDefecto)
             }
         };
 
@@ -144,7 +160,7 @@ public class GenerarCertificadoAsistenteUseCase
                 Nombres = r.Nombres,
                 Cargo = r.Cargo,
                 Empresa = r.Empresa,
-                FirmaBase64 = r.Firma ?? string.Empty
+                FirmaBase64 = ResolverFirma(r.Firma, firmaPorDefecto)
             });
         }
 

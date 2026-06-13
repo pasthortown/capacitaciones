@@ -23,4 +23,12 @@
     <ProjectReference Include="..\Capacitaciones.Infrastructure\Capacitaciones.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Firma por defecto (logo DOS) usada cuando un firmante no tiene firma cargada.
+         Se copia al output para que viaje en la imagen del contenedor y nunca se pierda. -->
+    <Content Include="Assets\firma-capacitador-default.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
