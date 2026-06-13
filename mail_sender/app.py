@@ -2,6 +2,7 @@ import base64
 import os
 import smtplib
 import socket
+import time
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -15,6 +16,13 @@ from pydantic import BaseModel, EmailStr, Field
 
 TEMPLATES_DIR = os.environ.get("TEMPLATES_DIR", "plantillas")
 ASSETS_DIR = os.environ.get("ASSETS_DIR", "assets")
+
+# Reintentos del envío SMTP. El connector/relay puede fallar por parpadeos de DNS
+# (`socket.gaierror: Temporary failure in name resolution`) o cortes transitorios de
+# red, que NO son `smtplib.SMTPException` sino `OSError`. Reintentamos con backoff
+# lineal antes de devolver error para que un parpadeo no impida el envío del correo.
+SMTP_MAX_RETRIES = int(os.environ.get("SMTP_MAX_RETRIES", "3"))
+SMTP_RETRY_BACKOFF_SECONDS = float(os.environ.get("SMTP_RETRY_BACKOFF_SECONDS", "2"))
 
 
 def load_logo_base64() -> str:
@@ -229,10 +237,26 @@ def send_mail(request: SendMailRequest) -> SendMailResponse:
     if request.bcc:
         all_recipients += list(request.bcc)
 
-    try:
-        send_via_smtp(message, all_recipients)
-    except smtplib.SMTPException as exc:
-        raise HTTPException(status_code=502, detail=f"Error SMTP: {exc}")
+    # Reintentos con backoff. Capturamos `OSError` además de `smtplib.SMTPException`
+    # porque los fallos de resolución de DNS (`socket.gaierror`) y los cortes de red
+    # transitorios derivan de `OSError`, no de `SMTPException`; antes escapaban del
+    # `except` y el endpoint devolvía 500 sin enviar el correo.
+    last_exc: Optional[BaseException] = None
+    for intento in range(1, SMTP_MAX_RETRIES + 1):
+        try:
+            send_via_smtp(message, all_recipients)
+            last_exc = None
+            break
+        except (smtplib.SMTPException, OSError) as exc:
+            last_exc = exc
+            if intento < SMTP_MAX_RETRIES:
+                time.sleep(SMTP_RETRY_BACKOFF_SECONDS * intento)
+
+    if last_exc is not None:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Error de envío tras {SMTP_MAX_RETRIES} intentos: {last_exc}",
+        )
 
     return SendMailResponse(
         status="sent",
