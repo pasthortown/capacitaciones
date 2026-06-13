@@ -84,3 +84,7 @@ SSL/generated-csr.txt
 # ----- Otros -----
 *.tmp
 *.bak
+
+# Python bytecode
+__pycache__/
+*.pyc
