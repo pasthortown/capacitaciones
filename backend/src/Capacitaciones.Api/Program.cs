@@ -307,6 +307,12 @@ builder.Services.AddHttpClient<IEmisorDocumentosClient, EmisorDocumentosHttpClie
 builder.Services.AddScoped<GenerarCertificadoAsistenteUseCase>();
 builder.Services.AddScoped<GenerarCertificadosCapacitacionUseCase>();
 
+// Envío de certificados en segundo plano: cola en proceso (singleton) + worker hosted.
+// El endpoint "generar-y-enviar" marca pendientes y encola; el worker procesa fuera del request.
+builder.Services.AddSingleton<Capacitaciones.Application.Ports.ICertificadoEnvioQueue,
+    Capacitaciones.Infrastructure.Services.CertificadoEnvioQueue>();
+builder.Services.AddHostedService<Capacitaciones.Api.BackgroundServices.CertificadoEnvioBackgroundService>();
+
 // Módulo Repositorio — storage de archivos + CRUD de recursos.
 // Precedencia de configuración: env var REPOSITORIO_DIR > appsettings "ResourceStorage:Directory" > default "/repository".
 var resourceStorageOptions = builder.Configuration.GetSection(ResourceStorageOptions.SectionName)

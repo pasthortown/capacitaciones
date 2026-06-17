@@ -156,6 +156,7 @@ public class LogoCapacitacionUseCasesTests
     /// <summary>Repo mínimo: solo los métodos usados por los use cases de logo.</summary>
     private sealed class InMemoryCapacitacionRepository : ICapacitacionRepository
     {
+        public Task<string?> GetLatestFirmaCapacitadorByNombreAsync(string capacitador, Guid? excluirCapacitacionId = null, CancellationToken ct = default) => Task.FromResult<string?>(null);
         public Dictionary<Guid, Capacitacion> Stored { get; } = new();
 
         public Task<IReadOnlyList<Capacitacion>> ListAsync(bool includeInactive = false, CancellationToken ct = default)

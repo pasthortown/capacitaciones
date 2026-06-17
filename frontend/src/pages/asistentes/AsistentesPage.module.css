@@ -41,6 +41,23 @@
   color: var(--color-text-secondary, #6b7280);
 }
 
+/* --- Estado de envío del certificado (columna "Certificado") --- */
+.badgeCertSent {
+  background-color: var(--color-success-bg, #DCFCE7);
+  color: var(--color-success-text, #166534);
+}
+
+.badgeCertPending {
+  background-color: var(--color-warning-bg, #FEF3C7);
+  color: var(--color-warning-text, #92400E);
+}
+
+.badgeCertError {
+  background-color: var(--color-danger-bg, #FEE2E2);
+  color: var(--color-danger-text, #991B1B);
+  cursor: help;
+}
+
 /* --- Celda de calificación (Fase 11) --- */
 .calificacionCell {
   display: inline-flex;

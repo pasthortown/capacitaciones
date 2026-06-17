@@ -49,4 +49,19 @@ public class Asistente
     /// TipoCertificacion=Aprobacion y el asistente está Presente. Null en cualquier otro caso.
     /// </summary>
     public decimal? Calificacion { get; set; }
+
+    /// <summary>
+    /// Estado del envío del certificado por correo. <c>null</c> = no aplica / nunca se disparó.
+    /// El proceso en segundo plano lo lleva de <c>Pendiente</c> a <c>Enviado</c> o <c>Error</c>.
+    /// </summary>
+    public EstadoEnvioCertificado? EstadoEnvioCertificado { get; set; }
+
+    /// <summary>Timestamp UTC del último envío exitoso del certificado. Null si nunca se envió.</summary>
+    public DateTime? FechaEnvioCertificado { get; set; }
+
+    /// <summary>
+    /// Último mensaje de error del envío del certificado (PDF ausente, sin email, fallo SMTP,
+    /// emisor no disponible…). Null cuando el estado no es <c>Error</c>.
+    /// </summary>
+    public string? MensajeErrorEnvio { get; set; }
 }

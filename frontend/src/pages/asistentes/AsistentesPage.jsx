@@ -377,6 +377,41 @@ export default function AsistentesPage() {
   const esAprobacion = capacitacion?.tipoCertificacion === 'Aprobacion';
   const puntajeMinimo = capacitacion?.puntajeMinimo ?? null;
 
+  // Pinta el estado del envío del certificado como badge. `null` => aún no se
+  // disparó el envío (o el asistente no es elegible: ausente / sin marcar).
+  const renderEstadoEnvio = (row) => {
+    const estado = row?.estadoEnvioCertificado ?? null;
+    if (estado === 'Enviado') {
+      const fecha = formatFechaHora(row?.fechaEnvioCertificado);
+      return (
+        <span
+          className={`${styles.badge} ${styles.badgeCertSent}`}
+          title={fecha ? `Enviado el ${fecha}` : undefined}
+        >
+          Enviado
+        </span>
+      );
+    }
+    if (estado === 'Pendiente') {
+      return (
+        <span className={`${styles.badge} ${styles.badgeCertPending}`}>
+          Pendiente
+        </span>
+      );
+    }
+    if (estado === 'Error') {
+      return (
+        <span
+          className={`${styles.badge} ${styles.badgeCertError}`}
+          title={row?.mensajeErrorEnvio || 'Error en el envío'}
+        >
+          Error
+        </span>
+      );
+    }
+    return '—';
+  };
+
   const columns = [
     {
       key: 'asistencia',
@@ -423,6 +458,17 @@ export default function AsistentesPage() {
       header: 'Fecha inscripción',
       accessor: (row) => formatFechaHora(row?.fechaInscripcion) || '—',
     },
+    // Columna Certificado: estado del envío por correo. Visible sólo si el
+    // evento emite certificado. "Enviado" | "Pendiente" | "Error" | sin envío.
+    ...(emiteCertificado
+      ? [
+          {
+            key: 'estadoEnvioCertificado',
+            header: 'Certificado',
+            accessor: (row) => renderEstadoEnvio(row),
+          },
+        ]
+      : []),
   ];
 
   const renderActions = (row) => {

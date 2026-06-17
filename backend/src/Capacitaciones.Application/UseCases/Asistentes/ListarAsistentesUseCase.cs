@@ -47,7 +47,11 @@ public class ListarAsistentesUseCase
                 FechaMarcacionAsistencia = a.FechaMarcacionAsistencia,
                 // Fase 11 — calificación editable inline en la tabla admin. El front decide si
                 // renderizarla según el TipoCertificacion de la capacitación (Aprobacion).
-                Calificacion = a.Calificacion
+                Calificacion = a.Calificacion,
+                // Envío de certificados — estado por asistente para la columna "Certificado".
+                EstadoEnvioCertificado = a.EstadoEnvioCertificado?.ToString(),
+                FechaEnvioCertificado = a.FechaEnvioCertificado,
+                MensajeErrorEnvio = a.MensajeErrorEnvio
             })
             .ToList();
     }

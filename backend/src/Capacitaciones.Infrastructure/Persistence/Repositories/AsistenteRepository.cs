@@ -149,4 +149,96 @@ public class AsistenteRepository : IAsistenteRepository
 
         return agrupados.ToDictionary(x => x.CapacitacionId, x => x.Total);
     }
+
+    public async Task<int> MarcarEstadoEnvioElegiblesAsync(
+        Guid capacitacionId,
+        ISet<Guid> elegibleIds,
+        CancellationToken ct = default)
+    {
+        // Cargamos tracked (sin AsNoTracking) para poder mutar y persistir en un solo SaveChanges.
+        var asistentes = await _db.Asistentes
+            .Where(a => a.CapacitacionId == capacitacionId)
+            .ToListAsync(ct);
+
+        var pendientes = 0;
+        foreach (var a in asistentes)
+        {
+            if (elegibleIds.Contains(a.Id))
+            {
+                a.EstadoEnvioCertificado = EstadoEnvioCertificado.Pendiente;
+                a.MensajeErrorEnvio = null;
+                pendientes++;
+            }
+            else
+            {
+                // No elegible (ausente / sin marcar): no aplica certificado → limpiamos el estado.
+                a.EstadoEnvioCertificado = null;
+                a.MensajeErrorEnvio = null;
+                a.FechaEnvioCertificado = null;
+            }
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return pendientes;
+    }
+
+    public async Task<int> MarcarErroresComoPendientesAsync(Guid capacitacionId, CancellationToken ct = default)
+    {
+        var errores = await _db.Asistentes
+            .Where(a => a.CapacitacionId == capacitacionId
+                        && a.EstadoEnvioCertificado == EstadoEnvioCertificado.Error)
+            .ToListAsync(ct);
+
+        foreach (var a in errores)
+        {
+            a.EstadoEnvioCertificado = EstadoEnvioCertificado.Pendiente;
+            a.MensajeErrorEnvio = null;
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return errores.Count;
+    }
+
+    public async Task<IReadOnlyList<Asistente>> ListByEstadoEnvioAsync(
+        Guid capacitacionId,
+        EstadoEnvioCertificado estado,
+        CancellationToken ct = default)
+    {
+        return await _db.Asistentes
+            .AsNoTracking()
+            .Include(a => a.Area)
+            .Where(a => a.CapacitacionId == capacitacionId && a.EstadoEnvioCertificado == estado)
+            .OrderBy(a => a.FechaInscripcion)
+            .ToListAsync(ct);
+    }
+
+    public async Task ActualizarResultadoEnvioAsync(
+        Guid asistenteId,
+        EstadoEnvioCertificado estado,
+        DateTime? fechaEnvio,
+        string? mensajeError,
+        CancellationToken ct = default)
+    {
+        var asistente = await _db.Asistentes.FirstOrDefaultAsync(a => a.Id == asistenteId, ct);
+        if (asistente is null) return;
+
+        asistente.EstadoEnvioCertificado = estado;
+        asistente.MensajeErrorEnvio = mensajeError;
+        if (fechaEnvio.HasValue)
+        {
+            asistente.FechaEnvioCertificado = fechaEnvio.Value;
+        }
+
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<Guid>> ListCapacitacionesConPendientesAsync(CancellationToken ct = default)
+    {
+        return await _db.Asistentes
+            .AsNoTracking()
+            .Where(a => a.EstadoEnvioCertificado == EstadoEnvioCertificado.Pendiente)
+            .Select(a => a.CapacitacionId)
+            .Distinct()
+            .ToListAsync(ct);
+    }
 }

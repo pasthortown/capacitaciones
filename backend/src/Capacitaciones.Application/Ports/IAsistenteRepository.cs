@@ -58,4 +58,47 @@ public interface IAsistenteRepository
     Task<IReadOnlyDictionary<Guid, int>> CountByCapacitacionesAsync(
         IEnumerable<Guid> capacitacionIds,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Marca el envío de certificados de una capacitación: los asistentes cuyo id está en
+    /// <paramref name="elegibleIds"/> pasan a <see cref="EstadoEnvioCertificado.Pendiente"/>
+    /// (limpiando el mensaje de error previo); el resto queda en <c>null</c> (no aplica).
+    /// Devuelve la cantidad que quedó pendiente.
+    /// </summary>
+    Task<int> MarcarEstadoEnvioElegiblesAsync(
+        Guid capacitacionId,
+        ISet<Guid> elegibleIds,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Reabre los asistentes en estado <see cref="EstadoEnvioCertificado.Error"/> de una
+    /// capacitación, volviéndolos a <see cref="EstadoEnvioCertificado.Pendiente"/> y limpiando
+    /// el mensaje de error. Devuelve cuántos se reabrieron.
+    /// </summary>
+    Task<int> MarcarErroresComoPendientesAsync(Guid capacitacionId, CancellationToken ct = default);
+
+    /// <summary>Lista los asistentes de una capacitación que están en el estado de envío dado.</summary>
+    Task<IReadOnlyList<Asistente>> ListByEstadoEnvioAsync(
+        Guid capacitacionId,
+        EstadoEnvioCertificado estado,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Persiste el resultado del envío del certificado de un asistente: estado, timestamp de
+    /// envío (solo en éxito) y mensaje de error (solo en fallo). Operación puntual usada por el
+    /// worker en segundo plano.
+    /// </summary>
+    Task ActualizarResultadoEnvioAsync(
+        Guid asistenteId,
+        EstadoEnvioCertificado estado,
+        DateTime? fechaEnvio,
+        string? mensajeError,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Devuelve los ids de capacitaciones que tienen al menos un asistente en estado
+    /// <see cref="EstadoEnvioCertificado.Pendiente"/>. Lo usa el worker al arrancar para
+    /// retomar envíos que quedaron a medias por un reinicio del servidor.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> ListCapacitacionesConPendientesAsync(CancellationToken ct = default);
 }

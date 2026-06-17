@@ -37,4 +37,16 @@ public class AsistenteSummaryDto
     /// cuando corresponde.
     /// </summary>
     public decimal? Calificacion { get; set; }
+
+    /// <summary>
+    /// Estado del envío del certificado por correo: "Pendiente" | "Enviado" | "Error" | <c>null</c>
+    /// (no aplica / aún no se disparó). El front lo pinta como columna "Certificado" con badge.
+    /// </summary>
+    public string? EstadoEnvioCertificado { get; set; }
+
+    /// <summary>Timestamp UTC del último envío exitoso del certificado. Null si nunca se envió.</summary>
+    public DateTime? FechaEnvioCertificado { get; set; }
+
+    /// <summary>Detalle del último error de envío. Null salvo cuando el estado es "Error".</summary>
+    public string? MensajeErrorEnvio { get; set; }
 }

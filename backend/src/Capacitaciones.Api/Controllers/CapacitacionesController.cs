@@ -46,6 +46,7 @@ public class CapacitacionesController : ControllerBase
     private readonly NotificarLinksCapacitadorUseCase _notificarCapacitador;
     private readonly EnviarInvitacionInscripcionUseCase _enviarInvitacion;
     private readonly GenerarYEnviarCertificadosUseCase _generarYEnviarCertificados;
+    private readonly Capacitaciones.Application.Ports.ICertificadoEnvioQueue _certificadoEnvioQueue;
     private readonly ILogger<CapacitacionesController> _logger;
 
     public CapacitacionesController(
@@ -64,6 +65,7 @@ public class CapacitacionesController : ControllerBase
         NotificarLinksCapacitadorUseCase notificarCapacitador,
         EnviarInvitacionInscripcionUseCase enviarInvitacion,
         GenerarYEnviarCertificadosUseCase generarYEnviarCertificados,
+        Capacitaciones.Application.Ports.ICertificadoEnvioQueue certificadoEnvioQueue,
         ILogger<CapacitacionesController> logger)
     {
         _listar = listar;
@@ -81,6 +83,7 @@ public class CapacitacionesController : ControllerBase
         _notificarCapacitador = notificarCapacitador;
         _enviarInvitacion = enviarInvitacion;
         _generarYEnviarCertificados = generarYEnviarCertificados;
+        _certificadoEnvioQueue = certificadoEnvioQueue;
         _logger = logger;
     }
 
@@ -411,20 +414,64 @@ public class CapacitacionesController : ControllerBase
     }
 
     /// <summary>
-    /// Genera todos los certificados de una capacitación y luego se los envía
-    /// por correo a cada asistente con el PDF como adjunto. Procesa en bloques
-    /// de 5 con pausa entre bloques para no saturar el SMTP.
-    /// Devuelve <c>200 OK</c> con el resumen agregado (Total / Emitidos /
-    /// NoElegibles / Enviados / errores). Si un asistente no tiene email se
-    /// reporta en <c>erroresEnvio</c> sin afectar al resto.
+    /// Dispara el envío de certificados de TODOS los asistentes elegibles. No espera a que
+    /// termine: marca a los elegibles como <c>Pendiente</c>, encola la tarea y responde
+    /// <c>202 Accepted</c> de inmediato. Un proceso en segundo plano genera y envía cada
+    /// certificado con reintentos, actualizando el estado por asistente (Pendiente → Enviado /
+    /// Error). El front consulta el listado de asistentes para ver el avance.
+    /// Mantiene 404 / 409 síncronos para validaciones inmediatas.
     /// </summary>
     [HttpPost("{id:guid}/certificados/generar-y-enviar")]
     public async Task<IActionResult> GenerarYEnviarCertificados(Guid id, CancellationToken ct)
     {
         try
         {
-            var resultado = await _generarYEnviarCertificados.ExecuteAsync(id, ct);
-            return Ok(resultado);
+            var pendientes = await _generarYEnviarCertificados.IniciarEnvioAsync(id, ct);
+            _certificadoEnvioQueue.Encolar(id);
+            return Accepted(new
+            {
+                estado = "EN_PROCESO",
+                pendientes,
+                message = pendientes > 0
+                    ? $"Se están generando y enviando {pendientes} certificado(s) en segundo plano."
+                    : "No hay asistentes elegibles para certificado."
+            });
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CertificadoNoDisponibleException ex)
+        {
+            return new ObjectResult(new { error = ex.Codigo, message = ex.Message })
+            {
+                StatusCode = StatusCodes.Status409Conflict
+            };
+        }
+    }
+
+    /// <summary>
+    /// Reintenta el envío de los certificados que quedaron en estado <c>Error</c>: los vuelve a
+    /// <c>Pendiente</c> y re-encola el proceso en segundo plano. Responde <c>202 Accepted</c>.
+    /// </summary>
+    [HttpPost("{id:guid}/certificados/reintentar-errores")]
+    public async Task<IActionResult> ReintentarCertificadosErroneos(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var reabiertos = await _generarYEnviarCertificados.ReintentarErroresAsync(id, ct);
+            if (reabiertos > 0)
+            {
+                _certificadoEnvioQueue.Encolar(id);
+            }
+            return Accepted(new
+            {
+                estado = "EN_PROCESO",
+                pendientes = reabiertos,
+                message = reabiertos > 0
+                    ? $"Reintentando el envío de {reabiertos} certificado(s) en segundo plano."
+                    : "No hay certificados en error para reintentar."
+            });
         }
         catch (CapacitacionNotFoundException)
         {

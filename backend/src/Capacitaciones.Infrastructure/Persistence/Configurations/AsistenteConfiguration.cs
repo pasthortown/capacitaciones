@@ -51,6 +51,17 @@ public class AsistenteConfiguration : IEntityTypeConfiguration<Asistente>
         builder.Property(a => a.Calificacion)
             .HasColumnType("decimal(4,2)");
 
+        // Envío de certificados — estado por asistente (Pendiente/Enviado/Error). Se almacena
+        // como int nullable (null = no aplica). FechaEnvioCertificado guarda el timestamp UTC
+        // del último envío exitoso; MensajeErrorEnvio el detalle del último fallo.
+        builder.Property(a => a.EstadoEnvioCertificado)
+            .HasConversion<int?>();
+
+        builder.Property(a => a.FechaEnvioCertificado);
+
+        builder.Property(a => a.MensajeErrorEnvio)
+            .HasMaxLength(1000);
+
         // FK a Capacitacion: cascade delete (al borrar físicamente una capacitación se
         // eliminan sus asistentes; el delete lógico por defecto no propaga nada).
         builder.HasOne(a => a.Capacitacion)

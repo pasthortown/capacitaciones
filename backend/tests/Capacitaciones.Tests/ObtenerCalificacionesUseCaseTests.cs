@@ -189,6 +189,7 @@ public class ObtenerCalificacionesUseCaseTests
 
     private sealed class FakeCapacitacionRepository : ICapacitacionRepository
     {
+        public Task<string?> GetLatestFirmaCapacitadorByNombreAsync(string capacitador, Guid? excluirCapacitacionId = null, CancellationToken ct = default) => Task.FromResult<string?>(null);
         private readonly Capacitacion? _entity;
         public FakeCapacitacionRepository(Capacitacion? entity = null) { _entity = entity; }
 
@@ -208,6 +209,12 @@ public class ObtenerCalificacionesUseCaseTests
 
     private sealed class FakeAsistenteRepo : IAsistenteRepository
     {
+        // Stubs del flujo de envío de certificados (no ejercitados por estos tests).
+        public Task<int> MarcarEstadoEnvioElegiblesAsync(Guid capacitacionId, ISet<Guid> elegibleIds, CancellationToken ct = default) => Task.FromResult(0);
+        public Task<int> MarcarErroresComoPendientesAsync(Guid capacitacionId, CancellationToken ct = default) => Task.FromResult(0);
+        public Task<IReadOnlyList<Asistente>> ListByEstadoEnvioAsync(Guid capacitacionId, EstadoEnvioCertificado estado, CancellationToken ct = default) => Task.FromResult((IReadOnlyList<Asistente>)new List<Asistente>());
+        public Task ActualizarResultadoEnvioAsync(Guid asistenteId, EstadoEnvioCertificado estado, DateTime? fechaEnvio, string? mensajeError, CancellationToken ct = default) => Task.CompletedTask;
+        public Task<IReadOnlyList<Guid>> ListCapacitacionesConPendientesAsync(CancellationToken ct = default) => Task.FromResult((IReadOnlyList<Guid>)new List<Guid>());
         private readonly IList<Asistente> _items;
         public FakeAsistenteRepo(IEnumerable<Asistente> items) { _items = items.ToList(); }
 

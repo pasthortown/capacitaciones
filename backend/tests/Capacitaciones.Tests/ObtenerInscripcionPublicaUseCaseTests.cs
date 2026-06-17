@@ -81,6 +81,7 @@ public class ObtenerInscripcionPublicaUseCaseTests
 
     private sealed class StubCapRepo : ICapacitacionRepository
     {
+        public Task<string?> GetLatestFirmaCapacitadorByNombreAsync(string capacitador, Guid? excluirCapacitacionId = null, CancellationToken ct = default) => Task.FromResult<string?>(null);
         private readonly Capacitacion? _entity;
         public StubCapRepo(Capacitacion? entity) { _entity = entity; }
 

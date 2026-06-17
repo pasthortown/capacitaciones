@@ -106,7 +106,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         var result = await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
 
@@ -144,7 +145,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         var ex = await Assert.ThrowsAsync<CertificadoNoDisponibleException>(
             () => useCase.ExecuteAsync(CapacitacionId, AsistenteId));
@@ -162,7 +164,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         var ex = await Assert.ThrowsAsync<CertificadoFirmasFaltantesException>(
             () => useCase.ExecuteAsync(CapacitacionId, AsistenteId));
@@ -181,7 +184,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         var ex = await Assert.ThrowsAsync<CertificadoFirmasFaltantesException>(
             () => useCase.ExecuteAsync(CapacitacionId, AsistenteId));
@@ -200,7 +204,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         var ex = await Assert.ThrowsAsync<CapacitacionServiceException>(
             () => useCase.ExecuteAsync(CapacitacionId, AsistenteId));
@@ -216,7 +221,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(null),
             new FakeAsistenteRepo(null),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         await Assert.ThrowsAsync<CapacitacionNotFoundException>(
             () => useCase.ExecuteAsync(CapacitacionId, AsistenteId));
@@ -234,7 +240,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         var ex = await Assert.ThrowsAsync<CertificadoAsistenteNoElegibleException>(
             () => useCase.ExecuteAsync(CapacitacionId, AsistenteId));
@@ -254,7 +261,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         var ex = await Assert.ThrowsAsync<CertificadoAsistenteNoElegibleException>(
             () => useCase.ExecuteAsync(CapacitacionId, AsistenteId));
@@ -271,7 +279,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
 
@@ -293,7 +302,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
 
@@ -315,7 +325,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
 
@@ -334,7 +345,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
 
@@ -355,7 +367,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
 
@@ -374,7 +387,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
 
@@ -391,7 +405,8 @@ public class GenerarCertificadoAsistenteUseCaseTests
         var useCase = new GenerarCertificadoAsistenteUseCase(
             new FakeCapacitacionRepo(cap),
             new FakeAsistenteRepo(asistente),
-            emisor);
+            emisor,
+            new Capacitaciones.Application.UseCases.Asistentes.CertificadosOptions());
 
         await useCase.ExecuteAsync(CapacitacionId, AsistenteId);
 
@@ -427,6 +442,7 @@ public class GenerarCertificadoAsistenteUseCaseTests
 
     private sealed class FakeCapacitacionRepo : ICapacitacionRepository
     {
+        public Task<string?> GetLatestFirmaCapacitadorByNombreAsync(string capacitador, Guid? excluirCapacitacionId = null, CancellationToken ct = default) => Task.FromResult<string?>(null);
         private readonly Capacitacion? _entity;
 
         public FakeCapacitacionRepo(Capacitacion? entity)
@@ -456,6 +472,12 @@ public class GenerarCertificadoAsistenteUseCaseTests
 
     private sealed class FakeAsistenteRepo : IAsistenteRepository
     {
+        // Stubs del flujo de envío de certificados (no ejercitados por estos tests).
+        public Task<int> MarcarEstadoEnvioElegiblesAsync(Guid capacitacionId, ISet<Guid> elegibleIds, CancellationToken ct = default) => Task.FromResult(0);
+        public Task<int> MarcarErroresComoPendientesAsync(Guid capacitacionId, CancellationToken ct = default) => Task.FromResult(0);
+        public Task<IReadOnlyList<Asistente>> ListByEstadoEnvioAsync(Guid capacitacionId, EstadoEnvioCertificado estado, CancellationToken ct = default) => Task.FromResult((IReadOnlyList<Asistente>)new List<Asistente>());
+        public Task ActualizarResultadoEnvioAsync(Guid asistenteId, EstadoEnvioCertificado estado, DateTime? fechaEnvio, string? mensajeError, CancellationToken ct = default) => Task.CompletedTask;
+        public Task<IReadOnlyList<Guid>> ListCapacitacionesConPendientesAsync(CancellationToken ct = default) => Task.FromResult((IReadOnlyList<Guid>)new List<Guid>());
         private readonly Asistente? _entity;
 
         public FakeAsistenteRepo(Asistente? entity)

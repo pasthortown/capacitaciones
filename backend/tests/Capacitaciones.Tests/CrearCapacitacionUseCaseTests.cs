@@ -80,6 +80,7 @@ public class CrearCapacitacionUseCaseTests
 
     private sealed class FakeCapacitacionRepo : ICapacitacionRepository
     {
+        public Task<string?> GetLatestFirmaCapacitadorByNombreAsync(string capacitador, Guid? excluirCapacitacionId = null, CancellationToken ct = default) => Task.FromResult<string?>(null);
         public Task<string> AddAsync(Capacitacion entity, Func<CancellationToken, Task<string>> codeFactory, CancellationToken ct = default)
         {
             entity.Codigo = "CAP-PC-REG-999";
