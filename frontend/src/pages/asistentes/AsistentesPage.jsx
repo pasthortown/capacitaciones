@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ClipboardList, FileBadge, FileCheck2 } from 'lucide-react';
 import DataTable from '../../components/Table/DataTable.jsx';
@@ -48,10 +48,10 @@ export default function AsistentesPage() {
   const [asistentes, setAsistentes] = useState([]);
   const [downloadingId, setDownloadingId] = useState(null);
 
-  // Generación en lote
+  // Generación en lote (envío en segundo plano: el avance por asistente se
+  // refleja en la columna "Certificado" vía polling del listado).
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [loteResult, setLoteResult] = useState(null); // { total, emitidos, errores }
 
   // Reporte de asistencia (PDF)
   const [descargandoReporte, setDescargandoReporte] = useState(false);
@@ -96,14 +96,29 @@ export default function AsistentesPage() {
     navigate('/capacitaciones');
   };
 
-  // Índice rápido id → asistente para resolver nombres en el resumen del lote.
-  const asistentesById = useMemo(() => {
-    const map = new Map();
-    for (const a of asistentes) {
-      if (a?.id) map.set(a.id, a);
+  // Refresca el listado para reflejar el avance del envío en segundo plano
+  // (Pendiente → Enviado / Error en la columna "Certificado"). Se detiene
+  // cuando ya no quedan pendientes o tras un número acotado de intentos.
+  const pollEstadoEnvio = useCallback(async () => {
+    const MAX_INTENTOS = 15;
+    for (let intento = 0; intento < MAX_INTENTOS; intento += 1) {
+      // Espera entre refrescos (el primero también espera, para dar tiempo al
+      // worker a procesar el primer asistente).
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      if (!mountedRef.current) return;
+      let list = [];
+      try {
+        list = await listByCapacitacion(id);
+      } catch {
+        continue; // un refresco fallido no aborta el seguimiento
+      }
+      if (!mountedRef.current) return;
+      if (Array.isArray(list)) setAsistentes(list);
+      const quedanPendientes = Array.isArray(list)
+        && list.some((a) => a?.estadoEnvioCertificado === 'Pendiente');
+      if (!quedanPendientes) return;
     }
-    return map;
-  }, [asistentes]);
+  }, [id]);
 
   const handleDescargar = async (asistente) => {
     if (!asistente?.id || downloadingId) return;
@@ -204,32 +219,26 @@ export default function AsistentesPage() {
   const confirmGenerarLote = async () => {
     setGenerating(true);
     try {
+      // El backend encola el envío y responde 202 con { estado, pendientes, message }.
+      // El resultado por asistente NO viene en esta respuesta: se sigue en la
+      // columna "Certificado" (Pendiente → Enviado / Error) vía pollEstadoEnvio.
       const resp = await generarYEnviarCertificados(id);
       if (!mountedRef.current) return;
-      const total = Number(resp?.total ?? 0);
-      const emitidos = Number(resp?.emitidos ?? 0);
-      const enviados = Number(resp?.enviados ?? 0);
-      // Fase 12: los no-elegibles (ausentes / sin marcar) son estado esperado, no error.
-      const noElegibles = Number(resp?.noElegibles ?? 0);
-      const noElegiblesDetalle = Array.isArray(resp?.noElegiblesDetalle)
-        ? resp.noElegiblesDetalle
-        : [];
-      const errores = Array.isArray(resp?.errores) ? resp.errores : [];
-      const erroresEnvio = Array.isArray(resp?.erroresEnvio) ? resp.erroresEnvio : [];
       setConfirmOpen(false);
-      if (
-        errores.length === 0 &&
-        erroresEnvio.length === 0 &&
-        emitidos + noElegibles === total &&
-        enviados === emitidos
-      ) {
-        const extra = noElegibles > 0
-          ? ` (${noElegibles} omitidos por ausencia o falta de marcación)`
-          : '';
-        toast.success(`Se emitieron y enviaron ${enviados} certificados${extra}.`);
-        setLoteResult(null);
+      const pendientes = Number(resp?.pendientes ?? 0);
+      if (pendientes > 0) {
+        toast.success(
+          resp?.message ||
+            `Se están generando y enviando ${pendientes} certificado(s) en segundo plano.`,
+        );
+        await fetchAll(); // muestra de inmediato los badges "Pendiente"
+        await pollEstadoEnvio(); // y los actualiza conforme el worker avanza
       } else {
-        setLoteResult({ total, emitidos, enviados, noElegibles, noElegiblesDetalle, errores, erroresEnvio });
+        // Sin elegibles (todos ausentes o sin marcar en el pase de lista).
+        toast.info(
+          resp?.message ||
+            'No hay asistentes elegibles para certificado (ausentes o sin marcar en el pase de lista).',
+        );
       }
     } catch (err) {
       if (!mountedRef.current) return;
@@ -631,111 +640,6 @@ export default function AsistentesPage() {
           saturar el SMTP, así que la operación puede tardar varios segundos
           en cohortes grandes. ¿Deseas continuar?
         </p>
-      </Modal>
-
-      {/* Modal resumen de resultados del lote (cuando hay errores parciales) */}
-      <Modal
-        isOpen={Boolean(loteResult)}
-        onClose={() => setLoteResult(null)}
-        title="Resumen de emisión"
-        footer={
-          <button
-            type="button"
-            className="btn btn--primary"
-            onClick={() => setLoteResult(null)}
-          >
-            Cerrar
-          </button>
-        }
-      >
-        {loteResult && (
-          <>
-            <p>
-              Se emitieron <strong>{loteResult.emitidos}</strong> de{' '}
-              <strong>{loteResult.total}</strong> certificados, y se enviaron
-              por correo <strong>{loteResult.enviados ?? 0}</strong>.
-            </p>
-            {loteResult.noElegibles > 0 && (
-              <p className="text-sm text-secondary">
-                <strong>{loteResult.noElegibles}</strong> asistente(s) no eran
-                elegibles (ausentes o sin marcar en el pase de lista) y se
-                omitieron. Esto no es un error — revisa la asistencia si esperabas
-                emitirlos.
-              </p>
-            )}
-            {loteResult.errores.length > 0 && (
-              <>
-                <p className="text-sm text-secondary">
-                  Los siguientes fallaron:
-                </p>
-                <div className="table-container">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th style={{ textAlign: 'left' }}>Asistente</th>
-                        <th style={{ textAlign: 'left' }}>Motivo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {loteResult.errores.map((e, idx) => {
-                        const asist = e.asistenteId
-                          ? asistentesById.get(e.asistenteId)
-                          : null;
-                        const label = asist
-                          ? `${asist.nombres ?? ''} ${asist.apellidos ?? ''}`.trim() ||
-                            e.codigo ||
-                            e.asistenteId
-                          : e.codigo || e.asistenteId || '—';
-                        return (
-                          <tr key={`${e.asistenteId || e.codigo || idx}-${idx}`}>
-                            <td>{label}</td>
-                            <td>{e.mensaje || '—'}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-            {Array.isArray(loteResult.erroresEnvio) && loteResult.erroresEnvio.length > 0 && (
-              <>
-                <p className="text-sm text-secondary">
-                  Los siguientes correos no pudieron enviarse:
-                </p>
-                <div className="table-container">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th style={{ textAlign: 'left' }}>Asistente</th>
-                        <th style={{ textAlign: 'left' }}>Email</th>
-                        <th style={{ textAlign: 'left' }}>Motivo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {loteResult.erroresEnvio.map((e, idx) => {
-                        const asist = e.asistenteId
-                          ? asistentesById.get(e.asistenteId)
-                          : null;
-                        const label = asist
-                          ? `${asist.nombres ?? ''} ${asist.apellidos ?? ''}`.trim() ||
-                            e.asistenteId
-                          : e.asistenteId || '—';
-                        return (
-                          <tr key={`envio-${e.asistenteId || idx}-${idx}`}>
-                            <td>{label}</td>
-                            <td>{e.email || '—'}</td>
-                            <td>{e.mensaje || '—'}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </>
-        )}
       </Modal>
 
       {/* Modal informativo: firmas faltantes (individual) */}
