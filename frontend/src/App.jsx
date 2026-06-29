@@ -10,6 +10,8 @@ import InscripcionPage from './pages/inscripcion/InscripcionPage.jsx';
 import ResponsablePage from './pages/responsable/ResponsablePage.jsx';
 import ResponsablesPage from './pages/responsables/ResponsablesPage.jsx';
 import RepositorioPage from './pages/repositorio/RepositorioPage.jsx';
+import ColaboradoresPage from './pages/entrenamiento/ColaboradoresPage.jsx';
+import ConveniosPage from './pages/entrenamiento/ConveniosPage.jsx';
 import ModalidadesPage from './pages/catalogos/ModalidadesPage.jsx';
 import TiposActividadPage from './pages/catalogos/TiposActividadPage.jsx';
 import AreasPage from './pages/catalogos/AreasPage.jsx';
@@ -91,6 +93,14 @@ export default function App() {
 
           {/* Repositorio */}
           <Route path="/repositorio" element={<RepositorioPage />} />
+
+          {/* Entrenamiento */}
+          <Route
+            path="/entrenamiento"
+            element={<Navigate to="/entrenamiento/colaboradores" replace />}
+          />
+          <Route path="/entrenamiento/colaboradores" element={<ColaboradoresPage />} />
+          <Route path="/entrenamiento/convenios" element={<ConveniosPage />} />
 
           {/* Catálogos */}
           <Route

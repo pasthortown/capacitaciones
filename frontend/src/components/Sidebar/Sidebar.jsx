@@ -14,6 +14,9 @@ import {
   UserCheck,
   FolderOpen,
   MessagesSquare,
+  Dumbbell,
+  Users,
+  Handshake,
 } from 'lucide-react';
 import { useAuth } from '../../auth/useAuth.js';
 
@@ -45,6 +48,7 @@ export default function Sidebar({ collapsed = false }) {
   const isConfigActive = location.pathname.startsWith('/configuracion');
   const isResponsablesActive = location.pathname.startsWith('/responsables');
   const isRepositorioActive = location.pathname.startsWith('/repositorio');
+  const isEntrenamientoActive = location.pathname.startsWith('/entrenamiento');
   // "Capacitaciones" se resalta cuando la ruta empieza con /capacitaciones
   // y NO con /catalogos. Como son prefijos disjuntos en el router, basta con
   // comprobar el primero. Se incluye también el home `/` que redirige a
@@ -55,6 +59,7 @@ export default function Sidebar({ collapsed = false }) {
 
   const [catalogosOpen, setCatalogosOpen] = useState(isCatalogoActive);
   const [configOpen, setConfigOpen] = useState(isConfigActive);
+  const [entrenamientoOpen, setEntrenamientoOpen] = useState(isEntrenamientoActive);
 
   // Si el sidebar está colapsado no tiene sentido abrir submenús; los
   // sub-ítems no caben y confundirían. Al colapsar los cerramos implícitamente.
@@ -62,6 +67,7 @@ export default function Sidebar({ collapsed = false }) {
 
   const toggleCatalogos = () => setCatalogosOpen((v) => !v);
   const toggleConfig = () => setConfigOpen((v) => !v);
+  const toggleEntrenamiento = () => setEntrenamientoOpen((v) => !v);
 
   const handleLogout = () => {
     logout();
@@ -134,6 +140,56 @@ export default function Sidebar({ collapsed = false }) {
               <FolderOpen className="sidebar__nav-icon" />
               <span>Repositorio</span>
             </NavLink>
+          </li>
+
+          {/* Grupo colapsable: Entrenamiento (Colaboradores, Convenios).
+              Colapsada → el botón navega al primer ítem para no perder acceso. */}
+          <li className="sidebar__nav-item">
+            <button
+              type="button"
+              onClick={() => {
+                if (collapsed) navigate('/entrenamiento/colaboradores');
+                else toggleEntrenamiento();
+              }}
+              title="Entrenamiento"
+              className={`sidebar__nav-link${
+                isEntrenamientoActive ? ' sidebar__nav-link--active' : ''
+              }`}
+              style={{
+                width: '100%',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                textAlign: 'left',
+                justifyContent: 'flex-start',
+              }}
+              aria-expanded={entrenamientoOpen}
+            >
+              <Dumbbell className="sidebar__nav-icon" />
+              <span style={{ flex: 1 }}>Entrenamiento</span>
+              {entrenamientoOpen ? (
+                <ChevronDown className="sidebar__nav-chevron" width={16} height={16} />
+              ) : (
+                <ChevronRight className="sidebar__nav-chevron" width={16} height={16} />
+              )}
+            </button>
+
+            {submenusVisible && entrenamientoOpen && (
+              <ul className="sidebar__nav" style={{ marginTop: 4, paddingLeft: 20 }}>
+                <li className="sidebar__nav-item">
+                  <NavLink to="/entrenamiento/colaboradores" title="Colaboradores" className={navLinkClass}>
+                    <Users className="sidebar__nav-icon" />
+                    <span>Colaboradores</span>
+                  </NavLink>
+                </li>
+                <li className="sidebar__nav-item">
+                  <NavLink to="/entrenamiento/convenios" title="Convenios" className={navLinkClass}>
+                    <Handshake className="sidebar__nav-icon" />
+                    <span>Convenios</span>
+                  </NavLink>
+                </li>
+              </ul>
+            )}
           </li>
 
           {/* Grupo colapsable: Catálogos. Cuando la sidebar está colapsada,
