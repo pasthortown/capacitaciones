@@ -517,6 +517,42 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 - Texto dinámico según `certificadoEfectivo` (no según `tipoCertificacion` original).
 - Si `Aprobacion` efectiva, puede mostrar "con calificación de [Calificacion]/[PuntajeMinimo]" (a confirmar en fase 12).
 
+### 7.13 Módulo Entrenamiento → Colaboradores (hecho)
+
+Grupo lateral **Entrenamiento** con submenús **Colaboradores** y **Convenios**.
+
+**Colaboradores** (`/entrenamiento/colaboradores`) — dos pestañas:
+- **DOS (ControlTareas)**: colaboradores internos traídos en vivo del API de ControlTareas (SGI) vía `GET /empleados`, **solo lectura** (se administran allá).
+- **Externos**: personas ajenas a DOS, **CRUD completo** local (tabla `dbo.Colaborador`, cédula única, baja lógica). Una cédula que ya existe en DOS **no** puede registrarse como externo (`409 CEDULA_PERTENECE_A_DOS`).
+
+**Integración ControlTareas:** API en `CONTROLTAREAS_API_URL` (prod `http://10.1.1.174:8181`), usuario de servicio `capacitados` (login `POST /auth/login` → JWT cacheado). Credenciales en `.env` (`CONTROLTAREAS_API_URL/USER/PASSWORD`). Cliente `ControlTareasHttpClient`; config-gated (sin URL → pestaña DOS vacía). Endpoint lookup `GET /api/colaboradores/buscar/{cedula}` resuelve un colaborador (externo o DOS) con nombre/cargo/área.
+
+### 7.14 Módulo Entrenamiento → Convenios
+
+Pantalla `/entrenamiento/convenios` con barra de pestañas: **Convenios**, **Dashboard**, **Historial por Colaborador**.
+
+**Modelo de datos (hecho):**
+- `Convenio` (`dbo.Convenio`): colaborador obligatorio (CedulaColaborador + snapshot NombreColaborador/OrigenColaborador/CargoColaborador/AreaColaborador, resuelto por cédula contra Externos o DOS), Titulo, Descripcion, Tipo, TipoCurso, NombreCurso, Marca, SolicitadoPor, AutorizadoPor, Fecha (inicio devengo), MesesADevengar (0/12/24/36; 0=no aplica), Estado (`EstadoConvenio`: Vigente/Devengado/Cobrado/Anulado), FechaCorte, MontoCongelado, Activo (baja lógica), auditoría.
+- `ConvenioItem` (`dbo.ConvenioItem`, 1:N cascade): Tipo, Valor, Devengable (bool, def. true), Observacion. Monto total = suma de ítems; **base de devengo = suma de ítems devengables**.
+- `ConvenioAnexo` (`dbo.ConvenioAnexo`, 1:N cascade): archivos múltiples (convenio firmado, formulario de cobro firmado, etc.). Volumen host `./convenios_anexos` → backend RW `/convenios_anexos` (env `CONVENIOS_DIR`; **ownership 1654:app**). Storage `FileSystemConvenioAnexoStorage`. Máx 25 MB/archivo.
+
+**Reglas de devengo (hecho, en `ConvenioMapper.ToDto`, fecha Ecuador):**
+- Devengo proporcional mensual sobre la base devengable a lo largo de MesesADevengar. Lo adeudado = base × (mesesPendientes / MesesADevengar). MesesADevengar=0 → no aplica, pendiente 0.
+- **Vigente**: pendiente proporcional a hoy. **Devengado**: cumplió plazo sin cobro → pendiente 0. **Cobrado**: salió y se le cobró → al entrar al estado se congela `FechaCorte=hoy` y `MontoCongelado=pendiente al corte`; se expone `MontoCobrado`, deuda actual 0. **Anulado**: conserva el pendiente congelado (sigue debiéndose). La congelación se gestiona en `ConvenioMapper.Apply` (solo al entrar por primera vez al estado; volver a Vigente/Devengado libera el corte).
+
+**Endpoints (hecho, `ConveniosController`, policy Admin):** `GET /api/convenios?buscar=&incluirInactivos=`, `GET /api/convenios/{id}`, `POST`, `PUT /{id}`, `DELETE /{id}` (baja lógica), `GET /api/convenios/colaborador/{cedula}?soloVigentes=` (historial; filtra `TieneSaldoPendiente`), `POST /{id}/anexos` (multipart), `DELETE /{id}/anexos/{anexoId}`, `GET /{id}/anexos/{anexoId}/descargar`.
+
+**Frontend (hecho):** `ConveniosPage.jsx` + `services/convenios.js`. Pestaña Convenios (tabla + modal con ítems editables + estado + anexos drag&drop con **barra de progreso XHR**). Pestaña Historial (cédula + Buscar → tabla con colaborador/solicitado/aprobado + detalle de costos pendientes por convenio + total por devengar). Dashboard = placeholder.
+
+> ⚠️ **Fix EF importante:** las entidades hijas (ConvenioItem/ConvenioAnexo) **no** deben pre-asignar su `Guid Id` al agregarse a un padre ya *tracked* (EF lo trataría como UPDATE→0 filas). Se deja que EF genere el Id. `DesignTimeDbContextFactory` usa cadena placeholder SQL Server (no LocalDB).
+
+**PENDIENTE — Incremento 2 (PDFs vía `emisor_documentos`):**
+1. **Imprimir convenio** (botón en la tabla de Convenios): genera el PDF del convenio para que el colaborador lo firme. Debe incluir: datos del colaborador con **cargo, área y fecha de convenido (FechaCreacion)**, título/tipo/curso/marca, **detalle de ítems de costo**, **solicitado por / autorizado por**, meses a devengar. Crear plantilla HTML nueva en `./emisor_documentos/templates/` (Puppeteer), endpoint nuevo en el servicio Node (ej. `POST /emitir/convenio`), método en `IEmisorDocumentosClient`/`EmisorDocumentosHttpClient`, endpoint backend `GET /api/convenios/{id}/imprimir` que devuelve el PDF, y botón en el frontend (descarga).
+2. **Descargar Reporte** (botón en Historial): PDF con los convenios del colaborador + **montos por devengar pendientes** (para saber cómo cobrarle), incluyendo solicitado/aprobado por y el detalle de costos pendientes. Misma vía (`emisor_documentos`), endpoint `GET /api/convenios/colaborador/{cedula}/reporte`.
+3. **Dashboard**: indicadores de convenios — por definir con el usuario.
+
+Tipografías oficiales (§6.1) obligatorias también en estos PDF.
+
 ## 8. Estado actual
 
 - [x] Design system en `./style/` listo para consumo.
@@ -538,6 +574,9 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 - [x] Fase 10 — Pase de lista (link capacitador + `AttendanceToggle` admin).
 - [x] Fase 11 — Calificaciones (link capacitador + edición admin).
 - [x] Fase 12 — Lógica condicional de certificado (Aprobación / Asistencia / Participación + logo en plantilla + filtro de ausentes).
+- [x] Entrenamiento → Colaboradores (DOS vía API ControlTareas + Externos CRUD local). Ver §7.13.
+- [x] Entrenamiento → Convenios **Incremento 1** (CRUD + ítems de costo + devengo + estado + anexos múltiples + Historial). Ver §7.14.
+- [ ] Convenios **Incremento 2**: imprimir convenio en PDF + descargar reporte de historial (vía `emisor_documentos`) + Dashboard. Ver detalle en §7.14 "PENDIENTE".
 - [ ] Integración SonarQube + OWASP ZAP.
 
 ## 9. Plan de fases
@@ -556,6 +595,9 @@ Estos se reubicarán a `./emisor_documentos/templates/` al arrancar Fase 6.
 | 10   | ✅ Pase de lista (link capacitador + `AttendanceToggle` admin)                            | Backend, Frontend             |
 | 11   | ✅ Calificaciones (link capacitador + edición admin)                                      | Backend, Frontend             |
 | 12   | ✅ Lógica condicional de certificado + logo en plantilla                                  | Backend, emisor_documentos    |
+| 13   | ✅ Entrenamiento: Colaboradores (DOS vía API ControlTareas + Externos CRUD)               | Backend, Frontend             |
+| 14a  | ✅ Entrenamiento: Convenios Incremento 1 (CRUD, ítems, devengo, estado, anexos, historial) | Backend, Frontend             |
+| 14b  | ⏳ Convenios Incremento 2: PDF imprimir convenio + reporte historial + Dashboard          | emisor_documentos, Backend, Frontend |
 | 8    | Pasada de calidad y seguridad (Sonar + ZAP)                                               | Security                      |
 
 ## 10. Decisiones tomadas (v1)
