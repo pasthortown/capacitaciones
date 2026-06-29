@@ -17,4 +17,7 @@ public interface IControlTareasColaboradoresClient
 
     /// <summary>True si la cédula ya existe como empleado en ControlTareas (para impedir duplicar un externo).</summary>
     Task<bool> ExisteCedulaAsync(string cedula, CancellationToken ct = default);
+
+    /// <summary>Devuelve el colaborador de DOS por cédula, o null si no existe / integración deshabilitada.</summary>
+    Task<EmpleadoDosDto?> ObtenerPorCedulaAsync(string cedula, CancellationToken ct = default);
 }

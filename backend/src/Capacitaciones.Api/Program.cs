@@ -9,6 +9,7 @@ using Capacitaciones.Application.UseCases.Capacitador;
 using Capacitaciones.Application.UseCases.Catalogos;
 using Capacitaciones.Application.UseCases.Certificados;
 using Capacitaciones.Application.UseCases.Colaboradores;
+using Capacitaciones.Application.UseCases.Convenios;
 using Capacitaciones.Application.UseCases.Configuracion;
 using Capacitaciones.Application.UseCases.Encuesta;
 using Capacitaciones.Application.UseCases.Inscripcion;
@@ -170,6 +171,7 @@ builder.Services.AddScoped<IResponsableRepository, ResponsableRepository>();
 builder.Services.AddScoped<IAsistenteRepository, AsistenteRepository>();
 builder.Services.AddScoped<IRecursoRepository, RecursoRepository>();
 builder.Services.AddScoped<IColaboradorRepository, ColaboradorRepository>();
+builder.Services.AddScoped<IConvenioRepository, ConvenioRepository>();
 builder.Services.AddScoped<IPreguntaEncuestaRepository, PreguntaEncuestaRepository>();
 builder.Services.AddScoped<IRespuestaEncuestaRepository, RespuestaEncuestaRepository>();
 
@@ -434,6 +436,25 @@ builder.Services.AddScoped<ObtenerColaboradorExternoUseCase>();
 builder.Services.AddScoped<CrearColaboradorExternoUseCase>();
 builder.Services.AddScoped<EditarColaboradorExternoUseCase>();
 builder.Services.AddScoped<EliminarColaboradorExternoUseCase>();
+builder.Services.AddScoped<BuscarColaboradorPorCedulaUseCase>();
+
+// --- Convenios (Entrenamiento) ---
+var conveniosDir = Environment.GetEnvironmentVariable("CONVENIOS_DIR");
+var convenioAnexoOptions = new ConvenioAnexoStorageOptions
+{
+    Directory = string.IsNullOrWhiteSpace(conveniosDir) ? "/convenios_anexos" : conveniosDir,
+};
+builder.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(convenioAnexoOptions));
+builder.Services.AddSingleton<IConvenioAnexoStorage, FileSystemConvenioAnexoStorage>();
+builder.Services.AddScoped<ListarConveniosUseCase>();
+builder.Services.AddScoped<ObtenerConvenioUseCase>();
+builder.Services.AddScoped<CrearConvenioUseCase>();
+builder.Services.AddScoped<EditarConvenioUseCase>();
+builder.Services.AddScoped<EliminarConvenioUseCase>();
+builder.Services.AddScoped<ListarConveniosPorColaboradorUseCase>();
+builder.Services.AddScoped<SubirAnexoConvenioUseCase>();
+builder.Services.AddScoped<EliminarAnexoConvenioUseCase>();
+builder.Services.AddScoped<DescargarAnexoConvenioUseCase>();
 
 // Refactor Responsables — catálogo global + link firmado para página pública.
 builder.Services.AddScoped<ListarResponsablesUseCase>();

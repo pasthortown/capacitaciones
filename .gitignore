@@ -88,3 +88,7 @@ SSL/generated-csr.txt
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Anexos de convenios (archivos subidos)
+/convenios_anexos/*
+!/convenios_anexos/.gitkeep

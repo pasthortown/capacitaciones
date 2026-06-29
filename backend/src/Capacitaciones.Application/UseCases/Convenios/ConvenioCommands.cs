@@ -1,0 +1,119 @@
+using Capacitaciones.Application.Dtos.Convenios;
+using Capacitaciones.Application.Ports;
+using Capacitaciones.Domain.Entities;
+
+namespace Capacitaciones.Application.UseCases.Convenios;
+
+/// <summary>Resuelve un colaborador por cédula: primero entre los externos locales, luego en DOS
+/// (ControlTareas). Devuelve nombre + origen, o null si no existe en ninguno.</summary>
+public readonly record struct ColaboradorResuelto(string Nombre, string Origen, string? Cargo, string? Area);
+
+public static class ColaboradorResolver
+{
+    public static async Task<ColaboradorResuelto?> ResolveAsync(
+        IColaboradorRepository externos,
+        IControlTareasColaboradoresClient controlTareas,
+        string cedula,
+        CancellationToken ct)
+    {
+        var ext = await externos.GetByCedulaAsync(cedula, ct);
+        if (ext is not null) return new ColaboradorResuelto(ext.Name, "Externo", ext.JobPosition, ext.WorkArea);
+
+        var dos = await controlTareas.ObtenerPorCedulaAsync(cedula, ct);
+        if (dos is not null) return new ColaboradorResuelto(dos.Name, "DOS", dos.JobPosition, dos.WorkArea);
+
+        return null;
+    }
+}
+
+/// <summary>Alta de un convenio. Resuelve y "fija" el colaborador (cédula + nombre snapshot).</summary>
+public class CrearConvenioUseCase
+{
+    private readonly IConvenioRepository _repo;
+    private readonly IColaboradorRepository _externos;
+    private readonly IControlTareasColaboradoresClient _controlTareas;
+
+    public CrearConvenioUseCase(IConvenioRepository repo, IColaboradorRepository externos, IControlTareasColaboradoresClient controlTareas)
+    {
+        _repo = repo;
+        _externos = externos;
+        _controlTareas = controlTareas;
+    }
+
+    public async Task<ConvenioDto> ExecuteAsync(ConvenioRequest req, CancellationToken ct = default)
+    {
+        var cedula = (req.Cedula ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(cedula))
+            throw new ConvenioValidacionException("Debe seleccionar el colaborador (cédula).");
+
+        var resuelto = await ColaboradorResolver.ResolveAsync(_externos, _controlTareas, cedula, ct)
+            ?? throw new ColaboradorNoEncontradoException(cedula);
+
+        var entity = new Convenio
+        {
+            Id = Guid.NewGuid(),
+            CedulaColaborador = cedula,
+            NombreColaborador = resuelto.Nombre,
+            OrigenColaborador = resuelto.Origen,
+            CargoColaborador = resuelto.Cargo,
+            AreaColaborador = resuelto.Area,
+            Activo = true,
+            FechaCreacion = DateTime.UtcNow,
+        };
+        ConvenioMapper.Apply(entity, req);
+        await _repo.AddAsync(entity, ct);
+        return ConvenioMapper.ToDto(entity);
+    }
+}
+
+/// <summary>Edición de un convenio. El colaborador (cédula) no cambia; se refresca el snapshot
+/// del nombre. <c>Activo=true</c> reactiva.</summary>
+public class EditarConvenioUseCase
+{
+    private readonly IConvenioRepository _repo;
+    private readonly IColaboradorRepository _externos;
+    private readonly IControlTareasColaboradoresClient _controlTareas;
+
+    public EditarConvenioUseCase(IConvenioRepository repo, IColaboradorRepository externos, IControlTareasColaboradoresClient controlTareas)
+    {
+        _repo = repo;
+        _externos = externos;
+        _controlTareas = controlTareas;
+    }
+
+    public async Task<ConvenioDto> ExecuteAsync(Guid id, ConvenioRequest req, CancellationToken ct = default)
+    {
+        var entity = await _repo.GetByIdAsync(id, ct) ?? throw new ConvenioNotFoundException(id);
+
+        ConvenioMapper.Apply(entity, req);
+
+        // Refresca el snapshot del nombre por si cambió en la fuente (no cambia la cédula).
+        var resuelto = await ColaboradorResolver.ResolveAsync(_externos, _controlTareas, entity.CedulaColaborador, ct);
+        if (resuelto is not null)
+        {
+            entity.NombreColaborador = resuelto.Value.Nombre;
+            entity.OrigenColaborador = resuelto.Value.Origen;
+            entity.CargoColaborador = resuelto.Value.Cargo;
+            entity.AreaColaborador = resuelto.Value.Area;
+        }
+
+        if (req.Activo == true) entity.Activo = true;
+        entity.FechaActualizacion = DateTime.UtcNow;
+
+        await _repo.UpdateAsync(entity, ct);
+        return ConvenioMapper.ToDto(entity);
+    }
+}
+
+/// <summary>Baja lógica de un convenio.</summary>
+public class EliminarConvenioUseCase
+{
+    private readonly IConvenioRepository _repo;
+    public EliminarConvenioUseCase(IConvenioRepository repo) => _repo = repo;
+
+    public async Task ExecuteAsync(Guid id, CancellationToken ct = default)
+    {
+        var entity = await _repo.GetByIdAsync(id, ct) ?? throw new ConvenioNotFoundException(id);
+        await _repo.DeleteAsync(entity.Id, ct);
+    }
+}

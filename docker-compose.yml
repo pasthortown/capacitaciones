@@ -73,6 +73,7 @@ services:
       Notifications__PublicBaseUrl: ${PUBLIC_BASE_URL}
       REPOSITORIO_DIR: /repository
       IMAGEN_CAPACITACIONES_DIR: /imagen_capacitaciones
+      CONVENIOS_DIR: /convenios_anexos
       # Integración con ControlTareas (SGI) para traer colaboradores de DOS.
       CONTROLTAREAS_API_URL: ${CONTROLTAREAS_API_URL:-}
       CONTROLTAREAS_API_USER: ${CONTROLTAREAS_API_USER:-}
@@ -81,6 +82,7 @@ services:
       - ./output:/output
       - ./repository:/repository
       - ./imagen_capacitaciones:/imagen_capacitaciones
+      - ./convenios_anexos:/convenios_anexos
     networks:
       capacitaciones-net:
         ipv4_address: 192.168.56.11

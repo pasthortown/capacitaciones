@@ -85,6 +85,32 @@ public sealed class ControlTareasHttpClient : IControlTareasColaboradoresClient
             $"No se pudo verificar la cédula contra ControlTareas (HTTP {(int)resp.StatusCode}).");
     }
 
+    public async Task<EmpleadoDosDto?> ObtenerPorCedulaAsync(string cedula, CancellationToken ct = default)
+    {
+        if (!_o.Enabled || string.IsNullOrWhiteSpace(cedula)) return null;
+        try
+        {
+            var token = await ObtenerTokenAsync(ct);
+            if (token is null) return null;
+
+            using var req = new HttpRequestMessage(HttpMethod.Get, $"empleados/cedula/{Uri.EscapeDataString(cedula.Trim())}");
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var resp = await _http.SendAsync(req, ct);
+            if (resp.StatusCode == HttpStatusCode.NotFound) return null;
+            if (!resp.IsSuccessStatusCode)
+            {
+                _log.LogWarning("ControlTareas: GET /empleados/cedula respondió {Code}.", (int)resp.StatusCode);
+                return null;
+            }
+            return await resp.Content.ReadFromJsonAsync<EmpleadoDosDto>(Json, ct);
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "ControlTareas: no se pudo obtener el empleado por cédula.");
+            return null;
+        }
+    }
+
     /// <summary>Devuelve un JWT válido del usuario de servicio, reusando el cacheado si no expiró.</summary>
     private async Task<string?> ObtenerTokenAsync(CancellationToken ct)
     {

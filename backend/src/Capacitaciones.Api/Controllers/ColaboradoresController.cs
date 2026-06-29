@@ -22,6 +22,7 @@ public class ColaboradoresController : ControllerBase
     private readonly CrearColaboradorExternoUseCase _crear;
     private readonly EditarColaboradorExternoUseCase _editar;
     private readonly EliminarColaboradorExternoUseCase _eliminar;
+    private readonly BuscarColaboradorPorCedulaUseCase _buscarPorCedula;
 
     public ColaboradoresController(
         ListarColaboradoresDosUseCase listarDos,
@@ -29,7 +30,8 @@ public class ColaboradoresController : ControllerBase
         ObtenerColaboradorExternoUseCase obtener,
         CrearColaboradorExternoUseCase crear,
         EditarColaboradorExternoUseCase editar,
-        EliminarColaboradorExternoUseCase eliminar)
+        EliminarColaboradorExternoUseCase eliminar,
+        BuscarColaboradorPorCedulaUseCase buscarPorCedula)
     {
         _listarDos = listarDos;
         _listarExternos = listarExternos;
@@ -37,6 +39,15 @@ public class ColaboradoresController : ControllerBase
         _crear = crear;
         _editar = editar;
         _eliminar = eliminar;
+        _buscarPorCedula = buscarPorCedula;
+    }
+
+    /// <summary>Resuelve un colaborador por cédula (externo o DOS) para asociarlo a un convenio.</summary>
+    [HttpGet("buscar/{cedula}")]
+    public async Task<IActionResult> BuscarPorCedula(string cedula, CancellationToken ct)
+    {
+        var dto = await _buscarPorCedula.ExecuteAsync(cedula, ct);
+        return dto is null ? NotFound() : Ok(dto);
     }
 
     /// <summary>Colaboradores internos de DOS (ControlTareas). Solo lectura.</summary>
