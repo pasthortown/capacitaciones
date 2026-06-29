@@ -9,6 +9,7 @@ import { useToast } from '../../components/Toast/useToast.js';
 import { HttpError } from '../../services/http.js';
 import { confirm as swalConfirm } from '../../utils/swal.js';
 import colaboradoresService from '../../services/colaboradores.js';
+import styles from './ColaboradoresPage.module.css';
 
 /**
  * Entrenamiento → Colaboradores.
@@ -445,6 +446,7 @@ export default function ColaboradoresPage() {
       <Modal
         isOpen={formOpen}
         onClose={closeForm}
+        className={styles.wideModal}
         title={mode === 'edit' ? 'Editar colaborador externo' : 'Nuevo colaborador externo'}
         footer={
           <>
@@ -468,7 +470,7 @@ export default function ColaboradoresPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} noValidate>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-3)' }}>
+            <div className={styles.grid2}>
               <TextField
                 label="Cédula / Identificación"
                 name="cedula"
@@ -495,24 +497,24 @@ export default function ColaboradoresPage() {
               <TextField label="Correo" name="email" type="email" value={form.email} maxLength={200} onChange={(v) => setField('email', v)} error={errors.email} />
               <TextField label="Teléfono" name="phone" value={form.phone} maxLength={50} onChange={(v) => setField('phone', v)} />
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="col-sex">Sexo</label>
+              <div className="form-group" style={{ position: 'static' }}>
+                <label className="form-label" style={{ position: 'static' }} htmlFor="col-sex">Sexo</label>
                 <select id="col-sex" className="form-input" value={form.sex} onChange={(e) => setField('sex', e.target.value)}>
                   <option value="">—</option>
                   {SEXOS.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="col-civil">Estado civil</label>
+              <div className="form-group" style={{ position: 'static' }}>
+                <label className="form-label" style={{ position: 'static' }} htmlFor="col-civil">Estado civil</label>
                 <select id="col-civil" className="form-input" value={form.maritalStatus} onChange={(e) => setField('maritalStatus', e.target.value)}>
                   <option value="">—</option>
                   {ESTADOS_CIVILES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="col-birth">Fecha de nacimiento</label>
+              <div className="form-group" style={{ position: 'static' }}>
+                <label className="form-label" style={{ position: 'static' }} htmlFor="col-birth">Fecha de nacimiento</label>
                 <input id="col-birth" type="date" className="form-input" value={form.birthDate} onChange={(e) => setField('birthDate', e.target.value)} />
               </div>
 
