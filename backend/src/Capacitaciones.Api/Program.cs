@@ -8,6 +8,7 @@ using Capacitaciones.Application.UseCases.Capacitaciones;
 using Capacitaciones.Application.UseCases.Capacitador;
 using Capacitaciones.Application.UseCases.Catalogos;
 using Capacitaciones.Application.UseCases.Certificados;
+using Capacitaciones.Application.UseCases.Colaboradores;
 using Capacitaciones.Application.UseCases.Configuracion;
 using Capacitaciones.Application.UseCases.Encuesta;
 using Capacitaciones.Application.UseCases.Inscripcion;
@@ -168,6 +169,7 @@ builder.Services.AddScoped<ICapacitacionRepository, CapacitacionRepository>();
 builder.Services.AddScoped<IResponsableRepository, ResponsableRepository>();
 builder.Services.AddScoped<IAsistenteRepository, AsistenteRepository>();
 builder.Services.AddScoped<IRecursoRepository, RecursoRepository>();
+builder.Services.AddScoped<IColaboradorRepository, ColaboradorRepository>();
 builder.Services.AddScoped<IPreguntaEncuestaRepository, PreguntaEncuestaRepository>();
 builder.Services.AddScoped<IRespuestaEncuestaRepository, RespuestaEncuestaRepository>();
 
@@ -403,6 +405,35 @@ builder.Services.AddHttpClient<IEmisorReportesClient, EmisorReportesHttpClient>(
     client.BaseAddress = new Uri(baseUrl);
     client.Timeout = TimeSpan.FromSeconds(emisorReportesOptions.TimeoutSeconds);
 });
+
+// --- Integración con ControlTareas (SGI): trae los colaboradores internos de DOS. ---
+// Config por entorno (la URL cambiará a dominio en el futuro). Sin URL/usuario/clave queda
+// deshabilitada y la pestaña "DOS" sale vacía sin romper la app.
+var controlTareasOptions = new ControlTareasOptions
+{
+    BaseUrl = Environment.GetEnvironmentVariable("CONTROLTAREAS_API_URL"),
+    User = Environment.GetEnvironmentVariable("CONTROLTAREAS_API_USER"),
+    Password = Environment.GetEnvironmentVariable("CONTROLTAREAS_API_PASSWORD"),
+};
+var ctTimeout = Environment.GetEnvironmentVariable("CONTROLTAREAS_API_TIMEOUT_SECONDS");
+if (int.TryParse(ctTimeout, out var ctSecs) && ctSecs > 0) controlTareasOptions.TimeoutSeconds = ctSecs;
+builder.Services.AddSingleton(controlTareasOptions);
+builder.Services.AddHttpClient<IControlTareasColaboradoresClient, ControlTareasHttpClient>(client =>
+{
+    if (!string.IsNullOrWhiteSpace(controlTareasOptions.BaseUrl))
+    {
+        var baseUrl = controlTareasOptions.BaseUrl!;
+        if (!baseUrl.EndsWith('/')) baseUrl += "/";
+        client.BaseAddress = new Uri(baseUrl);
+    }
+    client.Timeout = TimeSpan.FromSeconds(controlTareasOptions.TimeoutSeconds);
+});
+builder.Services.AddScoped<ListarColaboradoresDosUseCase>();
+builder.Services.AddScoped<ListarColaboradoresExternosUseCase>();
+builder.Services.AddScoped<ObtenerColaboradorExternoUseCase>();
+builder.Services.AddScoped<CrearColaboradorExternoUseCase>();
+builder.Services.AddScoped<EditarColaboradorExternoUseCase>();
+builder.Services.AddScoped<EliminarColaboradorExternoUseCase>();
 
 // Refactor Responsables — catálogo global + link firmado para página pública.
 builder.Services.AddScoped<ListarResponsablesUseCase>();

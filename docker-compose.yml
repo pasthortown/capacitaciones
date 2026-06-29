@@ -73,6 +73,10 @@ services:
       Notifications__PublicBaseUrl: ${PUBLIC_BASE_URL}
       REPOSITORIO_DIR: /repository
       IMAGEN_CAPACITACIONES_DIR: /imagen_capacitaciones
+      # Integración con ControlTareas (SGI) para traer colaboradores de DOS.
+      CONTROLTAREAS_API_URL: ${CONTROLTAREAS_API_URL:-}
+      CONTROLTAREAS_API_USER: ${CONTROLTAREAS_API_USER:-}
+      CONTROLTAREAS_API_PASSWORD: ${CONTROLTAREAS_API_PASSWORD:-}
     volumes:
       - ./output:/output
       - ./repository:/repository
