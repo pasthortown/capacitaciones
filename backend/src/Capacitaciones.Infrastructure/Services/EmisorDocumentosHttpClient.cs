@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Capacitaciones.Application.Dtos.Certificados;
+using Capacitaciones.Application.Dtos.Convenios;
 using Capacitaciones.Application.Ports;
 
 namespace Capacitaciones.Infrastructure.Services;
@@ -47,6 +48,25 @@ public class EmisorDocumentosHttpClient : IEmisorDocumentosClient
             throw new HttpRequestException(
                 "El servicio emisor_documentos respondió un body vacío o sin campo 'ruta' para el reporte.");
         }
+        return resultado;
+    }
+
+    public Task<EmisionResultado> EmitirConvenioAsync(ConvenioImprimirRequest req, CancellationToken ct)
+        => PostEmitirAsync("emitir/convenio", req, ct);
+
+    public Task<EmisionResultado> EmitirReporteConveniosAsync(ReporteConveniosRequest req, CancellationToken ct)
+        => PostEmitirAsync("emitir/reporte-convenios", req, ct);
+
+    public Task<EmisionResultado> EmitirDashboardConveniosAsync(DashboardConveniosRequest req, CancellationToken ct)
+        => PostEmitirAsync("emitir/dashboard-convenios", req, ct);
+
+    private async Task<EmisionResultado> PostEmitirAsync<T>(string path, T req, CancellationToken ct)
+    {
+        using var response = await _http.PostAsJsonAsync(path, req, JsonOptions, ct);
+        response.EnsureSuccessStatusCode();
+        var resultado = await response.Content.ReadFromJsonAsync<EmisionResultado>(JsonOptions, ct);
+        if (resultado is null || string.IsNullOrWhiteSpace(resultado.Ruta))
+            throw new HttpRequestException($"El emisor respondió un body vacío o sin 'ruta' para '{path}'.");
         return resultado;
     }
 

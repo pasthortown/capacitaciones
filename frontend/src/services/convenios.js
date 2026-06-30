@@ -99,7 +99,48 @@ export function descargarAnexo(id, anexoId, fallbackFilename = 'anexo') {
   return http.downloadBlob(`${BASE}/${id}/anexos/${anexoId}/descargar`, { fallbackFilename });
 }
 
+/** B) Descarga el PDF del convenio (documento GIC-EC-ANX-01). */
+export function imprimir(id, fallbackFilename = 'Convenio.pdf') {
+  return http.downloadBlob(`${BASE}/${id}/imprimir`, { fallbackFilename });
+}
+
+/** D) Descarga el PDF de reporte de convenios por colaborador. */
+export function descargarReporteColaborador(cedula, fallbackFilename) {
+  return http.downloadBlob(`${BASE}/colaborador/${encodeURIComponent(cedula)}/reporte`,
+    { fallbackFilename: fallbackFilename || `Reporte_Convenios_${cedula}.pdf` });
+}
+
+/** E) Datos agregados del dashboard de convenios. */
+export function dashboard() {
+  return http.get(`${BASE}/dashboard`);
+}
+
+/** E) Descarga el PDF resumen del dashboard. */
+export function descargarDashboardPdf(fallbackFilename = 'Dashboard_Convenios.pdf') {
+  return http.downloadBlob(`${BASE}/dashboard/pdf`, { fallbackFilename });
+}
+
+/** C) Liquidación por desvinculación a una fecha de salida (yyyy-MM-dd). */
+export function liquidacion(cedula, fechaSalida) {
+  const p = new URLSearchParams();
+  if (fechaSalida) p.set('fechaSalida', fechaSalida);
+  const q = p.toString();
+  return http.get(`${BASE}/colaborador/${encodeURIComponent(cedula)}/liquidacion${q ? `?${q}` : ''}`);
+}
+
+/** Estado del contador de numeración de convenios (GIC-EC-REG-###). */
+export function obtenerNumeracion() {
+  return http.get(`${BASE}/numeracion`);
+}
+
+/** Fija el próximo número del contador de convenios. */
+export function actualizarNumeracion(siguienteNumero) {
+  return http.put(`${BASE}/numeracion`, { siguienteNumero });
+}
+
 export default {
   list, get, create, update, remove, historial, buscarColaborador,
   subirAnexo, eliminarAnexo, descargarAnexo,
+  obtenerNumeracion, actualizarNumeracion,
+  imprimir, descargarReporteColaborador, dashboard, descargarDashboardPdf, liquidacion,
 };

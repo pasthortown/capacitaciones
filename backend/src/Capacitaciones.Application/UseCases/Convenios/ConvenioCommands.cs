@@ -6,7 +6,7 @@ namespace Capacitaciones.Application.UseCases.Convenios;
 
 /// <summary>Resuelve un colaborador por cédula: primero entre los externos locales, luego en DOS
 /// (ControlTareas). Devuelve nombre + origen, o null si no existe en ninguno.</summary>
-public readonly record struct ColaboradorResuelto(string Nombre, string Origen, string? Cargo, string? Area);
+public readonly record struct ColaboradorResuelto(string Nombre, string Origen, string? Cargo, string? Area, string? Empresa);
 
 public static class ColaboradorResolver
 {
@@ -17,10 +17,10 @@ public static class ColaboradorResolver
         CancellationToken ct)
     {
         var ext = await externos.GetByCedulaAsync(cedula, ct);
-        if (ext is not null) return new ColaboradorResuelto(ext.Name, "Externo", ext.JobPosition, ext.WorkArea);
+        if (ext is not null) return new ColaboradorResuelto(ext.Name, "Externo", ext.JobPosition, ext.WorkArea, ext.Society);
 
         var dos = await controlTareas.ObtenerPorCedulaAsync(cedula, ct);
-        if (dos is not null) return new ColaboradorResuelto(dos.Name, "DOS", dos.JobPosition, dos.WorkArea);
+        if (dos is not null) return new ColaboradorResuelto(dos.Name, "DOS", dos.JobPosition, dos.WorkArea, dos.Society);
 
         return null;
     }
@@ -32,12 +32,14 @@ public class CrearConvenioUseCase
     private readonly IConvenioRepository _repo;
     private readonly IColaboradorRepository _externos;
     private readonly IControlTareasColaboradoresClient _controlTareas;
+    private readonly IConvenioNumeracionService _numeracion;
 
-    public CrearConvenioUseCase(IConvenioRepository repo, IColaboradorRepository externos, IControlTareasColaboradoresClient controlTareas)
+    public CrearConvenioUseCase(IConvenioRepository repo, IColaboradorRepository externos, IControlTareasColaboradoresClient controlTareas, IConvenioNumeracionService numeracion)
     {
         _repo = repo;
         _externos = externos;
         _controlTareas = controlTareas;
+        _numeracion = numeracion;
     }
 
     public async Task<ConvenioDto> ExecuteAsync(ConvenioRequest req, CancellationToken ct = default)
@@ -49,14 +51,18 @@ public class CrearConvenioUseCase
         var resuelto = await ColaboradorResolver.ResolveAsync(_externos, _controlTareas, cedula, ct)
             ?? throw new ColaboradorNoEncontradoException(cedula);
 
+        var (numero, _) = await _numeracion.ClaimNextAsync(ct);
+
         var entity = new Convenio
         {
             Id = Guid.NewGuid(),
+            NumeroRegistro = numero,
             CedulaColaborador = cedula,
             NombreColaborador = resuelto.Nombre,
             OrigenColaborador = resuelto.Origen,
             CargoColaborador = resuelto.Cargo,
             AreaColaborador = resuelto.Area,
+            EmpresaColaborador = resuelto.Empresa,
             Activo = true,
             FechaCreacion = DateTime.UtcNow,
         };
@@ -95,6 +101,7 @@ public class EditarConvenioUseCase
             entity.OrigenColaborador = resuelto.Value.Origen;
             entity.CargoColaborador = resuelto.Value.Cargo;
             entity.AreaColaborador = resuelto.Value.Area;
+            entity.EmpresaColaborador = resuelto.Value.Empresa;
         }
 
         if (req.Activo == true) entity.Activo = true;

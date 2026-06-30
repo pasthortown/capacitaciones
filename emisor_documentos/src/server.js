@@ -17,6 +17,12 @@ const {
   buildPdfFilename,
   renderReporteAsistenciaHtml,
   buildPdfReporteFilename,
+  renderConvenioHtml,
+  buildConvenioFilename,
+  renderReporteConveniosHtml,
+  buildReporteConveniosFilename,
+  renderDashboardConveniosHtml,
+  buildDashboardConveniosFilename,
   ValidationError
 } = require('./template');
 const { renderPdf, closeBrowser } = require('./renderer');
@@ -86,6 +92,101 @@ app.post('/emitir/reporte-asistencia', async (req, res) => {
     }
     // eslint-disable-next-line no-console
     console.error('[emisor] error al emitir reporte de asistencia:', err);
+    return res.status(500).json({ error: 'InternalError', message: err.message || 'Error interno' });
+  }
+});
+
+/**
+ * Convenio — Anexo de Capacitación oficial (GIC-EC-ANX-01). A4 portrait, layout por
+ * la propia @page del HTML. PDF en OUTPUT_DIR con nombre `Convenio_{codigoRegistro}.pdf`.
+ */
+app.post('/emitir/convenio', async (req, res) => {
+  try {
+    const html = renderConvenioHtml(req.body);
+    const codigoRegistro = req.body.convenio && req.body.convenio.codigoRegistro;
+
+    const filename = buildConvenioFilename(codigoRegistro);
+    const outPath = path.join(config.outputDir, filename);
+
+    await fsp.mkdir(config.outputDir, { recursive: true });
+
+    const pdfBuffer = await renderPdf(html, config.templatesDir, {
+      landscape: false,
+      preferCSSPageSize: true,
+      margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' }
+    });
+    await fsp.writeFile(outPath, pdfBuffer);
+
+    return res.status(201).json({ ruta: `/output/${filename}` });
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({ error: 'ValidationError', message: err.message });
+    }
+    // eslint-disable-next-line no-console
+    console.error('[emisor] error al emitir convenio:', err);
+    return res.status(500).json({ error: 'InternalError', message: err.message || 'Error interno' });
+  }
+});
+
+/**
+ * Reporte de Convenios por Colaborador (montos por devengar). A4 landscape, layout
+ * por la @page del HTML. PDF en OUTPUT_DIR con nombre `Reporte_Convenios_{cedula}.pdf`.
+ */
+app.post('/emitir/reporte-convenios', async (req, res) => {
+  try {
+    const html = renderReporteConveniosHtml(req.body);
+    const cedula = req.body.colaborador && req.body.colaborador.cedula;
+
+    const filename = buildReporteConveniosFilename(cedula);
+    const outPath = path.join(config.outputDir, filename);
+
+    await fsp.mkdir(config.outputDir, { recursive: true });
+
+    const pdfBuffer = await renderPdf(html, config.templatesDir, {
+      landscape: true,
+      preferCSSPageSize: true,
+      margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' }
+    });
+    await fsp.writeFile(outPath, pdfBuffer);
+
+    return res.status(201).json({ ruta: `/output/${filename}` });
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({ error: 'ValidationError', message: err.message });
+    }
+    // eslint-disable-next-line no-console
+    console.error('[emisor] error al emitir reporte de convenios:', err);
+    return res.status(500).json({ error: 'InternalError', message: err.message || 'Error interno' });
+  }
+});
+
+/**
+ * Dashboard de Convenios (resumen por curso + gráfico de pastel). A4 portrait, layout
+ * por la @page del HTML. PDF en OUTPUT_DIR con nombre `Dashboard_Convenios.pdf`.
+ */
+app.post('/emitir/dashboard-convenios', async (req, res) => {
+  try {
+    const html = renderDashboardConveniosHtml(req.body);
+
+    const filename = buildDashboardConveniosFilename();
+    const outPath = path.join(config.outputDir, filename);
+
+    await fsp.mkdir(config.outputDir, { recursive: true });
+
+    const pdfBuffer = await renderPdf(html, config.templatesDir, {
+      landscape: false,
+      preferCSSPageSize: true,
+      margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' }
+    });
+    await fsp.writeFile(outPath, pdfBuffer);
+
+    return res.status(201).json({ ruta: `/output/${filename}` });
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({ error: 'ValidationError', message: err.message });
+    }
+    // eslint-disable-next-line no-console
+    console.error('[emisor] error al emitir dashboard de convenios:', err);
     return res.status(500).json({ error: 'InternalError', message: err.message || 'Error interno' });
   }
 });

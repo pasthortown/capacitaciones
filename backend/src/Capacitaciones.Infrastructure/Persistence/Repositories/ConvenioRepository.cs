@@ -50,6 +50,11 @@ public class ConvenioRepository : IConvenioRepository
         await _db.SaveChangesAsync(ct);
     }
 
+    public async Task<int> GetMaxNumeroRegistroAsync(CancellationToken ct = default)
+        => await _db.Convenios.AsNoTracking()
+            .Where(c => c.NumeroRegistro != null)
+            .MaxAsync(c => (int?)c.NumeroRegistro, ct) ?? 0;
+
     public async Task UpdateAsync(Convenio entity, CancellationToken ct = default)
     {
         // La entidad viene tracked desde GetByIdAsync (con Include de Items). Al haber

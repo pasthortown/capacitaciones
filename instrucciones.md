@@ -527,31 +527,33 @@ Grupo lateral **Entrenamiento** con submenús **Colaboradores** y **Convenios**.
 
 **Integración ControlTareas:** API en `CONTROLTAREAS_API_URL` (prod `http://10.1.1.174:8181`), usuario de servicio `capacitados` (login `POST /auth/login` → JWT cacheado). Credenciales en `.env` (`CONTROLTAREAS_API_URL/USER/PASSWORD`). Cliente `ControlTareasHttpClient`; config-gated (sin URL → pestaña DOS vacía). Endpoint lookup `GET /api/colaboradores/buscar/{cedula}` resuelve un colaborador (externo o DOS) con nombre/cargo/área.
 
-### 7.14 Módulo Entrenamiento → Convenios
+### 7.14 Módulo Entrenamiento → Convenios (Anexo de Capacitación GIC-EC-ANX-01)
 
-Pantalla `/entrenamiento/convenios` con barra de pestañas: **Convenios**, **Dashboard**, **Historial por Colaborador**.
+Pantalla `/entrenamiento/convenios` con barra de pestañas: **Convenios**, **Dashboard**, **Historial por Colaborador**, **Desvinculación**. El Convenio es el documento oficial **Anexo de Capacitación, Certificación o Examen — GIC-EC-ANX-01 v1**. Prototipo de referencia visual: `./AnexoCapacitacion.jsx` (raíz, demo).
 
-**Modelo de datos (hecho):**
-- `Convenio` (`dbo.Convenio`): colaborador obligatorio (CedulaColaborador + snapshot NombreColaborador/OrigenColaborador/CargoColaborador/AreaColaborador, resuelto por cédula contra Externos o DOS), Titulo, Descripcion, Tipo, TipoCurso, NombreCurso, Marca, SolicitadoPor, AutorizadoPor, Fecha (inicio devengo), MesesADevengar (0/12/24/36; 0=no aplica), Estado (`EstadoConvenio`: Vigente/Devengado/Cobrado/Anulado), FechaCorte, MontoCongelado, Activo (baja lógica), auditoría.
-- `ConvenioItem` (`dbo.ConvenioItem`, 1:N cascade): Tipo, Valor, Devengable (bool, def. true), Observacion. Monto total = suma de ítems; **base de devengo = suma de ítems devengables**.
-- `ConvenioAnexo` (`dbo.ConvenioAnexo`, 1:N cascade): archivos múltiples (convenio firmado, formulario de cobro firmado, etc.). Volumen host `./convenios_anexos` → backend RW `/convenios_anexos` (env `CONVENIOS_DIR`; **ownership 1654:app**). Storage `FileSystemConvenioAnexoStorage`. Máx 25 MB/archivo.
+**Modelo de datos (`Convenio` en `dbo.Convenio`):**
+- Numeración propia: `NumeroRegistro` (int) → código **`GIC-EC-REG-###`** (contador `dbo.ConvenioNumeracion`, fila Id=1, reserva atómica UPDLOCK en `ConvenioNumeracionService`, formato vía `IConvenioNumeracionService.Format`). Separado del `CAP-PC-REG-###` de capacitaciones.
+- Snapshot colaborador (resuelto por cédula contra Externos/DOS al crear/editar): NombreColaborador, OrigenColaborador, CargoColaborador, **AreaColaborador (= Departamento)**, EmpresaColaborador (pre-llenado de `Society`). Manuales en el anexo: **CentroCostos, JefeInmediato, RelacionLaboral, FechaIngreso (requerida), FechaFirma**. (Centro de costos/jefe/relación/ingreso NO existen en las fuentes → se capturan en el anexo.)
+- Evento: Titulo, Descripcion, **Tipo** (tipo de evento: Curso o capacitación / Certificación / Examen de certificación / Diplomado / Programa especializado / Material de estudio — de aquí sale la clasificación), TipoCurso, NombreCurso, Marca, FechaInicioCurso, FechaFinCurso, Horas, Resultado (Aprobado/En curso/Pendiente/No aprobado), ConvenioFirmado (switch que el usuario marca al cargar el firmado), SolicitadoPor, AutorizadoPor, Fecha.
+- Costo: `ConvenioItem` (1:N cascade): Tipo, Valor, Devengable, Observacion. **Monto total = suma de ítems**. **Base de devengación = `ValorAsumidoEmpresa`** (campo manual bajo el total; ya NO es la suma de ítems devengables).
+- Devengo: MesesADevengar (0/12/24/36), Estado (`EstadoConvenio`: Vigente/Devengado/Cobrado/Anulado), FechaCorte, MontoCongelado, Activo, auditoría.
+- `ConvenioAnexo` (1:N cascade): archivos múltiples. Volumen host `./convenios_anexos` → backend RW `/convenios_anexos` (env `CONVENIOS_DIR`; ownership 1654:app). Máx 25 MB/archivo.
 
-**Reglas de devengo (hecho, en `ConvenioMapper.ToDto`, fecha Ecuador):**
-- Devengo proporcional mensual sobre la base devengable a lo largo de MesesADevengar. Lo adeudado = base × (mesesPendientes / MesesADevengar). MesesADevengar=0 → no aplica, pendiente 0.
-- **Vigente**: pendiente proporcional a hoy. **Devengado**: cumplió plazo sin cobro → pendiente 0. **Cobrado**: salió y se le cobró → al entrar al estado se congela `FechaCorte=hoy` y `MontoCongelado=pendiente al corte`; se expone `MontoCobrado`, deuda actual 0. **Anulado**: conserva el pendiente congelado (sigue debiéndose). La congelación se gestiona en `ConvenioMapper.Apply` (solo al entrar por primera vez al estado; volver a Vigente/Devengado libera el corte).
+**Reglas de devengo/reintegro (`ConvenioMapper`, fecha Ecuador):**
+- Base = `ValorAsumidoEmpresa`. **Ancla = `FechaIngreso`** (fallback a `Fecha` para legados). Umbral: si base < **$60** → sin obligación (pendiente 0).
+- **Clasificación automática** desde `Tipo`: *Certificaciones y exámenes* (escalonado) / *Cursos y capacitaciones* / *Diplomados o programas especializados* (proporcional) / *Revisar*. **Plazo sugerido** según clasificación+valor (tramos $500/$1500/$4000 → 12/24/36m; certificaciones=36m); MesesADevengar editable (botón "Aplicar" en el form).
+- **Modalidad**: *proporcional mensual* (base × mesesPendientes/MesesADevengar) o *escalonada especial* para certificaciones (% pendiente por tramos de antigüedad: ≤12m→100%, ≤24m→50%, ≤36m→25%, luego 0%).
+- Estados: **Vigente** pendiente a hoy; **Devengado** pendiente 0; **Cobrado** congela `FechaCorte`+`MontoCongelado`, expone `MontoCobrado`; **Anulado** conserva el pendiente congelado. Congelación en `ConvenioMapper.Apply` (solo al entrar 1ª vez; volver a Vigente/Devengado libera).
 
-**Endpoints (hecho, `ConveniosController`, policy Admin):** `GET /api/convenios?buscar=&incluirInactivos=`, `GET /api/convenios/{id}`, `POST`, `PUT /{id}`, `DELETE /{id}` (baja lógica), `GET /api/convenios/colaborador/{cedula}?soloVigentes=` (historial; filtra `TieneSaldoPendiente`), `POST /{id}/anexos` (multipart), `DELETE /{id}/anexos/{anexoId}`, `GET /{id}/anexos/{anexoId}/descargar`.
+**Endpoints (`ConveniosController`, policy Admin):** CRUD `GET/POST/PUT/DELETE /api/convenios`, `GET /colaborador/{cedula}?soloVigentes=`, anexos `POST/DELETE/GET .../anexos[/{id}/descargar]`. Numeración: `GET/PUT /api/convenios/numeracion`. **Incremento 2:** `GET /{id}/imprimir` (PDF Anexo), `GET /colaborador/{cedula}/reporte` (PDF historial), `GET /dashboard` (datos) + `GET /dashboard/pdf` (PDF resumen), `GET /colaborador/{cedula}/liquidacion?fechaSalida=` (reintegro por desvinculación).
 
-**Frontend (hecho):** `ConveniosPage.jsx` + `services/convenios.js`. Pestaña Convenios (tabla + modal con ítems editables + estado + anexos drag&drop con **barra de progreso XHR**). Pestaña Historial (cédula + Buscar → tabla con colaborador/solicitado/aprobado + detalle de costos pendientes por convenio + total por devengar). Dashboard = placeholder.
+**emisor_documentos (PDFs, hecho):** `POST /emitir/convenio` (Convenio_{codigo}.pdf, GIC-EC-ANX-01), `POST /emitir/reporte-convenios` (Reporte_Convenios_{cedula}.pdf), `POST /emitir/dashboard-convenios` (Dashboard_Convenios.pdf, resumen por curso + pastel conic-gradient sin libs, fecha de corte). Plantillas `convenio.html`/`reporte_convenios.html`/`dashboard_convenios.html` con tipografías oficiales (§6.1). Cliente `IEmisorDocumentosClient.EmitirConvenio/ReporteConvenios/DashboardConveniosAsync`. Los UseCases (`ImprimirConvenioUseCase`, `DescargarReporteConveniosUseCase`, `DashboardConveniosUseCase`, `LiquidacionColaboradorUseCase`) emiten→leen de `/output`→devuelven `File`.
 
-> ⚠️ **Fix EF importante:** las entidades hijas (ConvenioItem/ConvenioAnexo) **no** deben pre-asignar su `Guid Id` al agregarse a un padre ya *tracked* (EF lo trataría como UPDATE→0 filas). Se deja que EF genere el Id. `DesignTimeDbContextFactory` usa cadena placeholder SQL Server (no LocalDB).
+**Frontend (`ConveniosPage.jsx` + `services/convenios.js`):** Pestaña Convenios (tabla con código + botón **Imprimir**; modal con secciones Colaborador/Evento/Devengación, ítems, **panel de cálculo automático** clasificación/modalidad/plazo en vivo, anexos drag&drop). Historial (cédula + botón **Descargar Reporte**). **Dashboard** (KPIs + por estado + por marca + **Descargar PDF**; ROI/utilidad pendiente de integrar fuente de pipeline). **Desvinculación** (cédula + fecha de salida → liquidación de reintegro por convenio + total). Numeración de convenios vive en **Configuración → Numeración** (tab "Convenios" junto a "Capacitaciones").
 
-**PENDIENTE — Incremento 2 (PDFs vía `emisor_documentos`):**
-1. **Imprimir convenio** (botón en la tabla de Convenios): genera el PDF del convenio para que el colaborador lo firme. Debe incluir: datos del colaborador con **cargo, área y fecha de convenido (FechaCreacion)**, título/tipo/curso/marca, **detalle de ítems de costo**, **solicitado por / autorizado por**, meses a devengar. Crear plantilla HTML nueva en `./emisor_documentos/templates/` (Puppeteer), endpoint nuevo en el servicio Node (ej. `POST /emitir/convenio`), método en `IEmisorDocumentosClient`/`EmisorDocumentosHttpClient`, endpoint backend `GET /api/convenios/{id}/imprimir` que devuelve el PDF, y botón en el frontend (descarga).
-2. **Descargar Reporte** (botón en Historial): PDF con los convenios del colaborador + **montos por devengar pendientes** (para saber cómo cobrarle), incluyendo solicitado/aprobado por y el detalle de costos pendientes. Misma vía (`emisor_documentos`), endpoint `GET /api/convenios/colaborador/{cedula}/reporte`.
-3. **Dashboard**: indicadores de convenios — por definir con el usuario.
+> ⚠️ **Fix EF importante:** las entidades hijas (ConvenioItem/ConvenioAnexo) no deben pre-asignar su `Guid Id` al agregarse a un padre ya *tracked*. `DesignTimeDbContextFactory` usa cadena placeholder SQL Server. Migración `AddConvenioAnexoFields` hace **backfill**: numera convenios legados por orden de creación, avanza el contador, y copia `ValorAsumidoEmpresa` desde la suma de ítems devengables (preserva el devengo legado).
 
-Tipografías oficiales (§6.1) obligatorias también en estos PDF.
+> ⚠️ **PENDIENTE Dashboard ROI:** el ROI por marca/persona/área del prototipo necesita la "Utilidad Bruta del pipeline" (vía Excel/vista SQL `v_roi_por_marca`), que **no existe** en el sistema. El dashboard actual muestra inversión/devengado/por devengar (datos propios); el ROI queda a la espera de definir el origen de la utilidad.
 
 ## 8. Estado actual
 
@@ -576,7 +578,7 @@ Tipografías oficiales (§6.1) obligatorias también en estos PDF.
 - [x] Fase 12 — Lógica condicional de certificado (Aprobación / Asistencia / Participación + logo en plantilla + filtro de ausentes).
 - [x] Entrenamiento → Colaboradores (DOS vía API ControlTareas + Externos CRUD local). Ver §7.13.
 - [x] Entrenamiento → Convenios **Incremento 1** (CRUD + ítems de costo + devengo + estado + anexos múltiples + Historial). Ver §7.14.
-- [ ] Convenios **Incremento 2**: imprimir convenio en PDF + descargar reporte de historial (vía `emisor_documentos`) + Dashboard. Ver detalle en §7.14 "PENDIENTE".
+- [x] Convenios **Incremento 2 + alineación a Anexo GIC-EC-ANX-01**: modelo extendido (snapshot completo + evento + ValorAsumidoEmpresa + numeración GIC-EC-REG), clasificación/plazo/modalidad automáticos, devengo escalonado/proporcional anclado en FechaIngreso, PDF imprimir convenio, PDF reporte historial, Dashboard (datos + PDF resumen), módulo Desvinculación/Reintegro, numeración en Configuración con tabs. Ver §7.14. *(Pendiente: ROI con utilidad de pipeline; verificación end-to-end de PDFs en el contenedor + sync a prod.)*
 - [ ] Integración SonarQube + OWASP ZAP.
 
 ## 9. Plan de fases
@@ -597,7 +599,7 @@ Tipografías oficiales (§6.1) obligatorias también en estos PDF.
 | 12   | ✅ Lógica condicional de certificado + logo en plantilla                                  | Backend, emisor_documentos    |
 | 13   | ✅ Entrenamiento: Colaboradores (DOS vía API ControlTareas + Externos CRUD)               | Backend, Frontend             |
 | 14a  | ✅ Entrenamiento: Convenios Incremento 1 (CRUD, ítems, devengo, estado, anexos, historial) | Backend, Frontend             |
-| 14b  | ⏳ Convenios Incremento 2: PDF imprimir convenio + reporte historial + Dashboard          | emisor_documentos, Backend, Frontend |
+| 14b  | ✅ Convenios → Anexo GIC-EC-ANX-01: modelo extendido + numeración GIC-EC-REG + PDFs (convenio/reporte/dashboard) + Desvinculación/Reintegro | emisor_documentos, Backend, Frontend |
 | 8    | Pasada de calidad y seguridad (Sonar + ZAP)                                               | Security                      |
 
 ## 10. Decisiones tomadas (v1)

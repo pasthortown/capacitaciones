@@ -1,4 +1,5 @@
 using Capacitaciones.Application.Dtos.Certificados;
+using Capacitaciones.Application.Dtos.Convenios;
 
 namespace Capacitaciones.Application.Ports;
 
@@ -23,6 +24,15 @@ public interface IEmisorDocumentosClient
     /// Lanza <see cref="HttpRequestException"/> si el emisor no responde.
     /// </summary>
     Task<EmisionResultado> EmitirReporteAsistenciaAsync(ReporteAsistenciaRequest req, CancellationToken ct);
+
+    /// <summary>Invoca <c>POST /emitir/convenio</c> (documento Anexo GIC-EC-ANX-01).</summary>
+    Task<EmisionResultado> EmitirConvenioAsync(ConvenioImprimirRequest req, CancellationToken ct);
+
+    /// <summary>Invoca <c>POST /emitir/reporte-convenios</c> (historial por colaborador).</summary>
+    Task<EmisionResultado> EmitirReporteConveniosAsync(ReporteConveniosRequest req, CancellationToken ct);
+
+    /// <summary>Invoca <c>POST /emitir/dashboard-convenios</c> (resumen por curso + pastel).</summary>
+    Task<EmisionResultado> EmitirDashboardConveniosAsync(DashboardConveniosRequest req, CancellationToken ct);
 
     /// <summary>
     /// Invoca <c>GET /health</c>. Devuelve <c>true</c> si responde <c>200 OK</c>,

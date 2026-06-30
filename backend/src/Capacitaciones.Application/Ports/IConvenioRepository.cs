@@ -16,6 +16,10 @@ public interface IConvenioRepository
     Task AddAsync(Convenio entity, CancellationToken ct = default);
     Task UpdateAsync(Convenio entity, CancellationToken ct = default);
 
+    /// <summary>Mayor número de registro ya asignado (incluye inactivos); 0 si no hay ninguno.
+    /// Sirve para validar el contador en la pantalla de Numeración Convenios.</summary>
+    Task<int> GetMaxNumeroRegistroAsync(CancellationToken ct = default);
+
     /// <summary>Baja lógica idempotente.</summary>
     Task DeleteAsync(Guid id, CancellationToken ct = default);
 }

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Resumen de Convenios</title>
+  <style>
+    /* ===== Tipografías oficiales (§6.1 instrucciones.md) ===== */
+    @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-Thin.otf') format('opentype');       font-weight: 100; font-style: normal; }
+    @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-ThinItalic.otf') format('opentype'); font-weight: 100; font-style: italic; }
+    @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-Heavy.otf') format('opentype');      font-weight: 900; font-style: normal; }
+    @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-HeavyItalic.otf') format('opentype'); font-weight: 900; font-style: italic; }
+
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Light.ttf') format('truetype');    font-weight: 300; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Italic.ttf') format('truetype');  font-weight: 400; font-style: italic; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Medium.ttf') format('truetype');  font-weight: 500; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Bold.ttf') format('truetype');    font-weight: 700; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; }
+
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-Regular.otf') format('opentype'); font-weight: 400; font-style: normal; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-Italic.otf') format('opentype');  font-weight: 400; font-style: italic; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-SemiBold.otf') format('opentype'); font-weight: 600; font-style: normal; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-SemiBoldItalic.otf') format('opentype'); font-weight: 600; font-style: italic; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-Bold.otf') format('opentype');   font-weight: 700; font-style: normal; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-BoldItalic.otf') format('opentype'); font-weight: 700; font-style: italic; }
+
+    /* ===== Página ===== */
+    @page { size: A4; margin: 12mm; }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Montserrat', Arial, sans-serif;
+      color: #1a1a1a;
+      font-size: 9.5pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* ===== Header oficial ===== */
+    .page-header {
+      border: 1px solid #221E20;
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 4mm;
+    }
+    .page-header td {
+      border: 1px solid #221E20;
+      vertical-align: middle;
+      padding: 2mm 3mm;
+    }
+    .page-header .logo-cell { width: 34mm; text-align: center; padding: 2mm; }
+    .page-header .logo-cell img { width: 26mm; height: auto; object-fit: contain; }
+    .page-header .title-cell {
+      text-align: center;
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+      font-weight: 700;
+      font-size: 14pt;
+      letter-spacing: 0.4px;
+      color: #221E20;
+    }
+    .page-header .meta-cell {
+      width: 48mm;
+      font-size: 8.5pt;
+      line-height: 1.4;
+    }
+    .page-header .meta-cell .lbl { color: #77787B; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 0.3px; }
+    .red-bar { height: 3px; background: #E20000; margin-bottom: 5mm; }
+
+    /* ===== Tabla por curso ===== */
+    .resumen {
+      width: 100%;
+      border: 1px solid #221E20;
+      border-collapse: collapse;
+      table-layout: fixed;
+      margin-bottom: 7mm;
+    }
+    .resumen th, .resumen td {
+      border: 1px solid #cfcfcf;
+      padding: 1.8mm 2.5mm;
+      font-size: 9pt;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+    .resumen thead th {
+      background: #221E20; color: #fff;
+      font-weight: 700; text-transform: uppercase;
+      font-size: 7.8pt; letter-spacing: 0.3px;
+      text-align: center; vertical-align: middle;
+    }
+    .resumen .num { text-align: right; white-space: nowrap; }
+    .resumen .sub { font-size: 7.5pt; color: #77787B; display: block; }
+    .resumen tbody tr:nth-child(even) { background: #f7f7f7; }
+    .resumen tfoot td {
+      font-weight: 700;
+      background: #fde6e6;
+      color: #E20000;
+      font-size: 9.5pt;
+    }
+    .resumen .col-curso { width: 34%; }
+    .resumen .col-mon   { width: 16.5%; }
+
+    /* ===== Gráfico de pastel ===== */
+    .chart-section {
+      display: flex;
+      align-items: center;
+      gap: 14mm;
+      border: 1px solid #e2e2e2;
+      border-radius: 4px;
+      padding: 6mm 8mm;
+      background: #fafafa;
+    }
+    .chart-title {
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+      font-weight: 700; font-size: 11pt; color: #221E20;
+      text-transform: uppercase; letter-spacing: 0.4px;
+      margin-bottom: 4mm;
+    }
+    .pie {
+      width: 48mm; height: 48mm; border-radius: 50%;
+      background: {{pieGradient}};
+      flex-shrink: 0;
+    }
+    .legend { flex: 1; }
+    .legend .li { display: flex; align-items: center; gap: 3mm; margin-bottom: 3mm; }
+    .legend .swatch { width: 5mm; height: 5mm; border-radius: 2px; flex-shrink: 0; }
+    .legend .swatch.dev { background: #1d7a3a; }
+    .legend .swatch.pen { background: #E20000; }
+    .legend .ltext { font-size: 10pt; }
+    .legend .ltext strong { font-weight: 700; }
+    .legend .lpct { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-weight: 700; }
+    .legend .nota { font-size: 8pt; color: #77787B; margin-top: 2mm; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <table class="page-header">
+    <tr>
+      <td class="logo-cell"><img src="./logotipo-DOS-Color.png" alt="DOS" /></td>
+      <td class="title-cell">Resumen de Convenios</td>
+      <td class="meta-cell"><span class="lbl">Fecha de corte</span><br/>{{fechaCorte}}</td>
+    </tr>
+  </table>
+  <div class="red-bar"></div>
+
+  {{tablaCursos}}
+
+  <div>
+    <div class="chart-title">Distribución del costo asumido por DOS</div>
+    <div class="chart-section">
+      <div class="pie"></div>
+      <div class="legend">
+        <div class="li">
+          <span class="swatch dev"></span>
+          <span class="ltext">Devengado <span class="lpct">{{pctDevengado}}</span> · {{montoDevengado}}</span>
+        </div>
+        <div class="li">
+          <span class="swatch pen"></span>
+          <span class="ltext">Por devengar <span class="lpct">{{pctPorDevengar}}</span> · {{montoPorDevengar}}</span>
+        </div>
+        <div class="nota">
+          Porcentajes calculados sobre el costo total asumido por DOS ({{costoAsumidoDOS}}).
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

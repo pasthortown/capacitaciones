@@ -11,6 +11,9 @@ const config = require('./config');
 
 const TEMPLATE_PATH = path.join(config.templatesDir, 'certificado.html');
 const REPORTE_TEMPLATE_PATH = path.join(config.templatesDir, 'reporte_asistencia.html');
+const CONVENIO_TEMPLATE_PATH = path.join(config.templatesDir, 'convenio.html');
+const REPORTE_CONVENIOS_TEMPLATE_PATH = path.join(config.templatesDir, 'reporte_convenios.html');
+const DASHBOARD_CONVENIOS_TEMPLATE_PATH = path.join(config.templatesDir, 'dashboard_convenios.html');
 
 // Mapeo artículo + sustantivo por tipo de actividad (case-insensitive, sin acentos).
 const ACTIVIDAD_MAP = {
@@ -63,6 +66,49 @@ function formatFechaEs(fechaIso, timeZone) {
   });
   // Intl devuelve "17 de abril de 2026" para es-EC
   return fmt.format(date);
+}
+
+/**
+ * Formatea un monto como USD (ej. "$1,200.00"). Si el valor no es numérico
+ * devuelve "—" para mantener el patrón de "campo vacío → guión" de los anexos.
+ */
+function formatMonedaUsd(valor) {
+  if (valor === undefined || valor === null || valor === '') return '—';
+  const num = Number(valor);
+  if (!Number.isFinite(num)) return '—';
+  const fmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `$${fmt.format(num)}`;
+}
+
+/**
+ * Formatea un porcentaje (ej. 66.67 → "66.7%"). Acepta number o string numérica.
+ */
+function formatPorcentaje(valor) {
+  const num = Number(valor);
+  if (!Number.isFinite(num)) return '—';
+  const str = Number.isInteger(num) ? String(num) : num.toFixed(1);
+  return `${str}%`;
+}
+
+/**
+ * Helper de "campo vacío → guión" para textos. Devuelve el valor escapado o "—".
+ */
+function valorOGuion(valor) {
+  if (valor === undefined || valor === null || String(valor).trim() === '') return '—';
+  return escapeHtml(valor);
+}
+
+/**
+ * Formatea una fecha ISO en es-EC; si está vacía o es inválida devuelve "—"
+ * (a diferencia de formatFechaEs que lanza). Útil para campos opcionales de fecha.
+ */
+function formatFechaEsOGuion(fechaIso) {
+  if (!fechaIso) return '—';
+  try {
+    return escapeHtml(formatFechaEs(fechaIso, config.timeZone));
+  } catch (_err) {
+    return '—';
+  }
 }
 
 function sanitizeFilenamePart(value) {
@@ -532,10 +578,421 @@ function buildPdfReporteFilename(codigo) {
   return `Reporte_Asistencia_${safeCodigo}.pdf`;
 }
 
+// ========== 1) Convenio (Anexo de Capacitación GIC-EC-ANX-01) =======================
+
+/**
+ * Valida el payload del convenio. Estructura esperada:
+ *   {
+ *     convenio:    { codigoRegistro, codigoFormato, version, titulo, tipo, tipoCurso,
+ *                    nombreCurso, marca, fechaConvenio, fechaFirma, fechaCreacion,
+ *                    fechaInicioCurso, fechaFinCurso, horas, resultado, clasificacion,
+ *                    modalidadReintegro, plazoTexto, mesesADevengar, montoTotal,
+ *                    valorAsumidoEmpresa, convenioFirmado },
+ *     colaborador: { nombre, cedula, cargo, area, empresa, centroCostos, jefeInmediato,
+ *                    relacionLaboral, fechaIngreso, origen },
+ *     items:       [ { tipo, valor, devengable, observacion } ],
+ *     solicitadoPor, autorizadoPor
+ *   }
+ */
+function validateConvenioPayload(body) {
+  if (!body || typeof body !== 'object') {
+    throw new ValidationError('Payload vacío o no es un objeto.');
+  }
+  const { convenio, colaborador, items } = body;
+  if (!convenio || typeof convenio !== 'object') {
+    throw new ValidationError('`convenio` es obligatorio.');
+  }
+  if (!convenio.codigoRegistro) throw new ValidationError('`convenio.codigoRegistro` es obligatorio.');
+  if (!colaborador || typeof colaborador !== 'object') {
+    throw new ValidationError('`colaborador` es obligatorio.');
+  }
+  if (!colaborador.nombre) throw new ValidationError('`colaborador.nombre` es obligatorio.');
+  if (!colaborador.cedula) throw new ValidationError('`colaborador.cedula` es obligatorio.');
+  if (items !== undefined && !Array.isArray(items)) {
+    throw new ValidationError('`items` debe ser un arreglo.');
+  }
+}
+
+function boolSiNo(valor) {
+  if (valor === true) return 'Sí';
+  if (valor === false) return 'No';
+  return '—';
+}
+
+function buildConvenioColaboradorHtml(colaborador, convenio) {
+  const campos = [
+    ['Nombre del colaborador', valorOGuion(colaborador.nombre), true],
+    ['Cédula', valorOGuion(colaborador.cedula), false],
+    ['Cargo', valorOGuion(colaborador.cargo), false],
+    ['Área / departamento', valorOGuion(colaborador.area), false],
+    ['Centro de costos', valorOGuion(colaborador.centroCostos), false],
+    ['Empresa', valorOGuion(colaborador.empresa), false],
+    ['Jefe inmediato', valorOGuion(colaborador.jefeInmediato), false],
+    ['Relación laboral', valorOGuion(colaborador.relacionLaboral), false],
+    ['Fecha de ingreso', formatFechaEsOGuion(colaborador.fechaIngreso), false],
+    ['Fecha de firma', formatFechaEsOGuion(convenio.fechaFirma), false]
+  ];
+  return `<div class="pgrid2">${campos
+    .map(([label, value, span]) => `<div class="pf${span ? ' pspan2' : ''}"><label>${escapeHtml(label)}</label><span>${value}</span></div>`)
+    .join('')}</div>`;
+}
+
+function buildConvenioEventoHtml(convenio) {
+  const campos = [
+    ['Título', valorOGuion(convenio.titulo), true],
+    ['Nombre del curso', valorOGuion(convenio.nombreCurso), true],
+    ['Tipo de evento', valorOGuion(convenio.tipo), false],
+    ['Tipo de curso', valorOGuion(convenio.tipoCurso), false],
+    ['Marca', valorOGuion(convenio.marca), false],
+    ['Fecha de inicio', formatFechaEsOGuion(convenio.fechaInicioCurso), false],
+    ['Fecha de fin / aprobación', formatFechaEsOGuion(convenio.fechaFinCurso), false],
+    ['Horas', valorOGuion(convenio.horas), false],
+    ['Resultado', valorOGuion(convenio.resultado), false],
+    ['Convenio firmado', boolSiNo(convenio.convenioFirmado), false]
+  ];
+  return `<div class="pgrid2">${campos
+    .map(([label, value, span]) => `<div class="pf${span ? ' pspan2' : ''}"><label>${escapeHtml(label)}</label><span>${value}</span></div>`)
+    .join('')}</div>`;
+}
+
+function buildConvenioCostosHtml(items, convenio) {
+  const filas = (Array.isArray(items) ? items : [])
+    .map((it) => `<tr>
+      <td>${valorOGuion(it.tipo)}</td>
+      <td class="num">${formatMonedaUsd(it.valor)}</td>
+      <td class="center">${boolSiNo(it.devengable)}</td>
+      <td>${valorOGuion(it.observacion)}</td>
+    </tr>`)
+    .join('');
+
+  const filasHtml = filas || `<tr><td colspan="4" class="center">Sin ítems de costo registrados.</td></tr>`;
+
+  return `<table class="costos">
+    <thead>
+      <tr>
+        <th>Tipo</th>
+        <th class="num">Valor</th>
+        <th class="center">Devengable</th>
+        <th>Observación</th>
+      </tr>
+    </thead>
+    <tbody>${filasHtml}</tbody>
+    <tfoot>
+      <tr><td>Total</td><td class="num">${formatMonedaUsd(convenio.montoTotal)}</td><td colspan="2"></td></tr>
+      <tr class="total-empresa"><td>Valor asumido por la empresa</td><td class="num">${formatMonedaUsd(convenio.valorAsumidoEmpresa)}</td><td colspan="2"></td></tr>
+    </tfoot>
+  </table>`;
+}
+
+function buildConvenioReintegroHtml(convenio) {
+  const campos = [
+    ['Clasificación aplicable', valorOGuion(convenio.clasificacion)],
+    ['Modalidad de reintegro', valorOGuion(convenio.modalidadReintegro)],
+    ['Plazo de devengación', valorOGuion(convenio.plazoTexto)],
+    ['Meses a devengar', valorOGuion(convenio.mesesADevengar)]
+  ];
+  return `<div class="pgrid2">${campos
+    .map(([label, value]) => `<div class="pf"><label>${escapeHtml(label)}</label><span>${value}</span></div>`)
+    .join('')}</div>`;
+}
+
+function renderConvenioHtml(payload) {
+  validateConvenioPayload(payload);
+
+  const { convenio, colaborador, items } = payload;
+
+  const codigoFormato = valorOGuion(convenio.codigoFormato || 'GIC-EC-ANX-01');
+  const version = valorOGuion(convenio.version || 'v1');
+  const codigoRegistro = valorOGuion(convenio.codigoRegistro);
+  // Pie: usa fechaFirma → fechaConvenio → fechaCreacion como respaldo.
+  const fechaPie = formatFechaEsOGuion(convenio.fechaFirma || convenio.fechaConvenio || convenio.fechaCreacion);
+
+  const tokens = {
+    codigoFormato,
+    version,
+    codigoRegistro,
+    seccionColaborador: buildConvenioColaboradorHtml(colaborador, convenio),
+    seccionEvento: buildConvenioEventoHtml(convenio),
+    tablaCostos: buildConvenioCostosHtml(items, convenio),
+    seccionReintegro: buildConvenioReintegroHtml(convenio),
+    nombreColaborador: valorOGuion(colaborador.nombre),
+    cedulaColaborador: valorOGuion(colaborador.cedula),
+    fechaPie
+  };
+
+  const template = fs.readFileSync(CONVENIO_TEMPLATE_PATH, 'utf8');
+  return Object.keys(tokens).reduce((html, key) => {
+    const re = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g');
+    return html.replace(re, tokens[key]);
+  }, template);
+}
+
+function buildConvenioFilename(codigoRegistro) {
+  const safe = sanitizeFilenamePart(codigoRegistro) || 'CONVENIO';
+  return `Convenio_${safe}.pdf`;
+}
+
+// ========== 2) Reporte de Convenios por Colaborador ==================================
+
+/**
+ * Valida el payload del reporte de convenios. Estructura:
+ *   {
+ *     colaborador: { nombre, cedula, cargo, area, empresa },
+ *     fechaCorte, totalPorDevengar,
+ *     convenios: [ { codigoRegistro, titulo, nombreCurso, marca, fecha, fechaIngreso,
+ *                    estado, montoTotal, valorAsumidoEmpresa, montoDevengado,
+ *                    montoPendiente, mesesADevengar, mesesTranscurridos, mesesPendientes,
+ *                    porcentajePendiente, solicitadoPor, autorizadoPor, items } ]
+ *   }
+ */
+function validateReporteConveniosPayload(body) {
+  if (!body || typeof body !== 'object') {
+    throw new ValidationError('Payload vacío o no es un objeto.');
+  }
+  const { colaborador, convenios } = body;
+  if (!colaborador || typeof colaborador !== 'object') {
+    throw new ValidationError('`colaborador` es obligatorio.');
+  }
+  if (!colaborador.cedula) throw new ValidationError('`colaborador.cedula` es obligatorio.');
+  if (convenios !== undefined && !Array.isArray(convenios)) {
+    throw new ValidationError('`convenios` debe ser un arreglo.');
+  }
+}
+
+function buildReporteConveniosColaboradorHtml(colaborador) {
+  const campos = [
+    ['Colaborador', valorOGuion(colaborador.nombre)],
+    ['Cédula', valorOGuion(colaborador.cedula)],
+    ['Cargo', valorOGuion(colaborador.cargo)],
+    ['Área', valorOGuion(colaborador.area)],
+    ['Empresa', valorOGuion(colaborador.empresa)]
+  ];
+  return `<div class="colab-box">${campos
+    .map(([label, value]) => `<div class="cf"><label>${escapeHtml(label)}</label><span>${value}</span></div>`)
+    .join('')}</div>`;
+}
+
+function estadoTagClass(estado) {
+  const key = stripAccents(estado || '').toLowerCase().trim();
+  if (key === 'vigente') return 'vigente';
+  if (key === 'devengado' || key === 'devengado totalmente') return 'devengado';
+  return 'otro';
+}
+
+function buildReporteConveniosTablaHtml(convenios) {
+  const filas = (Array.isArray(convenios) ? convenios : [])
+    .map((c) => {
+      // Título principal + curso como subtítulo (si difieren). Si solo hay uno, se muestra ese.
+      const tituloTxt = String(c.titulo || '').trim();
+      const cursoTxt = String(c.nombreCurso || '').trim();
+      let tituloHtml = '—';
+      if (tituloTxt && cursoTxt && tituloTxt !== cursoTxt) {
+        tituloHtml = `${escapeHtml(tituloTxt)}<span style="color:#77787B;font-size:7.5pt;display:block;">${escapeHtml(cursoTxt)}</span>`;
+      } else {
+        tituloHtml = valorOGuion(tituloTxt || cursoTxt);
+      }
+      const estadoCls = estadoTagClass(c.estado);
+      const resp = `Sol.: ${valorOGuion(c.solicitadoPor)}<br/>Aut.: ${valorOGuion(c.autorizadoPor)}`;
+      return `<tr>
+        <td class="col-cod center">${valorOGuion(c.codigoRegistro)}</td>
+        <td class="col-titulo">${tituloHtml}</td>
+        <td class="col-est center"><span class="estado-tag ${estadoCls}">${valorOGuion(c.estado)}</span></td>
+        <td class="col-mon num">${formatMonedaUsd(c.valorAsumidoEmpresa)}</td>
+        <td class="col-mon num">${formatMonedaUsd(c.montoDevengado)}</td>
+        <td class="col-mon num pendiente-cell">${formatMonedaUsd(c.montoPendiente)}</td>
+        <td class="col-mes center">${valorOGuion(c.mesesPendientes)}</td>
+        <td class="col-pct center">${formatPorcentaje(c.porcentajePendiente)}</td>
+        <td class="col-resp">${resp}</td>
+      </tr>`;
+    })
+    .join('');
+
+  const filasHtml = filas || `<tr><td colspan="9" class="center">Sin convenios registrados.</td></tr>`;
+
+  return `<table class="conv">
+    <thead>
+      <tr>
+        <th class="col-cod">Código</th>
+        <th class="col-titulo">Título / Curso</th>
+        <th class="col-est">Estado</th>
+        <th class="col-mon">Valor asumido</th>
+        <th class="col-mon">Devengado</th>
+        <th class="col-mon">Por devengar</th>
+        <th class="col-mes">Meses pend.</th>
+        <th class="col-pct">% pend.</th>
+        <th class="col-resp">Solicitado / Autorizado por</th>
+      </tr>
+    </thead>
+    <tbody>${filasHtml}</tbody>
+  </table>`;
+}
+
+function renderReporteConveniosHtml(payload) {
+  validateReporteConveniosPayload(payload);
+
+  const { colaborador, convenios, fechaCorte, totalPorDevengar } = payload;
+
+  const tokens = {
+    fechaCorte: formatFechaEsOGuion(fechaCorte),
+    colaboradorBox: buildReporteConveniosColaboradorHtml(colaborador),
+    tablaConvenios: buildReporteConveniosTablaHtml(convenios),
+    totalPorDevengar: formatMonedaUsd(totalPorDevengar)
+  };
+
+  const template = fs.readFileSync(REPORTE_CONVENIOS_TEMPLATE_PATH, 'utf8');
+  return Object.keys(tokens).reduce((html, key) => {
+    const re = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g');
+    return html.replace(re, tokens[key]);
+  }, template);
+}
+
+function buildReporteConveniosFilename(cedula) {
+  const safe = sanitizeFilenamePart(cedula) || 'COLABORADOR';
+  return `Reporte_Convenios_${safe}.pdf`;
+}
+
+// ========== 3) Dashboard de Convenios (resumen por curso + pie chart) ================
+
+/**
+ * Valida el payload del dashboard de convenios. Estructura:
+ *   {
+ *     fechaCorte,
+ *     cursos: [ { nombreCurso, codigoRegistro, colaborador, costoTotal,
+ *                 costoAsumidoDOS, costoDevengado, costoPorDevengar } ],
+ *     totales: { costoTotal, costoAsumidoDOS, costoDevengado, costoPorDevengar }
+ *   }
+ */
+function validateDashboardConveniosPayload(body) {
+  if (!body || typeof body !== 'object') {
+    throw new ValidationError('Payload vacío o no es un objeto.');
+  }
+  const { cursos, totales } = body;
+  if (cursos !== undefined && !Array.isArray(cursos)) {
+    throw new ValidationError('`cursos` debe ser un arreglo.');
+  }
+  if (totales !== undefined && (totales === null || typeof totales !== 'object')) {
+    throw new ValidationError('`totales` debe ser un objeto.');
+  }
+}
+
+function buildDashboardTablaHtml(cursos, totales) {
+  const filas = (Array.isArray(cursos) ? cursos : [])
+    .map((c) => {
+      const cursoCell = `${valorOGuion(c.nombreCurso)}<span class="sub">${valorOGuion(c.codigoRegistro)} · ${valorOGuion(c.colaborador)}</span>`;
+      return `<tr>
+        <td class="col-curso">${cursoCell}</td>
+        <td class="col-mon num">${formatMonedaUsd(c.costoTotal)}</td>
+        <td class="col-mon num">${formatMonedaUsd(c.costoAsumidoDOS)}</td>
+        <td class="col-mon num">${formatMonedaUsd(c.costoDevengado)}</td>
+        <td class="col-mon num">${formatMonedaUsd(c.costoPorDevengar)}</td>
+      </tr>`;
+    })
+    .join('');
+
+  const filasHtml = filas || `<tr><td colspan="5" class="center">Sin cursos registrados.</td></tr>`;
+  const t = totales || {};
+
+  return `<table class="resumen">
+    <thead>
+      <tr>
+        <th class="col-curso">Curso</th>
+        <th class="col-mon">Costo total</th>
+        <th class="col-mon">Costo asumido DOS</th>
+        <th class="col-mon">Costo devengado</th>
+        <th class="col-mon">Costo por devengar</th>
+      </tr>
+    </thead>
+    <tbody>${filasHtml}</tbody>
+    <tfoot>
+      <tr>
+        <td>Totales</td>
+        <td class="num">${formatMonedaUsd(t.costoTotal)}</td>
+        <td class="num">${formatMonedaUsd(t.costoAsumidoDOS)}</td>
+        <td class="num">${formatMonedaUsd(t.costoDevengado)}</td>
+        <td class="num">${formatMonedaUsd(t.costoPorDevengar)}</td>
+      </tr>
+    </tfoot>
+  </table>`;
+}
+
+/**
+ * Calcula los porcentajes del pie chart (devengado vs por devengar) como porción
+ * del costo asumido por DOS, y devuelve el conic-gradient CSS + textos de leyenda.
+ * El pie se dibuja SIN librerías externas (CSP bloquea CDNs).
+ */
+function buildDashboardPie(totales) {
+  const t = totales || {};
+  const asumido = Number(t.costoAsumidoDOS);
+  let devengado = Number(t.costoDevengado);
+  let porDevengar = Number(t.costoPorDevengar);
+  if (!Number.isFinite(devengado)) devengado = 0;
+  if (!Number.isFinite(porDevengar)) porDevengar = 0;
+
+  // Base de cálculo: costoAsumidoDOS si es válido y > 0; si no, suma de las porciones.
+  let base = Number.isFinite(asumido) && asumido > 0 ? asumido : devengado + porDevengar;
+  let pctDev = 0;
+  let pctPen = 0;
+  if (base > 0) {
+    pctDev = (devengado / base) * 100;
+    pctPen = (porDevengar / base) * 100;
+  }
+  // Redondeo a 1 decimal para el corte del gradiente y la leyenda.
+  const pctDevR = Math.round(pctDev * 10) / 10;
+  const corte = pctDevR; // grados de devengado en el conic-gradient
+
+  // Colores: verde devengado, rojo por devengar. Si todo es 0, gris.
+  const gradient = base > 0
+    ? `conic-gradient(#1d7a3a 0% ${corte}%, #E20000 ${corte}% 100%)`
+    : 'conic-gradient(#cfcfcf 0% 100%)';
+
+  return {
+    pieGradient: gradient,
+    pctDevengado: formatPorcentaje(pctDevR),
+    pctPorDevengar: formatPorcentaje(Math.round(pctPen * 10) / 10),
+    montoDevengado: formatMonedaUsd(devengado),
+    montoPorDevengar: formatMonedaUsd(porDevengar),
+    costoAsumidoDOS: formatMonedaUsd(Number.isFinite(asumido) ? asumido : base)
+  };
+}
+
+function renderDashboardConveniosHtml(payload) {
+  validateDashboardConveniosPayload(payload);
+
+  const { cursos, totales, fechaCorte } = payload;
+  const pie = buildDashboardPie(totales);
+
+  const tokens = {
+    fechaCorte: formatFechaEsOGuion(fechaCorte),
+    tablaCursos: buildDashboardTablaHtml(cursos, totales),
+    pieGradient: pie.pieGradient,
+    pctDevengado: pie.pctDevengado,
+    pctPorDevengar: pie.pctPorDevengar,
+    montoDevengado: pie.montoDevengado,
+    montoPorDevengar: pie.montoPorDevengar,
+    costoAsumidoDOS: pie.costoAsumidoDOS
+  };
+
+  const template = fs.readFileSync(DASHBOARD_CONVENIOS_TEMPLATE_PATH, 'utf8');
+  return Object.keys(tokens).reduce((html, key) => {
+    const re = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g');
+    return html.replace(re, tokens[key]);
+  }, template);
+}
+
+function buildDashboardConveniosFilename() {
+  return 'Dashboard_Convenios.pdf';
+}
+
 module.exports = {
   renderHtml,
   buildPdfFilename,
   renderReporteAsistenciaHtml,
   buildPdfReporteFilename,
+  renderConvenioHtml,
+  buildConvenioFilename,
+  renderReporteConveniosHtml,
+  buildReporteConveniosFilename,
+  renderDashboardConveniosHtml,
+  buildDashboardConveniosFilename,
   ValidationError
 };

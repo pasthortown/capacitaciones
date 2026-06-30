@@ -455,6 +455,16 @@ builder.Services.AddScoped<ListarConveniosPorColaboradorUseCase>();
 builder.Services.AddScoped<SubirAnexoConvenioUseCase>();
 builder.Services.AddScoped<EliminarAnexoConvenioUseCase>();
 builder.Services.AddScoped<DescargarAnexoConvenioUseCase>();
+// Numeración de convenios (GIC-EC-REG-###).
+builder.Services.AddScoped<IConvenioNumeracionRepository, ConvenioNumeracionRepository>();
+builder.Services.AddScoped<IConvenioNumeracionService, ConvenioNumeracionService>();
+builder.Services.AddScoped<ObtenerConvenioNumeracionUseCase>();
+builder.Services.AddScoped<ActualizarConvenioNumeracionUseCase>();
+// PDFs de convenios (vía emisor_documentos) + dashboard + liquidación.
+builder.Services.AddScoped<ImprimirConvenioUseCase>();
+builder.Services.AddScoped<DescargarReporteConveniosUseCase>();
+builder.Services.AddScoped<DashboardConveniosUseCase>();
+builder.Services.AddScoped<LiquidacionColaboradorUseCase>();
 
 // Refactor Responsables — catálogo global + link firmado para página pública.
 builder.Services.AddScoped<ListarResponsablesUseCase>();

@@ -25,6 +25,12 @@ public class ConveniosController : ControllerBase
     private readonly SubirAnexoConvenioUseCase _subirAnexo;
     private readonly EliminarAnexoConvenioUseCase _eliminarAnexo;
     private readonly DescargarAnexoConvenioUseCase _descargarAnexo;
+    private readonly ObtenerConvenioNumeracionUseCase _obtenerNumeracion;
+    private readonly ActualizarConvenioNumeracionUseCase _actualizarNumeracion;
+    private readonly ImprimirConvenioUseCase _imprimir;
+    private readonly DescargarReporteConveniosUseCase _reporte;
+    private readonly DashboardConveniosUseCase _dashboard;
+    private readonly LiquidacionColaboradorUseCase _liquidacion;
 
     public ConveniosController(
         ListarConveniosUseCase listar,
@@ -35,7 +41,13 @@ public class ConveniosController : ControllerBase
         ListarConveniosPorColaboradorUseCase historial,
         SubirAnexoConvenioUseCase subirAnexo,
         EliminarAnexoConvenioUseCase eliminarAnexo,
-        DescargarAnexoConvenioUseCase descargarAnexo)
+        DescargarAnexoConvenioUseCase descargarAnexo,
+        ObtenerConvenioNumeracionUseCase obtenerNumeracion,
+        ActualizarConvenioNumeracionUseCase actualizarNumeracion,
+        ImprimirConvenioUseCase imprimir,
+        DescargarReporteConveniosUseCase reporte,
+        DashboardConveniosUseCase dashboard,
+        LiquidacionColaboradorUseCase liquidacion)
     {
         _listar = listar;
         _obtener = obtener;
@@ -46,6 +58,25 @@ public class ConveniosController : ControllerBase
         _subirAnexo = subirAnexo;
         _eliminarAnexo = eliminarAnexo;
         _descargarAnexo = descargarAnexo;
+        _obtenerNumeracion = obtenerNumeracion;
+        _actualizarNumeracion = actualizarNumeracion;
+        _imprimir = imprimir;
+        _reporte = reporte;
+        _dashboard = dashboard;
+        _liquidacion = liquidacion;
+    }
+
+    // --- Numeración de convenios (GIC-EC-REG-###) ---
+
+    [HttpGet("numeracion")]
+    public async Task<IActionResult> ObtenerNumeracion(CancellationToken ct)
+        => Ok(await _obtenerNumeracion.ExecuteAsync(ct));
+
+    [HttpPut("numeracion")]
+    public async Task<IActionResult> ActualizarNumeracion([FromBody] UpdateConvenioNumeracionDto input, CancellationToken ct)
+    {
+        try { return Ok(await _actualizarNumeracion.ExecuteAsync(input, ct)); }
+        catch (ConvenioServiceException ex) { return MapError(ex); }
     }
 
     [HttpGet]
@@ -127,6 +158,57 @@ public class ConveniosController : ControllerBase
         }
         catch (ConvenioNotFoundException) { return NotFound(); }
         catch (ConvenioServiceException ex) when (ex.Codigo is "ANEXO_AUSENTE" or "ANEXO_NO_ENCONTRADO") { return NotFound(new { error = ex.Codigo, message = ex.Message }); }
+    }
+
+    // --- PDFs (vía emisor_documentos) y dashboard ---
+
+    /// <summary>B) Imprime el convenio (documento GIC-EC-ANX-01).</summary>
+    [HttpGet("{id:guid}/imprimir")]
+    public Task<IActionResult> Imprimir(Guid id, CancellationToken ct)
+        => EmitirPdf(() => _imprimir.ExecuteAsync(id, ct));
+
+    /// <summary>D) Reporte de convenios por colaborador (montos por devengar).</summary>
+    [HttpGet("colaborador/{cedula}/reporte")]
+    public Task<IActionResult> ReporteColaborador(string cedula, CancellationToken ct)
+        => EmitirPdf(() => _reporte.ExecuteAsync(cedula, ct));
+
+    /// <summary>E) Datos agregados del dashboard de convenios.</summary>
+    [HttpGet("dashboard")]
+    public async Task<IActionResult> Dashboard(CancellationToken ct)
+        => Ok(await _dashboard.ResumenAsync(ct));
+
+    /// <summary>E) PDF resumen del dashboard (por curso + pastel).</summary>
+    [HttpGet("dashboard/pdf")]
+    public Task<IActionResult> DashboardPdf(CancellationToken ct)
+        => EmitirPdf(() => _dashboard.PdfAsync(ct));
+
+    /// <summary>C) Liquidación por desvinculación (reintegro a una fecha de salida).</summary>
+    [HttpGet("colaborador/{cedula}/liquidacion")]
+    public async Task<IActionResult> Liquidacion(string cedula, [FromQuery] DateTime? fechaSalida, CancellationToken ct)
+    {
+        try
+        {
+            var fecha = fechaSalida ?? DateTime.UtcNow;
+            return Ok(await _liquidacion.ExecuteAsync(cedula, fecha, ct));
+        }
+        catch (ConvenioServiceException ex) { return MapError(ex); }
+    }
+
+    /// <summary>Ejecuta un caso de uso que devuelve un PDF; traduce fallas del emisor a 503.</summary>
+    private async Task<IActionResult> EmitirPdf(Func<Task<Capacitaciones.Application.Dtos.Certificados.CertificadoDescargaDto>> exec)
+    {
+        try
+        {
+            var d = await exec();
+            return File(d.FileStream, d.ContentType, d.Filename);
+        }
+        catch (ConvenioNotFoundException) { return NotFound(); }
+        catch (ConvenioServiceException ex) { return MapError(ex); }
+        catch (HttpRequestException ex)
+        {
+            return new ObjectResult(new { error = "SERVICIO_EMISOR_NO_DISPONIBLE", message = $"No se pudo contactar al emisor: {ex.Message}" })
+            { StatusCode = StatusCodes.Status503ServiceUnavailable };
+        }
     }
 
     private IActionResult MapError(ConvenioServiceException ex) => ex switch

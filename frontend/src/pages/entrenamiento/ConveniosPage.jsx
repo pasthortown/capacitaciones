@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Handshake, LayoutDashboard, History, Plus, Pencil, Trash2, RotateCcw,
-  Download, Search, Trash, UploadCloud,
+  Download, Search, Trash, UploadCloud, Printer, FileDown, UserMinus,
 } from 'lucide-react';
 import DataTable from '../../components/Table/DataTable.jsx';
 import Modal from '../../components/Modal/Modal.jsx';
@@ -34,11 +34,49 @@ const fechaCorta = (s) => (s ? String(s).slice(0, 10) : '—');
 
 const ESTADOS = ['Vigente', 'Devengado', 'Cobrado', 'Anulado'];
 
+const TIPOS_EVENTO = [
+  'Curso o capacitación', 'Certificación', 'Examen de certificación',
+  'Diplomado', 'Programa especializado', 'Material de estudio',
+];
+const RESULTADOS = ['Aprobado', 'En curso', 'Pendiente', 'No aprobado'];
+
+// --- Clasificación (espejo de ConvenioMapper en backend, solo para vista previa) ---
+const norm = (s) => (s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function clasificar(tipo) {
+  const t = norm(tipo);
+  if (['examen de certificacion', 'certificacion', 'material de estudio'].includes(t)) return 'Certificaciones y exámenes';
+  if (t === 'curso o capacitacion') return 'Cursos y capacitaciones';
+  if (['diplomado', 'programa especializado'].includes(t)) return 'Diplomados o programas especializados';
+  return 'Revisar';
+}
+const modalidadDe = (clasif) =>
+  clasif === 'Certificaciones y exámenes' ? 'Reintegro escalonado especial' : 'Reintegro proporcional mensual';
+function plazoSugerido(clasif, valor) {
+  const v = Number(valor) || 0;
+  if (v < 60) return { meses: 0, texto: 'N/A (valor < $60)' };
+  if (clasif === 'Certificaciones y exámenes') return { meses: 36, texto: '36 meses' };
+  if (clasif === 'Cursos y capacitaciones') {
+    if (v <= 500) return { meses: 12, texto: '12 meses' };
+    if (v <= 1500) return { meses: 24, texto: '24 meses' };
+    if (v <= 4000) return { meses: 36, texto: '36 meses' };
+    return { meses: -1, texto: 'Anexo especial' };
+  }
+  if (clasif === 'Diplomados o programas especializados') {
+    if (v <= 1500) return { meses: 24, texto: '24 meses' };
+    if (v <= 4000) return { meses: 36, texto: '36 meses' };
+    return { meses: -1, texto: 'Anexo especial' };
+  }
+  return { meses: 0, texto: 'Revisar' };
+}
+
 const emptyForm = {
   cedula: '', nombreColaborador: '', origenColaborador: '', cargoColaborador: '', areaColaborador: '',
+  empresaColaborador: '', centroCostos: '', jefeInmediato: '', relacionLaboral: '',
+  fechaIngreso: '', fechaFirma: '',
   titulo: '', descripcion: '', tipo: '', tipoCurso: '', nombreCurso: '', marca: '',
+  fechaInicioCurso: '', fechaFinCurso: '', horas: '', resultado: '', convenioFirmado: false,
   solicitadoPor: '', autorizadoPor: '',
-  fecha: '', mesesADevengar: 0, estado: 'Vigente',
+  fecha: '', valorAsumidoEmpresa: '', mesesADevengar: 0, estado: 'Vigente',
   items: [],
 };
 
@@ -64,6 +102,7 @@ export default function ConveniosPage() {
           { id: 'convenios', label: 'Convenios', icon: Handshake },
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'historial', label: 'Historial por Colaborador', icon: History },
+          { id: 'desvinculacion', label: 'Desvinculación', icon: UserMinus },
         ].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -80,16 +119,8 @@ export default function ConveniosPage() {
 
       {tab === 'convenios' && <ConveniosTab toast={toast} />}
       {tab === 'historial' && <HistorialTab toast={toast} />}
-      {tab === 'dashboard' && (
-        <div className="card">
-          <div className="card__body">
-            <div className="empty-state">
-              <div className="empty-state__title">Dashboard</div>
-              <p className="empty-state__description">Indicadores de convenios — por definir.</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {tab === 'dashboard' && <DashboardTab toast={toast} />}
+      {tab === 'desvinculacion' && <DesvinculacionTab toast={toast} />}
     </div>
   );
 }
@@ -159,21 +190,34 @@ function ConveniosTab({ toast }) {
     setMode('edit');
     setEditing(row);
     setErrors({});
+    const d = (s) => (fechaCorta(s) === '—' ? '' : fechaCorta(s));
     setForm({
       cedula: row.cedulaColaborador || '',
       nombreColaborador: row.nombreColaborador || '',
       origenColaborador: row.origenColaborador || '',
       cargoColaborador: row.cargoColaborador || '',
       areaColaborador: row.areaColaborador || '',
+      empresaColaborador: row.empresaColaborador || '',
+      centroCostos: row.centroCostos || '',
+      jefeInmediato: row.jefeInmediato || '',
+      relacionLaboral: row.relacionLaboral || '',
+      fechaIngreso: d(row.fechaIngreso),
+      fechaFirma: d(row.fechaFirma),
       titulo: row.titulo || '',
       descripcion: row.descripcion || '',
       tipo: row.tipo || '',
       tipoCurso: row.tipoCurso || '',
       nombreCurso: row.nombreCurso || '',
       marca: row.marca || '',
+      fechaInicioCurso: d(row.fechaInicioCurso),
+      fechaFinCurso: d(row.fechaFinCurso),
+      horas: row.horas != null ? String(row.horas) : '',
+      resultado: row.resultado || '',
+      convenioFirmado: !!row.convenioFirmado,
       solicitadoPor: row.solicitadoPor || '',
       autorizadoPor: row.autorizadoPor || '',
-      fecha: fechaCorta(row.fecha) === '—' ? '' : fechaCorta(row.fecha),
+      fecha: d(row.fecha),
+      valorAsumidoEmpresa: row.valorAsumidoEmpresa != null ? String(row.valorAsumidoEmpresa) : '',
       mesesADevengar: row.mesesADevengar ?? 0,
       estado: row.estado || 'Vigente',
       items: (row.items || []).map((i) => ({
@@ -217,12 +261,19 @@ function ConveniosTab({ toast }) {
   const totalDevengable = useMemo(
     () => form.items.filter((it) => it.devengable).reduce((s, it) => s + (Number(it.valor) || 0), 0), [form.items]);
 
+  // Vista previa de la clasificación automática (el backend recalcula al guardar).
+  const calcPreview = useMemo(() => {
+    const clasif = clasificar(form.tipo);
+    return { clasif, modalidad: modalidadDe(clasif), plazo: plazoSugerido(clasif, form.valorAsumidoEmpresa) };
+  }, [form.tipo, form.valorAsumidoEmpresa]);
+
   const validate = () => {
     const next = {};
     if (!form.cedula.trim()) next.cedula = 'La cédula es obligatoria.';
     else if (!form.nombreColaborador) next.cedula = 'Busca y valida el colaborador.';
     if (!form.titulo.trim()) next.titulo = 'El título es obligatorio.';
     if (!form.fecha) next.fecha = 'La fecha es obligatoria.';
+    if (!form.fechaIngreso) next.fechaIngreso = 'La fecha de ingreso es obligatoria (ancla del devengo).';
     for (const it of form.items) {
       if (!String(it.tipo).trim() || it.valor === '' || Number.isNaN(Number(it.valor))) {
         next.items = 'Cada ítem requiere tipo y valor numérico.';
@@ -235,15 +286,26 @@ function ConveniosTab({ toast }) {
 
   const buildPayload = () => ({
     cedula: form.cedula.trim(),
+    centroCostos: form.centroCostos.trim() || null,
+    jefeInmediato: form.jefeInmediato.trim() || null,
+    relacionLaboral: form.relacionLaboral.trim() || null,
+    fechaIngreso: form.fechaIngreso || null,
+    fechaFirma: form.fechaFirma || null,
     titulo: form.titulo.trim(),
     descripcion: form.descripcion.trim() || null,
     tipo: form.tipo.trim() || null,
     tipoCurso: form.tipoCurso.trim() || null,
     nombreCurso: form.nombreCurso.trim() || null,
     marca: form.marca.trim() || null,
+    fechaInicioCurso: form.fechaInicioCurso || null,
+    fechaFinCurso: form.fechaFinCurso || null,
+    horas: form.horas === '' ? null : Number(form.horas),
+    resultado: form.resultado.trim() || null,
+    convenioFirmado: !!form.convenioFirmado,
     solicitadoPor: form.solicitadoPor.trim() || null,
     autorizadoPor: form.autorizadoPor.trim() || null,
     fecha: form.fecha,
+    valorAsumidoEmpresa: Number(form.valorAsumidoEmpresa) || 0,
     mesesADevengar: Number(form.mesesADevengar) || 0,
     estado: form.estado || 'Vigente',
     items: form.items.map((it) => ({
@@ -295,11 +357,17 @@ function ConveniosTab({ toast }) {
 
   const handleReactivate = async (row) => {
     try {
+      const d = (s) => (fechaCorta(s) === '—' ? null : fechaCorta(s));
       await conveniosService.update(row.id, {
         cedula: row.cedulaColaborador, titulo: row.titulo, descripcion: row.descripcion,
+        centroCostos: row.centroCostos, jefeInmediato: row.jefeInmediato, relacionLaboral: row.relacionLaboral,
+        fechaIngreso: d(row.fechaIngreso), fechaFirma: d(row.fechaFirma),
         tipo: row.tipo, tipoCurso: row.tipoCurso, nombreCurso: row.nombreCurso, marca: row.marca,
+        fechaInicioCurso: d(row.fechaInicioCurso), fechaFinCurso: d(row.fechaFinCurso),
+        horas: row.horas, resultado: row.resultado, convenioFirmado: !!row.convenioFirmado,
         solicitadoPor: row.solicitadoPor, autorizadoPor: row.autorizadoPor,
-        fecha: fechaCorta(row.fecha), mesesADevengar: row.mesesADevengar, estado: row.estado,
+        fecha: fechaCorta(row.fecha), valorAsumidoEmpresa: row.valorAsumidoEmpresa,
+        mesesADevengar: row.mesesADevengar, estado: row.estado,
         items: (row.items || []).map((i) => ({ tipo: i.tipo, valor: i.valor, devengable: i.devengable, observacion: i.observacion })),
         activo: true,
       });
@@ -310,6 +378,20 @@ function ConveniosTab({ toast }) {
   const handleDescargarAnexo = async (convenioId, anexo) => {
     try { await conveniosService.descargarAnexo(convenioId, anexo.id, anexo.nombreOriginal || `anexo-${anexo.id}`); }
     catch (err) { toast.error(err?.message || 'No se pudo descargar el anexo.'); }
+  };
+
+  const [imprimiendoId, setImprimiendoId] = useState(null);
+  const handleImprimir = async (row) => {
+    setImprimiendoId(row.id);
+    try {
+      const fallback = `${row.codigoRegistro || 'Convenio'}.pdf`;
+      await conveniosService.imprimir(row.id, fallback);
+    } catch (err) {
+      if (err instanceof HttpError && err.status === 503) toast.error('El servicio de emisión no está disponible. Intenta en unos minutos.');
+      else toast.error(err?.message || 'No se pudo generar el PDF del convenio.');
+    } finally {
+      if (mountedRef.current) setImprimiendoId(null);
+    }
   };
 
   // ----- Anexos múltiples dentro del modal (solo en edición) -----
@@ -350,6 +432,7 @@ function ConveniosTab({ toast }) {
   };
 
   const columns = useMemo(() => [
+    { key: 'codigoRegistro', header: 'Código', width: '140px', accessor: (r) => r.codigoRegistro || '—' },
     {
       key: 'colaborador', header: 'Colaborador',
       accessor: (r) => (
@@ -407,6 +490,11 @@ function ConveniosTab({ toast }) {
             actions={(row) => (
               <>
                 <button type="button" className="btn btn--ghost btn--sm btn--icon"
+                  onClick={() => handleImprimir(row)} title="Imprimir convenio (PDF)" aria-label="Imprimir"
+                  disabled={imprimiendoId === row.id}>
+                  <Printer width={16} height={16} />
+                </button>
+                <button type="button" className="btn btn--ghost btn--sm btn--icon"
                   onClick={() => openEdit(row)} title="Editar / anexos" aria-label="Editar">
                   <Pencil width={16} height={16} />
                 </button>
@@ -444,6 +532,7 @@ function ConveniosTab({ toast }) {
         <form onSubmit={handleSubmit} noValidate>
           {/* Colaborador */}
           <div className={styles.grid2}>
+            <div className={styles.fullSpan}><h4 style={{ margin: 0 }}>Colaborador</h4></div>
             <div style={{ display: 'flex', gap: 'var(--spacing-2)', alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
                 <TextField label="Cédula del colaborador" name="cedula" value={form.cedula} required maxLength={20}
@@ -456,35 +545,70 @@ function ConveniosTab({ toast }) {
             <TextField label="Colaborador" name="nombreColaborador" value={form.nombreColaborador} disabled
               helper={form.origenColaborador ? `Origen: ${form.origenColaborador}` : 'Busca por cédula para validar'} onChange={() => {}} />
 
+            <TextField label="Cargo" name="cargoColaborador" value={form.cargoColaborador} disabled
+              helper="Se completa desde la fuente al guardar" onChange={() => {}} />
+            <TextField label="Área / Departamento" name="areaColaborador" value={form.areaColaborador} disabled
+              helper="Se completa desde la fuente al guardar" onChange={() => {}} />
+            <TextField label="Empresa" name="empresaColaborador" value={form.empresaColaborador} disabled
+              helper="Se completa desde la fuente al guardar" onChange={() => {}} />
+            <TextField label="Centro de costos" name="centroCostos" value={form.centroCostos} maxLength={150}
+              onChange={(v) => setField('centroCostos', v)} />
+            <TextField label="Jefe inmediato" name="jefeInmediato" value={form.jefeInmediato} maxLength={200}
+              onChange={(v) => setField('jefeInmediato', v)} />
+            <TextField label="Relación laboral" name="relacionLaboral" value={form.relacionLaboral} maxLength={100}
+              onChange={(v) => setField('relacionLaboral', v)} />
+
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-ingreso">Fecha de ingreso *</label>
+              <input id="cv-ingreso" type="date" className="form-input" value={form.fechaIngreso} onChange={(e) => setField('fechaIngreso', e.target.value)} />
+              {errors.fechaIngreso ? <div className="form-helper form-helper--error">{errors.fechaIngreso}</div>
+                : <div className="form-helper">Ancla del cálculo de devengación.</div>}
+            </div>
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-firma">Fecha de firma</label>
+              <input id="cv-firma" type="date" className="form-input" value={form.fechaFirma} onChange={(e) => setField('fechaFirma', e.target.value)} />
+            </div>
+
+            {/* Evento formativo */}
+            <div className={styles.fullSpan} style={{ marginTop: 'var(--spacing-2)' }}><h4 style={{ margin: 0 }}>Evento formativo</h4></div>
             <TextField label="Título del convenio" name="titulo" value={form.titulo} required maxLength={250}
               onChange={(v) => setField('titulo', v)} error={errors.titulo} />
-            <TextField label="Tipo de convenio" name="tipo" value={form.tipo} maxLength={150} onChange={(v) => setField('tipo', v)} />
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-tipo">Tipo de evento</label>
+              <select id="cv-tipo" className="form-input" value={form.tipo} onChange={(e) => setField('tipo', e.target.value)}>
+                <option value="">— Selecciona —</option>
+                {TIPOS_EVENTO.map((t) => <option key={t} value={t}>{t}</option>)}
+                {form.tipo && !TIPOS_EVENTO.includes(form.tipo) && <option value={form.tipo}>{form.tipo}</option>}
+              </select>
+            </div>
 
             <TextField label="Tipo de curso" name="tipoCurso" value={form.tipoCurso} maxLength={150} onChange={(v) => setField('tipoCurso', v)} />
             <TextField label="Nombre del curso" name="nombreCurso" value={form.nombreCurso} maxLength={250} onChange={(v) => setField('nombreCurso', v)} />
             <TextField label="Marca" name="marca" value={form.marca} maxLength={150} onChange={(v) => setField('marca', v)} />
 
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-ini">Fecha inicio del curso</label>
+              <input id="cv-ini" type="date" className="form-input" value={form.fechaInicioCurso} onChange={(e) => setField('fechaInicioCurso', e.target.value)} />
+            </div>
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-fin">Fecha fin / aprobación</label>
+              <input id="cv-fin" type="date" className="form-input" value={form.fechaFinCurso} onChange={(e) => setField('fechaFinCurso', e.target.value)} />
+            </div>
+            <TextField label="Horas" name="horas" type="number" value={form.horas} onChange={(v) => setField('horas', v)} />
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-resultado">Resultado</label>
+              <select id="cv-resultado" className="form-input" value={form.resultado} onChange={(e) => setField('resultado', e.target.value)}>
+                <option value="">— Selecciona —</option>
+                {RESULTADOS.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+
             <TextField label="Solicitado por" name="solicitadoPor" value={form.solicitadoPor} maxLength={200} onChange={(v) => setField('solicitadoPor', v)} />
             <TextField label="Autorizado por" name="autorizadoPor" value={form.autorizadoPor} maxLength={200} onChange={(v) => setField('autorizadoPor', v)} />
 
-            <div className="form-group" style={{ position: 'static' }}>
-              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-fecha">Fecha *</label>
-              <input id="cv-fecha" type="date" className="form-input" value={form.fecha} onChange={(e) => setField('fecha', e.target.value)} />
-              {errors.fecha && <div className="form-helper form-helper--error">{errors.fecha}</div>}
-            </div>
-
-            <div className="form-group" style={{ position: 'static' }}>
-              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-meses">Meses a devengar</label>
-              <select id="cv-meses" className="form-input" value={form.mesesADevengar} onChange={(e) => setField('mesesADevengar', Number(e.target.value))}>
-                {MESES_OPCIONES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-            </div>
-
-            <div className="form-group" style={{ position: 'static' }}>
-              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-estado">Estado</label>
-              <select id="cv-estado" className="form-input" value={form.estado} onChange={(e) => setField('estado', e.target.value)}>
-                {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
+            <div className={`form-group ${styles.fullSpan}`} style={{ position: 'static' }}>
+              <Toggle label="Convenio firmado (marcar al cargar el documento firmado)" name="convenioFirmado"
+                checked={form.convenioFirmado} onChange={(v) => setField('convenioFirmado', v)} />
             </div>
 
             <div className={`form-group ${styles.fullSpan}`} style={{ position: 'static' }}>
@@ -520,7 +644,55 @@ function ConveniosTab({ toast }) {
           </button>
           <div className={styles.totalsBar}>
             <span className="badge">Total: {money(totalItems)}</span>
-            <span className="badge badge--active">Devengable: {money(totalDevengable)}</span>
+            <span className="badge badge--active">Devengable (ítems): {money(totalDevengable)}</span>
+          </div>
+
+          {/* Devengación */}
+          <h4 style={{ marginTop: 'var(--spacing-4)', marginBottom: 'var(--spacing-2)' }}>Devengación</h4>
+          <div className={styles.grid2}>
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-valor">Valor asumido por la empresa (USD)</label>
+              <input id="cv-valor" type="number" step="0.01" min="0" className="form-input" value={form.valorAsumidoEmpresa}
+                onChange={(e) => setField('valorAsumidoEmpresa', e.target.value)} />
+              <div className="form-helper">Base del cálculo de devengación.</div>
+            </div>
+
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-fecha">Fecha del convenio *</label>
+              <input id="cv-fecha" type="date" className="form-input" value={form.fecha} onChange={(e) => setField('fecha', e.target.value)} />
+              {errors.fecha && <div className="form-helper form-helper--error">{errors.fecha}</div>}
+            </div>
+
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-meses">Meses a devengar</label>
+              <select id="cv-meses" className="form-input" value={form.mesesADevengar} onChange={(e) => setField('mesesADevengar', Number(e.target.value))}>
+                {MESES_OPCIONES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-estado">Estado</label>
+              <select id="cv-estado" className="form-input" value={form.estado} onChange={(e) => setField('estado', e.target.value)}>
+                {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Cálculo automático (vista previa; el backend recalcula al guardar) */}
+          <div className="alert alert--info" style={{ marginTop: 'var(--spacing-3)' }}>
+            <div className="alert__content">
+              <div className="alert__title">Cálculo automático</div>
+              <div className="alert__message" style={{ display: 'flex', gap: 'var(--spacing-4)', flexWrap: 'wrap' }}>
+                <span><strong>Clasificación:</strong> {calcPreview.clasif}</span>
+                <span><strong>Modalidad:</strong> {calcPreview.modalidad}</span>
+                <span><strong>Plazo sugerido:</strong> {calcPreview.plazo.texto}
+                  {calcPreview.plazo.meses > 0 && Number(form.mesesADevengar) !== calcPreview.plazo.meses && (
+                    <button type="button" className="btn btn--ghost btn--sm" style={{ marginLeft: 8 }}
+                      onClick={() => setField('mesesADevengar', calcPreview.plazo.meses)}>Aplicar</button>
+                  )}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Anexos (convenio firmado, formulario de cobro firmado, etc.) — múltiples */}
@@ -609,6 +781,21 @@ function HistorialTab({ toast }) {
   const totalPendiente = useMemo(
     () => (rows || []).reduce((s, r) => s + (Number(r.montoPendiente) || 0), 0), [rows]);
 
+  const [descargando, setDescargando] = useState(false);
+  const descargarReporte = async () => {
+    const ced = cedula.trim();
+    if (!ced) { toast.error('Busca primero un colaborador.'); return; }
+    setDescargando(true);
+    try {
+      await conveniosService.descargarReporteColaborador(ced);
+    } catch (err) {
+      if (err instanceof HttpError && err.status === 503) toast.error('El servicio de emisión no está disponible. Intenta en unos minutos.');
+      else toast.error(err?.message || 'No se pudo descargar el reporte.');
+    } finally {
+      setDescargando(false);
+    }
+  };
+
   // Datos de colaborador para el encabezado: del lookup o del primer convenio (snapshot).
   const info = colaborador
     ? { name: colaborador.name, cargo: '', area: '' }
@@ -636,6 +823,11 @@ function HistorialTab({ toast }) {
           <button type="button" className="btn btn--primary" onClick={buscar} disabled={loading} style={{ marginBottom: 2 }}>
             <Search width={16} height={16} /><span>{loading ? 'Buscando…' : 'Buscar'}</span>
           </button>
+          {rows !== null && (
+            <button type="button" className="btn btn--secondary" onClick={descargarReporte} disabled={descargando} style={{ marginBottom: 2 }}>
+              <FileDown width={16} height={16} /><span>{descargando ? 'Generando…' : 'Descargar Reporte'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -701,6 +893,180 @@ function HistorialTab({ toast }) {
             </div>
           )}
         </>
+      )}
+    </>
+  );
+}
+
+/* ------------------------------- Pestaña Dashboard ------------------------------- */
+function DashboardTab({ toast }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [descargando, setDescargando] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const d = await conveniosService.dashboard();
+        if (active) setData(d);
+      } catch (err) {
+        if (active) toast.error(err?.message || 'No se pudo cargar el dashboard.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [toast]);
+
+  const descargarPdf = async () => {
+    setDescargando(true);
+    try {
+      await conveniosService.descargarDashboardPdf();
+    } catch (err) {
+      if (err instanceof HttpError && err.status === 503) toast.error('El servicio de emisión no está disponible. Intenta en unos minutos.');
+      else toast.error(err?.message || 'No se pudo descargar el PDF.');
+    } finally {
+      setDescargando(false);
+    }
+  };
+
+  if (loading) {
+    return <div style={{ padding: 'var(--spacing-6)', display: 'flex', justifyContent: 'center' }}><Spinner size={32} label="Cargando…" /></div>;
+  }
+  if (!data) return <div className="card"><div className="card__body">Sin datos.</div></div>;
+
+  const kpis = [
+    { label: 'Convenios', value: data.totalConvenios },
+    { label: 'Valor asumido', value: money(data.totalAsumido) },
+    { label: 'Devengado', value: money(data.totalDevengado) },
+    { label: 'Por devengar', value: money(data.totalPorDevengar) },
+  ];
+
+  return (
+    <>
+      <div className="toolbar">
+        <div className="toolbar__filters">
+          <span className="text-secondary" style={{ fontSize: 13 }}>Fecha de corte: {fechaCorta(data.fechaCorte)}</span>
+        </div>
+        <div className="toolbar__actions">
+          <button type="button" className="btn btn--primary" onClick={descargarPdf} disabled={descargando}>
+            <FileDown width={16} height={16} /><span>{descargando ? 'Generando…' : 'Descargar PDF'}</span>
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--spacing-3)', marginBottom: 'var(--spacing-4)' }}>
+        {kpis.map((k) => (
+          <div key={k.label} className="card"><div className="card__body">
+            <div className="text-xs text-secondary">{k.label}</div>
+            <div style={{ fontFamily: 'var(--font-family-display)', fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: 'var(--color-primary)' }}>{k.value}</div>
+          </div></div>
+        ))}
+      </div>
+
+      <div className="card" style={{ marginBottom: 'var(--spacing-4)' }}>
+        <div className="card__header"><h2 className="card__title">Por estado</h2></div>
+        <div className="card__body" style={{ padding: 0 }}>
+          <table className={styles.itemsTable}>
+            <thead><tr><th>Estado</th><th style={{ textAlign: 'center' }}>Convenios</th><th style={{ textAlign: 'right' }}>Valor asumido</th><th style={{ textAlign: 'right' }}>Pendiente</th></tr></thead>
+            <tbody>
+              {data.porEstado.map((e) => (
+                <tr key={e.estado}><td>{e.estado}</td><td style={{ textAlign: 'center' }}>{e.cantidad}</td>
+                  <td style={{ textAlign: 'right' }}>{money(e.montoAsumido)}</td><td style={{ textAlign: 'right' }}>{money(e.montoPendiente)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card__header"><h2 className="card__title">Por marca</h2>
+          <p className="card__subtitle">Inversión = valor asumido por la empresa. (La utilidad/ROI requiere integrar la fuente de pipeline.)</p>
+        </div>
+        <div className="card__body" style={{ padding: 0 }}>
+          <table className={styles.itemsTable}>
+            <thead><tr><th>Marca</th><th style={{ textAlign: 'center' }}>Convenios</th><th style={{ textAlign: 'center' }}>Personas</th><th style={{ textAlign: 'right' }}>Inversión</th><th style={{ textAlign: 'right' }}>Devengado</th><th style={{ textAlign: 'right' }}>Por devengar</th></tr></thead>
+            <tbody>
+              {data.porMarca.map((m) => (
+                <tr key={m.marca}><td>{m.marca}</td><td style={{ textAlign: 'center' }}>{m.convenios}</td><td style={{ textAlign: 'center' }}>{m.personas}</td>
+                  <td style={{ textAlign: 'right' }}>{money(m.inversion)}</td><td style={{ textAlign: 'right' }}>{money(m.devengado)}</td><td style={{ textAlign: 'right' }}>{money(m.porDevengar)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ----------------------------- Pestaña Desvinculación ----------------------------- */
+function DesvinculacionTab({ toast }) {
+  const [cedula, setCedula] = useState('');
+  const [fechaSalida, setFechaSalida] = useState('');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const calcular = async () => {
+    const ced = cedula.trim();
+    if (!ced) { toast.error('Ingresa la cédula del colaborador.'); return; }
+    setLoading(true);
+    try {
+      const d = await conveniosService.liquidacion(ced, fechaSalida || undefined);
+      setData(d);
+    } catch (err) {
+      setData(null);
+      toast.error(err?.message || 'No se pudo calcular la liquidación.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const columns = useMemo(() => [
+    { key: 'codigoRegistro', header: 'Código', accessor: (r) => r.codigoRegistro || '—' },
+    { key: 'titulo', header: 'Convenio', accessor: (r) => r.titulo || '—' },
+    { key: 'clasificacion', header: 'Clasificación', accessor: (r) => r.clasificacion },
+    { key: 'modalidad', header: 'Modalidad', accessor: (r) => r.modalidadReintegro },
+    { key: 'meses', header: 'Meses a la salida', align: 'center', accessor: (r) => r.mesesTranscurridosASalida },
+    { key: 'valorAsumido', header: 'Valor asumido', align: 'right', accessor: (r) => money(r.valorAsumidoEmpresa) },
+    { key: 'reintegro', header: 'Reintegro', align: 'right', accessor: (r) => money(r.montoReintegro) },
+  ], []);
+
+  return (
+    <>
+      <div className="toolbar">
+        <div className="toolbar__filters" style={{ display: 'flex', gap: 'var(--spacing-2)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 220 }}>
+            <TextField label="Cédula del colaborador" name="desv-cedula" value={cedula} onChange={setCedula} />
+          </div>
+          <div className="form-group" style={{ position: 'static' }}>
+            <label className="form-label" style={{ position: 'static' }} htmlFor="desv-fecha">Fecha de salida</label>
+            <input id="desv-fecha" type="date" className="form-input" value={fechaSalida} onChange={(e) => setFechaSalida(e.target.value)} />
+          </div>
+          <button type="button" className="btn btn--primary" onClick={calcular} disabled={loading} style={{ marginBottom: 2 }}>
+            <Search width={16} height={16} /><span>{loading ? 'Calculando…' : 'Calcular reintegro'}</span>
+          </button>
+        </div>
+      </div>
+
+      {data && (
+        <div className="card">
+          <div className="card__header">
+            <div>
+              <h2 className="card__title">{data.nombre} ({data.cedula})</h2>
+              {(data.cargo || data.area) && (
+                <p className="text-secondary" style={{ margin: 0, fontSize: 13 }}>{[data.cargo, data.area].filter(Boolean).join(' · ')}</p>
+              )}
+              <p className="text-secondary" style={{ margin: 0, fontSize: 13 }}>Salida: {fechaCorta(data.fechaSalida)}</p>
+            </div>
+            <span className="badge badge--inactive">Total a reintegrar: {money(data.totalReintegro)}</span>
+          </div>
+          <div className="card__body" style={{ padding: 0 }}>
+            <DataTable columns={columns} rows={data.convenios} loading={loading}
+              emptyMessage="Sin convenios con reintegro a la fecha indicada." />
+          </div>
+        </div>
       )}
     </>
   );

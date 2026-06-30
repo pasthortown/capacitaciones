@@ -430,6 +430,15 @@ public class GenerarCertificadoAsistenteUseCaseTests
         public Task<EmisionResultado> EmitirReporteAsistenciaAsync(ReporteAsistenciaRequest req, CancellationToken ct)
             => throw new NotImplementedException();
 
+        public Task<EmisionResultado> EmitirConvenioAsync(Capacitaciones.Application.Dtos.Convenios.ConvenioImprimirRequest req, CancellationToken ct)
+            => throw new NotImplementedException();
+
+        public Task<EmisionResultado> EmitirReporteConveniosAsync(Capacitaciones.Application.Dtos.Convenios.ReporteConveniosRequest req, CancellationToken ct)
+            => throw new NotImplementedException();
+
+        public Task<EmisionResultado> EmitirDashboardConveniosAsync(Capacitaciones.Application.Dtos.Convenios.DashboardConveniosRequest req, CancellationToken ct)
+            => throw new NotImplementedException();
+
         public Task<EmisionResultado> EmitirAsync(EmisionRequest req, CancellationToken ct)
         {
             LastRequest = req;

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Anexo de Capacitación</title>
+  <style>
+    /* ===== Tipografías oficiales (§6.1 instrucciones.md) ===== */
+    @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-Thin.otf') format('opentype');       font-weight: 100; font-style: normal; }
+    @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-ThinItalic.otf') format('opentype'); font-weight: 100; font-style: italic; }
+    @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-Heavy.otf') format('opentype');      font-weight: 900; font-style: normal; }
+    @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-HeavyItalic.otf') format('opentype'); font-weight: 900; font-style: italic; }
+
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Light.ttf') format('truetype');    font-weight: 300; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Italic.ttf') format('truetype');  font-weight: 400; font-style: italic; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Medium.ttf') format('truetype');  font-weight: 500; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-Bold.ttf') format('truetype');    font-weight: 700; font-style: normal; }
+    @font-face { font-family: 'Montserrat'; src: url('./fonts/Montserrat/Montserrat-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; }
+
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-Regular.otf') format('opentype'); font-weight: 400; font-style: normal; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-Italic.otf') format('opentype');  font-weight: 400; font-style: italic; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-SemiBold.otf') format('opentype'); font-weight: 600; font-style: normal; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-SemiBoldItalic.otf') format('opentype'); font-weight: 600; font-style: italic; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-Bold.otf') format('opentype');   font-weight: 700; font-style: normal; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-BoldItalic.otf') format('opentype'); font-weight: 700; font-style: italic; }
+
+    /* ===== Página ===== */
+    @page { size: A4; margin: 0; }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Montserrat', Arial, sans-serif;
+      color: #1a1a1a;
+      font-size: 9.5pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .doc {
+      width: 210mm;
+      padding: 12mm 14mm;
+    }
+
+    /* ===== Header oficial ===== */
+    .hdr-top {
+      display: flex;
+      align-items: stretch;
+      border: 1px solid #221E20;
+      border-collapse: collapse;
+    }
+    .hdr-top .logo-cell {
+      width: 38mm;
+      border-right: 1px solid #221E20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3mm;
+    }
+    .hdr-top .logo-cell img { width: 30mm; height: auto; object-fit: contain; }
+    .hdr-top .title-cell {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3mm 4mm;
+      text-align: center;
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+      font-weight: 700;
+      font-size: 13pt;
+      letter-spacing: 0.3px;
+      color: #221E20;
+    }
+    .hdr-meta {
+      display: flex;
+      border: 1px solid #221E20;
+      border-top: none;
+    }
+    .hdr-meta .meta-cell {
+      flex: 1;
+      padding: 1.6mm 3mm;
+      border-right: 1px solid #221E20;
+    }
+    .hdr-meta .meta-cell:last-child { border-right: none; }
+    .hdr-meta .meta-label {
+      font-size: 7.5pt;
+      color: #77787B;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .hdr-meta .meta-val { font-size: 10pt; font-weight: 600; }
+    .hdr-meta .meta-val.reg { color: #E20000; }
+    .red-bar { height: 3px; background: #E20000; margin-bottom: 5mm; }
+
+    /* ===== Secciones ===== */
+    .ps { margin-bottom: 5mm; }
+    .ps-hdr { display: flex; align-items: center; gap: 2.4mm; margin-bottom: 2.6mm; }
+    .ps-num {
+      background: #E20000; color: #fff;
+      width: 5mm; height: 5mm; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8pt; font-weight: 700;
+    }
+    .ps-ttl {
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+      font-weight: 700; font-size: 10.5pt; color: #221E20;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+
+    .pgrid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2mm 6mm;
+      border: 1px solid #e2e2e2;
+      border-radius: 3px;
+      padding: 3mm 4mm;
+    }
+    .pf { display: flex; flex-direction: column; }
+    .pf.pspan2 { grid-column: 1 / span 2; }
+    .pf label {
+      font-size: 7.5pt; color: #77787B;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .pf span {
+      font-size: 10pt; font-weight: 500;
+      border-bottom: 1px solid #e2e2e2;
+      padding-bottom: 1.4mm; min-height: 5mm;
+      word-wrap: break-word;
+    }
+    .pf span.hi { color: #E20000; font-weight: 700; }
+
+    /* ===== Tabla de costos ===== */
+    .costos {
+      width: 100%;
+      border: 1px solid #221E20;
+      border-collapse: collapse;
+    }
+    .costos th, .costos td {
+      border: 1px solid #cfcfcf;
+      padding: 1.8mm 3mm;
+      font-size: 9pt;
+      vertical-align: middle;
+    }
+    .costos thead th {
+      background: #221E20; color: #fff;
+      font-weight: 700; text-transform: uppercase;
+      font-size: 8pt; letter-spacing: 0.4px;
+      text-align: left;
+    }
+    .costos .num { text-align: right; white-space: nowrap; }
+    .costos .center { text-align: center; }
+    .costos tfoot td {
+      font-weight: 700;
+      background: #f4f4f4;
+    }
+    .costos tfoot .total-empresa td {
+      background: #fde6e6;
+      color: #E20000;
+    }
+
+    /* ===== Autorización ===== */
+    .auth-sec {
+      border: 1px solid #e2e2e2;
+      border-left: 4px solid #E20000;
+      border-radius: 3px;
+      padding: 3mm 4mm;
+      margin-bottom: 6mm;
+      background: #fafafa;
+    }
+    .auth-title {
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+      font-weight: 700; font-size: 10pt; color: #221E20;
+      text-transform: uppercase; letter-spacing: 0.4px;
+      margin-bottom: 2mm;
+    }
+    .auth-txt { font-size: 9pt; line-height: 1.5; color: #333; text-align: justify; }
+
+    /* ===== Firmas ===== */
+    .firmas-row { display: flex; gap: 16mm; margin-bottom: 8mm; }
+    .firma-col { flex: 1; text-align: center; }
+    .firma-line { border-bottom: 1.5px solid #221E20; height: 16mm; margin-bottom: 2mm; }
+    .firma-lbl {
+      font-weight: 700; font-size: 9pt; text-transform: uppercase;
+      letter-spacing: 0.4px; color: #221E20;
+    }
+    .firma-sub { font-size: 8.5pt; color: #555; }
+
+    /* ===== Pie ===== */
+    .print-ft {
+      background: #221E20; color: #cfcfcf;
+      padding: 2mm 4mm;
+      display: flex; justify-content: space-between;
+      font-size: 8pt; letter-spacing: 0.2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="doc">
+    <div class="hdr-top">
+      <div class="logo-cell"><img src="./logotipo-DOS-Color.png" alt="DOS" /></div>
+      <div class="title-cell">Anexo de Capacitación, Certificación o Examen</div>
+    </div>
+    <div class="hdr-meta">
+      <div class="meta-cell"><div class="meta-label">Código de formulario</div><div class="meta-val">{{codigoFormato}}</div></div>
+      <div class="meta-cell"><div class="meta-label">Versión</div><div class="meta-val">{{version}}</div></div>
+      <div class="meta-cell"><div class="meta-label">N.° de registro</div><div class="meta-val reg">{{codigoRegistro}}</div></div>
+    </div>
+    <div class="red-bar"></div>
+
+    <!-- Sección 1 -->
+    <div class="ps">
+      <div class="ps-hdr"><div class="ps-num">1</div><div class="ps-ttl">Datos del colaborador</div></div>
+      {{seccionColaborador}}
+    </div>
+
+    <!-- Sección 2 -->
+    <div class="ps">
+      <div class="ps-hdr"><div class="ps-num">2</div><div class="ps-ttl">Detalle del evento</div></div>
+      {{seccionEvento}}
+    </div>
+
+    <!-- Sección 3 -->
+    <div class="ps">
+      <div class="ps-hdr"><div class="ps-num">3</div><div class="ps-ttl">Detalle de costos</div></div>
+      {{tablaCostos}}
+    </div>
+
+    <!-- Sección 4 -->
+    <div class="ps">
+      <div class="ps-hdr"><div class="ps-num">4</div><div class="ps-ttl">Cálculo de permanencia y reintegro</div></div>
+      {{seccionReintegro}}
+    </div>
+
+    <!-- Autorización -->
+    <div class="auth-sec">
+      <div class="auth-title">Autorización</div>
+      <p class="auth-txt">
+        Yo, <strong>{{nombreColaborador}}</strong>, portador/a de la cédula de identidad N.° <strong>{{cedulaColaborador}}</strong>,
+        me comprometo a cumplir con los requisitos, obligaciones y políticas establecidos en el presente convenio. En caso de
+        incumplimiento de cualquiera de las condiciones acordadas, autorizo expresamente a Compuequip DOS S.A. a realizar los
+        descuentos correspondientes de mis haberes, remuneraciones o liquidación de valores, según corresponda, de conformidad
+        con la política interna de capacitación y/o los montos establecidos por concepto de permanencia, devengación o reintegro
+        aplicables.
+      </p>
+    </div>
+
+    <!-- Firmas -->
+    <div class="firmas-row">
+      <div class="firma-col">
+        <div class="firma-line"></div>
+        <div class="firma-lbl">Por LA EMPRESA</div>
+        <div class="firma-sub">Gente y Cultura · COMPUEQUIP DOS S.A.</div>
+      </div>
+      <div class="firma-col">
+        <div class="firma-line"></div>
+        <div class="firma-lbl">EL/LA COLABORADOR/A</div>
+        <div class="firma-sub">{{nombreColaborador}}</div>
+        <div class="firma-sub">C.I.: {{cedulaColaborador}}</div>
+      </div>
+    </div>
+
+    <div class="print-ft">
+      <span>COMPUEQUIP DOS S.A. · RUC 1790885186001</span>
+      <span>{{fechaPie}}</span>
+      <span>{{codigoFormato}} {{version}}</span>
+    </div>
+  </div>
+</body>
+</html>
