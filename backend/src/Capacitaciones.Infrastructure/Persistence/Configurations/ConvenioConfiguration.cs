@@ -19,6 +19,7 @@ public class ConvenioConfiguration : IEntityTypeConfiguration<Convenio>
         b.Property(c => c.CargoColaborador).HasMaxLength(150);
         b.Property(c => c.AreaColaborador).HasMaxLength(150);
         b.Property(c => c.EmpresaColaborador).HasMaxLength(200);
+        b.Property(c => c.GeneroColaborador).HasMaxLength(40);
         b.Property(c => c.CentroCostos).HasMaxLength(150);
         b.Property(c => c.JefeInmediato).HasMaxLength(200);
         b.Property(c => c.RelacionLaboral).HasMaxLength(100);

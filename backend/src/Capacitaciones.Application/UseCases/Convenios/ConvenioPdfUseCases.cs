@@ -201,33 +201,63 @@ public class DashboardConveniosUseCase
     {
         var dtos = await CargarActivosAsync(ct);
 
-        var porEstado = dtos.GroupBy(d => d.Estado).Select(g => new DashboardEstadoDto
+        // Dimensión genérica: agrupa por un selector de etiqueta.
+        DashboardDimensionDto Dim(string clave, string titulo, Func<ConvenioDto, string> key) => new()
         {
-            Estado = g.Key,
-            Cantidad = g.Count(),
-            MontoAsumido = g.Sum(x => x.ValorAsumidoEmpresa),
-            MontoPendiente = g.Sum(x => x.MontoPendiente),
-        }).OrderBy(e => e.Estado).ToList();
+            Clave = clave,
+            Titulo = titulo,
+            Grupos = dtos.GroupBy(key).Select(g => new DashboardGrupoDto
+            {
+                Etiqueta = g.Key,
+                Cantidad = g.Count(),
+                Personas = g.Select(x => x.CedulaColaborador).Distinct().Count(),
+                Inversion = g.Sum(x => x.ValorAsumidoEmpresa),
+                Devengado = g.Sum(x => x.MontoDevengado),
+                PorDevengar = g.Sum(x => x.MontoPendiente),
+            }).OrderByDescending(x => x.Inversion).ThenBy(x => x.Etiqueta).ToList(),
+        };
 
-        var porMarca = dtos.GroupBy(d => string.IsNullOrWhiteSpace(d.Marca) ? "(Sin marca)" : d.Marca!).Select(g => new DashboardMarcaDto
+        static string OrGuion(string? s, string fallback) => string.IsNullOrWhiteSpace(s) ? fallback : s.Trim();
+        static string Genero(string? s)
         {
-            Marca = g.Key,
-            Convenios = g.Count(),
-            Personas = g.Select(x => x.CedulaColaborador).Distinct().Count(),
-            Inversion = g.Sum(x => x.ValorAsumidoEmpresa),
-            Devengado = g.Sum(x => x.MontoDevengado),
-            PorDevengar = g.Sum(x => x.MontoPendiente),
-        }).OrderByDescending(m => m.Inversion).ToList();
+            var t = (s ?? "").Trim().ToUpperInvariant();
+            if (t.StartsWith("M")) return "Masculino";
+            if (t.StartsWith("F")) return "Femenino";
+            return "Sin especificar";
+        }
+
+        var dimensiones = new List<DashboardDimensionDto>
+        {
+            Dim("estado", "Por estado", d => d.Estado),
+            Dim("genero", "Por género", d => Genero(d.GeneroColaborador)),
+            Dim("clasificacion", "Por clasificación", d => OrGuion(d.Clasificacion, "Sin clasificar")),
+            Dim("marca", "Por marca", d => OrGuion(d.Marca, "Sin marca")),
+            Dim("area", "Por área / departamento", d => OrGuion(d.AreaColaborador, "Sin área")),
+            Dim("cargo", "Por cargo", d => OrGuion(d.CargoColaborador, "Sin cargo")),
+            Dim("empresa", "Por empresa", d => OrGuion(d.EmpresaColaborador, "Sin empresa")),
+            Dim("resultado", "Por resultado", d => OrGuion(d.Resultado, "Sin resultado")),
+        };
+
+        var porMes = dtos.GroupBy(d => d.Fecha.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture))
+            .Select(g => new DashboardMesDto { Mes = g.Key, Inversion = g.Sum(x => x.ValorAsumidoEmpresa), Convenios = g.Count() })
+            .OrderBy(m => m.Mes).ToList();
+
+        var personas = dtos.Select(d => d.CedulaColaborador).Distinct().Count();
+        var totalAsumido = dtos.Sum(d => d.ValorAsumidoEmpresa);
 
         return new DashboardConveniosResumenDto
         {
             FechaCorte = ConvenioMapper.Hoy(),
             TotalConvenios = dtos.Count,
-            TotalAsumido = dtos.Sum(d => d.ValorAsumidoEmpresa),
+            TotalPersonas = personas,
+            TotalAsumido = totalAsumido,
             TotalDevengado = dtos.Sum(d => d.MontoDevengado),
             TotalPorDevengar = dtos.Sum(d => d.MontoPendiente),
-            PorEstado = porEstado,
-            PorMarca = porMarca,
+            TotalHoras = dtos.Sum(d => d.Horas ?? 0m),
+            CostoPromedioPersona = personas > 0 ? Math.Round(totalAsumido / personas, 2) : 0m,
+            ConveniosFirmados = dtos.Count(d => d.ConvenioFirmado),
+            Dimensiones = dimensiones,
+            PorMes = porMes,
             Cursos = dtos.Select(MapCurso).ToList(),
         };
     }

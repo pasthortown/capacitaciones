@@ -1,34 +1,50 @@
 namespace Capacitaciones.Application.Dtos.Convenios;
 
-// ===== Dashboard en pantalla (datos agregados) =====
+// ===== Dashboard en pantalla (datos agregados, solo con datos propios de Convenios) =====
 public class DashboardConveniosResumenDto
 {
     public DateTime FechaCorte { get; set; }
+    // KPIs
     public int TotalConvenios { get; set; }
+    public int TotalPersonas { get; set; }
     public decimal TotalAsumido { get; set; }
     public decimal TotalDevengado { get; set; }
     public decimal TotalPorDevengar { get; set; }
-    public List<DashboardEstadoDto> PorEstado { get; set; } = new();
-    public List<DashboardMarcaDto> PorMarca { get; set; } = new();
+    public decimal TotalHoras { get; set; }
+    public decimal CostoPromedioPersona { get; set; }
+    public int ConveniosFirmados { get; set; }
+
+    /// <summary>Cortes por dimensión (estado, marca, género, área, cargo, empresa, clasificación, resultado).</summary>
+    public List<DashboardDimensionDto> Dimensiones { get; set; } = new();
+    /// <summary>Inversión por mes (eje temporal).</summary>
+    public List<DashboardMesDto> PorMes { get; set; } = new();
+    /// <summary>Detalle por curso (también usado por el PDF).</summary>
     public List<DashboardCursoDto> Cursos { get; set; } = new();
 }
 
-public class DashboardEstadoDto
+/// <summary>Una dimensión de agrupación con sus grupos (para un gráfico de barras).</summary>
+public class DashboardDimensionDto
 {
-    public string Estado { get; set; } = string.Empty;
-    public int Cantidad { get; set; }
-    public decimal MontoAsumido { get; set; }
-    public decimal MontoPendiente { get; set; }
+    public string Clave { get; set; } = string.Empty;
+    public string Titulo { get; set; } = string.Empty;
+    public List<DashboardGrupoDto> Grupos { get; set; } = new();
 }
 
-public class DashboardMarcaDto
+public class DashboardGrupoDto
 {
-    public string Marca { get; set; } = string.Empty;
-    public int Convenios { get; set; }
+    public string Etiqueta { get; set; } = string.Empty;
+    public int Cantidad { get; set; }
     public int Personas { get; set; }
     public decimal Inversion { get; set; }
     public decimal Devengado { get; set; }
     public decimal PorDevengar { get; set; }
+}
+
+public class DashboardMesDto
+{
+    public string Mes { get; set; } = string.Empty;
+    public decimal Inversion { get; set; }
+    public int Convenios { get; set; }
 }
 
 // ===== Liquidación por desvinculación (reintegro a una fecha de salida) =====

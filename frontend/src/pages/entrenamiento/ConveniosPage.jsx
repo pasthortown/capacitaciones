@@ -899,6 +899,49 @@ function HistorialTab({ toast }) {
 }
 
 /* ------------------------------- Pestaña Dashboard ------------------------------- */
+function DimBars({ titulo, grupos }) {
+  const max = Math.max(1, ...grupos.map((g) => Number(g.inversion) || 0));
+  return (
+    <div className="card">
+      <div className="card__header"><h3 className="card__title">{titulo}</h3></div>
+      <div className="card__body" style={{ display: 'grid', gap: 'var(--spacing-3)' }}>
+        {grupos.length === 0 && <div className="text-secondary">Sin datos.</div>}
+        {grupos.map((g) => (
+          <div key={g.etiqueta}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 3, gap: 8 }}>
+              <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.etiqueta}</span>
+              <span className="text-secondary" style={{ whiteSpace: 'nowrap' }}>{g.cantidad} conv · {g.personas} pers · {money(g.inversion)}</span>
+            </div>
+            <div style={{ height: 10, background: 'var(--color-surface-2, #eef0f3)', borderRadius: 5, overflow: 'hidden' }}>
+              <div style={{ width: `${Math.round((Number(g.inversion) || 0) / max * 100)}%`, height: '100%', background: 'var(--color-primary, #2563eb)' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MesesBars({ porMes }) {
+  const max = Math.max(1, ...porMes.map((m) => Number(m.inversion) || 0));
+  return (
+    <div className="card">
+      <div className="card__header"><h3 className="card__title">Inversión por mes</h3></div>
+      <div className="card__body" style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 170, overflowX: 'auto' }}>
+        {porMes.length === 0 && <div className="text-secondary">Sin datos.</div>}
+        {porMes.map((m) => (
+          <div key={m.mes} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 44 }} title={`${m.mes}: ${money(m.inversion)} (${m.convenios} conv)`}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', width: 24 }}>
+              <div style={{ width: '100%', height: `${Math.round((Number(m.inversion) || 0) / max * 100)}%`, background: 'var(--color-primary, #2563eb)', borderRadius: '3px 3px 0 0', minHeight: 2 }} />
+            </div>
+            <div style={{ fontSize: 10, marginTop: 4, color: 'var(--color-text-secondary, #666)' }}>{m.mes}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DashboardTab({ toast }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -939,9 +982,13 @@ function DashboardTab({ toast }) {
 
   const kpis = [
     { label: 'Convenios', value: data.totalConvenios },
+    { label: 'Colaboradores', value: data.totalPersonas },
     { label: 'Valor asumido', value: money(data.totalAsumido) },
     { label: 'Devengado', value: money(data.totalDevengado) },
     { label: 'Por devengar', value: money(data.totalPorDevengar) },
+    { label: 'Horas', value: data.totalHoras ?? 0 },
+    { label: 'Costo prom./persona', value: money(data.costoPromedioPersona) },
+    { label: 'Convenios firmados', value: `${data.conveniosFirmados}/${data.totalConvenios}` },
   ];
 
   return (
@@ -957,45 +1004,21 @@ function DashboardTab({ toast }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--spacing-3)', marginBottom: 'var(--spacing-4)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--spacing-3)', marginBottom: 'var(--spacing-4)' }}>
         {kpis.map((k) => (
           <div key={k.label} className="card"><div className="card__body">
             <div className="text-xs text-secondary">{k.label}</div>
-            <div style={{ fontFamily: 'var(--font-family-display)', fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: 'var(--color-primary)' }}>{k.value}</div>
+            <div style={{ fontFamily: 'var(--font-family-display)', fontSize: 20, fontWeight: 700, color: 'var(--color-primary)' }}>{k.value}</div>
           </div></div>
         ))}
       </div>
 
-      <div className="card" style={{ marginBottom: 'var(--spacing-4)' }}>
-        <div className="card__header"><h2 className="card__title">Por estado</h2></div>
-        <div className="card__body" style={{ padding: 0 }}>
-          <table className={styles.itemsTable}>
-            <thead><tr><th>Estado</th><th style={{ textAlign: 'center' }}>Convenios</th><th style={{ textAlign: 'right' }}>Valor asumido</th><th style={{ textAlign: 'right' }}>Pendiente</th></tr></thead>
-            <tbody>
-              {data.porEstado.map((e) => (
-                <tr key={e.estado}><td>{e.estado}</td><td style={{ textAlign: 'center' }}>{e.cantidad}</td>
-                  <td style={{ textAlign: 'right' }}>{money(e.montoAsumido)}</td><td style={{ textAlign: 'right' }}>{money(e.montoPendiente)}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <MesesBars porMes={data.porMes || []} />
 
-      <div className="card">
-        <div className="card__header"><h2 className="card__title">Por marca</h2>
-          <p className="card__subtitle">Inversión = valor asumido por la empresa. (La utilidad/ROI requiere integrar la fuente de pipeline.)</p>
-        </div>
-        <div className="card__body" style={{ padding: 0 }}>
-          <table className={styles.itemsTable}>
-            <thead><tr><th>Marca</th><th style={{ textAlign: 'center' }}>Convenios</th><th style={{ textAlign: 'center' }}>Personas</th><th style={{ textAlign: 'right' }}>Inversión</th><th style={{ textAlign: 'right' }}>Devengado</th><th style={{ textAlign: 'right' }}>Por devengar</th></tr></thead>
-            <tbody>
-              {data.porMarca.map((m) => (
-                <tr key={m.marca}><td>{m.marca}</td><td style={{ textAlign: 'center' }}>{m.convenios}</td><td style={{ textAlign: 'center' }}>{m.personas}</td>
-                  <td style={{ textAlign: 'right' }}>{money(m.inversion)}</td><td style={{ textAlign: 'right' }}>{money(m.devengado)}</td><td style={{ textAlign: 'right' }}>{money(m.porDevengar)}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--spacing-4)', marginTop: 'var(--spacing-4)' }}>
+        {(data.dimensiones || []).map((dim) => (
+          <DimBars key={dim.clave} titulo={dim.titulo} grupos={dim.grupos} />
+        ))}
       </div>
     </>
   );

@@ -48,6 +48,8 @@ public class Convenio
     public string? AreaColaborador { get; set; }
     /// <summary>Empresa del colaborador (snapshot pre-llenado desde la fuente; texto libre).</summary>
     public string? EmpresaColaborador { get; set; }
+    /// <summary>Género del colaborador (snapshot desde la fuente; para indicadores del dashboard).</summary>
+    public string? GeneroColaborador { get; set; }
     /// <summary>Centro de costos (captura manual en el anexo; no existe en las fuentes).</summary>
     public string? CentroCostos { get; set; }
     /// <summary>Jefe inmediato (captura manual en el anexo).</summary>

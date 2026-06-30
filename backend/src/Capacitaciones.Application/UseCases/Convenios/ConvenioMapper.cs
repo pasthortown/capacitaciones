@@ -41,6 +41,7 @@ public static class ConvenioMapper
             CargoColaborador = c.CargoColaborador,
             AreaColaborador = c.AreaColaborador,
             EmpresaColaborador = c.EmpresaColaborador,
+            GeneroColaborador = c.GeneroColaborador,
             CentroCostos = c.CentroCostos,
             JefeInmediato = c.JefeInmediato,
             RelacionLaboral = c.RelacionLaboral,

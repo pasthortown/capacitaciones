@@ -6,7 +6,7 @@ namespace Capacitaciones.Application.UseCases.Convenios;
 
 /// <summary>Resuelve un colaborador por cédula: primero entre los externos locales, luego en DOS
 /// (ControlTareas). Devuelve nombre + origen, o null si no existe en ninguno.</summary>
-public readonly record struct ColaboradorResuelto(string Nombre, string Origen, string? Cargo, string? Area, string? Empresa);
+public readonly record struct ColaboradorResuelto(string Nombre, string Origen, string? Cargo, string? Area, string? Empresa, string? Genero);
 
 public static class ColaboradorResolver
 {
@@ -17,10 +17,10 @@ public static class ColaboradorResolver
         CancellationToken ct)
     {
         var ext = await externos.GetByCedulaAsync(cedula, ct);
-        if (ext is not null) return new ColaboradorResuelto(ext.Name, "Externo", ext.JobPosition, ext.WorkArea, ext.Society);
+        if (ext is not null) return new ColaboradorResuelto(ext.Name, "Externo", ext.JobPosition, ext.WorkArea, ext.Society, ext.Sex);
 
         var dos = await controlTareas.ObtenerPorCedulaAsync(cedula, ct);
-        if (dos is not null) return new ColaboradorResuelto(dos.Name, "DOS", dos.JobPosition, dos.WorkArea, dos.Society);
+        if (dos is not null) return new ColaboradorResuelto(dos.Name, "DOS", dos.JobPosition, dos.WorkArea, dos.Society, dos.Sex);
 
         return null;
     }
@@ -63,6 +63,7 @@ public class CrearConvenioUseCase
             CargoColaborador = resuelto.Cargo,
             AreaColaborador = resuelto.Area,
             EmpresaColaborador = resuelto.Empresa,
+            GeneroColaborador = resuelto.Genero,
             Activo = true,
             FechaCreacion = DateTime.UtcNow,
         };
@@ -102,6 +103,7 @@ public class EditarConvenioUseCase
             entity.CargoColaborador = resuelto.Value.Cargo;
             entity.AreaColaborador = resuelto.Value.Area;
             entity.EmpresaColaborador = resuelto.Value.Empresa;
+            entity.GeneroColaborador = resuelto.Value.Genero;
         }
 
         if (req.Activo == true) entity.Activo = true;

@@ -19,6 +19,7 @@ public class ConvenioDto
     /// <summary>Área del colaborador = Departamento.</summary>
     public string? AreaColaborador { get; set; }
     public string? EmpresaColaborador { get; set; }
+    public string? GeneroColaborador { get; set; }
     public string? CentroCostos { get; set; }
     public string? JefeInmediato { get; set; }
     public string? RelacionLaboral { get; set; }
