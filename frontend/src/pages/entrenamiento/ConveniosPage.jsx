@@ -1031,7 +1031,7 @@ function DashboardTab({ toast }) {
       <MesesBars porMes={data.porMes || []} />
 
       <SectionTitle>Distribución</SectionTitle>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: 'var(--spacing-5)', alignItems: 'start' }}>
+      <div className={styles.dimGrid}>
         {(data.dimensiones || []).map((dim) => (
           <DimBars key={dim.clave} titulo={dim.titulo} grupos={dim.grupos} />
         ))}
