@@ -1023,6 +1023,20 @@ function DesvinculacionTab({ toast }) {
     }
   };
 
+  const [descargando, setDescargando] = useState(false);
+  const descargarReporte = async () => {
+    if (!data) return;
+    setDescargando(true);
+    try {
+      await conveniosService.descargarReporteLiquidacion(data.cedula, fechaSalida || undefined);
+    } catch (err) {
+      if (err instanceof HttpError && err.status === 503) toast.error('El servicio de emisión no está disponible. Intenta en unos minutos.');
+      else toast.error(err?.message || 'No se pudo descargar el reporte.');
+    } finally {
+      setDescargando(false);
+    }
+  };
+
   const columns = useMemo(() => [
     { key: 'codigoRegistro', header: 'Código', accessor: (r) => r.codigoRegistro || '—' },
     { key: 'titulo', header: 'Convenio', accessor: (r) => r.titulo || '—' },
@@ -1058,9 +1072,14 @@ function DesvinculacionTab({ toast }) {
               {(data.cargo || data.area) && (
                 <p className="text-secondary" style={{ margin: 0, fontSize: 13 }}>{[data.cargo, data.area].filter(Boolean).join(' · ')}</p>
               )}
-              <p className="text-secondary" style={{ margin: 0, fontSize: 13 }}>Salida: {fechaCorta(data.fechaSalida)}</p>
+              <p className="text-secondary" style={{ margin: 0, fontSize: 13 }}>Fecha de desvinculación: {fechaCorta(data.fechaSalida)}</p>
             </div>
-            <span className="badge badge--inactive">Total a reintegrar: {money(data.totalReintegro)}</span>
+            <div style={{ display: 'flex', gap: 'var(--spacing-2)', alignItems: 'center' }}>
+              <span className="badge badge--inactive">Total a reintegrar: {money(data.totalReintegro)}</span>
+              <button type="button" className="btn btn--secondary btn--sm" onClick={descargarReporte} disabled={descargando}>
+                <FileDown width={16} height={16} /><span>{descargando ? 'Generando…' : 'Descargar Reporte'}</span>
+              </button>
+            </div>
           </div>
           <div className="card__body" style={{ padding: 0 }}>
             <DataTable columns={columns} rows={data.convenios} loading={loading}

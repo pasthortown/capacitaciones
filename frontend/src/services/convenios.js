@@ -128,6 +128,16 @@ export function liquidacion(cedula, fechaSalida) {
   return http.get(`${BASE}/colaborador/${encodeURIComponent(cedula)}/liquidacion${q ? `?${q}` : ''}`);
 }
 
+/** C) PDF de liquidación por desvinculación. */
+export function descargarReporteLiquidacion(cedula, fechaSalida, fallbackFilename) {
+  const p = new URLSearchParams();
+  if (fechaSalida) p.set('fechaSalida', fechaSalida);
+  const q = p.toString();
+  return http.downloadBlob(
+    `${BASE}/colaborador/${encodeURIComponent(cedula)}/liquidacion/reporte${q ? `?${q}` : ''}`,
+    { fallbackFilename: fallbackFilename || `Liquidacion_${cedula}.pdf` });
+}
+
 /** Estado del contador de numeración de convenios (GIC-EC-REG-###). */
 export function obtenerNumeracion() {
   return http.get(`${BASE}/numeracion`);
@@ -143,4 +153,5 @@ export default {
   subirAnexo, eliminarAnexo, descargarAnexo,
   obtenerNumeracion, actualizarNumeracion,
   imprimir, descargarReporteColaborador, dashboard, descargarDashboardPdf, liquidacion,
+  descargarReporteLiquidacion,
 };

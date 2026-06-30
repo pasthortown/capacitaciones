@@ -34,6 +34,9 @@ public interface IEmisorDocumentosClient
     /// <summary>Invoca <c>POST /emitir/dashboard-convenios</c> (resumen por curso + pastel).</summary>
     Task<EmisionResultado> EmitirDashboardConveniosAsync(DashboardConveniosRequest req, CancellationToken ct);
 
+    /// <summary>Invoca <c>POST /emitir/liquidacion-convenios</c> (reporte de desvinculación).</summary>
+    Task<EmisionResultado> EmitirLiquidacionConveniosAsync(LiquidacionReporteRequest req, CancellationToken ct);
+
     /// <summary>
     /// Invoca <c>GET /health</c>. Devuelve <c>true</c> si responde <c>200 OK</c>,
     /// <c>false</c> en cualquier otro caso (incluyendo excepciones de red).

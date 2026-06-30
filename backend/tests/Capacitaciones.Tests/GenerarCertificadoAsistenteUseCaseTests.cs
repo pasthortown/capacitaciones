@@ -439,6 +439,9 @@ public class GenerarCertificadoAsistenteUseCaseTests
         public Task<EmisionResultado> EmitirDashboardConveniosAsync(Capacitaciones.Application.Dtos.Convenios.DashboardConveniosRequest req, CancellationToken ct)
             => throw new NotImplementedException();
 
+        public Task<EmisionResultado> EmitirLiquidacionConveniosAsync(Capacitaciones.Application.Dtos.Convenios.LiquidacionReporteRequest req, CancellationToken ct)
+            => throw new NotImplementedException();
+
         public Task<EmisionResultado> EmitirAsync(EmisionRequest req, CancellationToken ct)
         {
             LastRequest = req;

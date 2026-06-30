@@ -116,3 +116,28 @@ public class DashboardTotalesDto
     public decimal CostoDevengado { get; set; }
     public decimal CostoPorDevengar { get; set; }
 }
+
+// ===== POST /emitir/liquidacion-convenios (reporte de desvinculación) =====
+public class LiquidacionReporteRequest
+{
+    public ConvenioImprimirColaboradorDto Colaborador { get; set; } = new();
+    public string FechaSalida { get; set; } = string.Empty;
+    public List<LiquidacionReporteConvenioDto> Convenios { get; set; } = new();
+    public decimal TotalReintegro { get; set; }
+}
+
+public class LiquidacionReporteConvenioDto
+{
+    public string CodigoRegistro { get; set; } = string.Empty;
+    public string Titulo { get; set; } = string.Empty;
+    public string? NombreCurso { get; set; }
+    public string? Marca { get; set; }
+    public string Clasificacion { get; set; } = string.Empty;
+    public string ModalidadReintegro { get; set; } = string.Empty;
+    public string Estado { get; set; } = string.Empty;
+    public string? FechaIngreso { get; set; }
+    public decimal ValorAsumidoEmpresa { get; set; }
+    public int MesesADevengar { get; set; }
+    public int MesesTranscurridosASalida { get; set; }
+    public decimal MontoReintegro { get; set; }
+}

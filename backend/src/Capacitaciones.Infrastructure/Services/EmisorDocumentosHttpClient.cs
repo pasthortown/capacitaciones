@@ -60,6 +60,9 @@ public class EmisorDocumentosHttpClient : IEmisorDocumentosClient
     public Task<EmisionResultado> EmitirDashboardConveniosAsync(DashboardConveniosRequest req, CancellationToken ct)
         => PostEmitirAsync("emitir/dashboard-convenios", req, ct);
 
+    public Task<EmisionResultado> EmitirLiquidacionConveniosAsync(LiquidacionReporteRequest req, CancellationToken ct)
+        => PostEmitirAsync("emitir/liquidacion-convenios", req, ct);
+
     private async Task<EmisionResultado> PostEmitirAsync<T>(string path, T req, CancellationToken ct)
     {
         using var response = await _http.PostAsJsonAsync(path, req, JsonOptions, ct);

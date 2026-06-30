@@ -465,6 +465,7 @@ builder.Services.AddScoped<ImprimirConvenioUseCase>();
 builder.Services.AddScoped<DescargarReporteConveniosUseCase>();
 builder.Services.AddScoped<DashboardConveniosUseCase>();
 builder.Services.AddScoped<LiquidacionColaboradorUseCase>();
+builder.Services.AddScoped<DescargarReporteLiquidacionUseCase>();
 
 // Refactor Responsables — catálogo global + link firmado para página pública.
 builder.Services.AddScoped<ListarResponsablesUseCase>();

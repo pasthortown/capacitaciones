@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ROI Integral · DOS S.A. 2025</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+/* ══════════════════════════════════════
+   GLOBAL TOKENS — same palette as originals
+   ══════════════════════════════════════ */
+:root{
+  --bg:#060e1e;--card:#0d1b2e;--card2:#102035;--surface:#0d1b30;--surface2:#112240;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#e2e8f0;--muted:#64748b;--soft:#94a3b8;
+  --blue:#1a56db;--blue-l:#3b82f6;--blue-xl:#93c5fd;
+  --teal:#0d9488;--green:#10b981;--green-l:#34d399;--green-xl:#6ee7b7;
+  --amber:#f59e0b;--amber-l:#fbbf24;--red:#ef4444;
+  --purple:#8b5cf6;--pink:#ec4899;--cyan:#06b6d4;
+  --male:#3b82f6;--female:#ec4899;--gold:#f59e0b;
+  --sans:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:3px}
+
+/* ══════════════════════════════════════
+   HEADER
+   ══════════════════════════════════════ */
+.hdr{background:linear-gradient(135deg,#0a1628,#0f2a50 50%,#0a1628);border-bottom:1px solid var(--border);padding:22px 40px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
+.hdr::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(27,86,219,.15) 0,transparent 60%),radial-gradient(ellipse at 80% 50%,rgba(13,148,136,.1) 0,transparent 60%)}
+.hdr-left{position:relative;z-index:1}
+.hdr-title{font-size:22px;font-weight:800;background:linear-gradient(90deg,#fff,#93c5fd 50%,#5eead4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.hdr-pills{display:flex;gap:8px;position:relative;z-index:1;flex-wrap:wrap}
+.hdr-pill{padding:4px 12px;border-radius:100px;font-size:11px;font-weight:600;letter-spacing:.3px;border:1px solid}
+.hp-green{background:rgba(16,185,129,.1);color:#34d399;border-color:rgba(16,185,129,.3)}
+.hp-blue{background:rgba(59,130,246,.1);color:#93c5fd;border-color:rgba(59,130,246,.3)}
+.hp-amber{background:rgba(245,158,11,.1);color:#fcd34d;border-color:rgba(245,158,11,.3)}
+.hp-purple{background:rgba(139,92,246,.1);color:#c4b5fd;border-color:rgba(139,92,246,.3)}
+
+/* ══════════════════════════════════════
+   NAV TABS
+   ══════════════════════════════════════ */
+.nav{background:rgba(6,14,30,.97);border-bottom:1px solid var(--border);padding:0 40px;display:flex;align-items:center;gap:2px;position:sticky;top:0;z-index:100;backdrop-filter:blur(14px)}
+.ntab{padding:15px 22px;font-size:13px;font-weight:600;color:var(--muted);border:none;background:none;cursor:pointer;font-family:var(--sans);letter-spacing:.2px;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:8px;position:relative}
+.ntab:hover{color:var(--text)}
+.ntab.on{color:#fff;border-bottom-color:var(--blue-l)}
+.ntab .ndot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.5;flex-shrink:0}
+.ntab.on .ndot{opacity:1;box-shadow:0 0 6px currentColor}
+.tab-page{display:none}
+.tab-page.on{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.tab-page.on{animation:fadeUp .2s ease}
+
+/* ══════════════════════════════════════
+   LAYOUT WRAPPERS
+   ══════════════════════════════════════ */
+.main{padding:32px 40px;max-width:1600px;margin:0 auto}
+.pmain{padding:28px 40px;max-width:1800px;margin:0 auto}
+.section-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ══════════════════════════════════════
+   SHARED CARDS / GRIDS
+   ══════════════════════════════════════ */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.mb4{margin-bottom:16px} .mb6{margin-bottom:24px} .mb8{margin-bottom:32px}
+
+/* ══════════════════════════════════════
+   ROI STRIP (used in Dashboard + Eventos)
+   ══════════════════════════════════════ */
+.roi-strip{background:linear-gradient(135deg,#051025,#0a2040);border:1px solid rgba(245,158,11,.2);border-radius:16px;padding:24px 32px;display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;position:relative;overflow:hidden}
+.roi-strip::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(245,158,11,.05) 0,transparent 70%)}
+.roi-main{position:relative;z-index:1}
+.roi-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--amber)}
+.roi-value{font-size:52px;font-weight:900;letter-spacing:-2px;line-height:1;background:linear-gradient(135deg,#fbbf24,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:4px 0}
+.roi-sub{font-size:13px;color:var(--muted)}
+.roi-meta{display:flex;gap:32px;position:relative;z-index:1;align-items:center}
+.roi-stat{text-align:center}
+.roi-stat-val{font-size:22px;font-weight:800;color:#fff;font-family:var(--mono)}
+.roi-stat-lab{font-size:11px;color:var(--muted);margin-top:2px}
+.roi-div{width:1px;height:52px;background:rgba(255,255,255,.08)}
+
+/* ══════════════════════════════════════
+   KPI CARDS
+   ══════════════════════════════════════ */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.kpi-card{border-radius:14px;padding:20px;border:1px solid var(--border)}
+.kpi-card .kpi-val{font-size:30px;font-weight:800;line-height:1;font-family:var(--mono)}
+.kpi-card .kpi-lab{font-size:12px;color:rgba(255,255,255,.5);margin-top:6px}
+.kpi-card .kpi-trend{font-size:11px;margin-top:8px;font-weight:600}
+.kpi-card.blue{background:linear-gradient(135deg,#1e3a5f,#1a56db22);color:#93c5fd}
+.kpi-card.green{background:linear-gradient(135deg,#064e3b,#10b98122);color:#6ee7b7}
+.kpi-card.amber{background:linear-gradient(135deg,#451a03,#f59e0b22);color:#fcd34d}
+.kpi-card.teal{background:linear-gradient(135deg,#042f2e,#0d948822);color:#5eead4}
+.kpi-card.purple{background:linear-gradient(135deg,#2e1065,#8b5cf620);color:#c4b5fd}
+.kpi-card.pink{background:linear-gradient(135deg,#500724,#ec489920);color:#f9a8d4}
+.kpi-card.red{background:linear-gradient(135deg,#450a0a,#ef444420);color:#fca5a5}
+
+/* ══════════════════════════════════════
+   GENDER (Dashboard tab)
+   ══════════════════════════════════════ */
+.gender-section{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.gender-card{border-radius:16px;padding:28px;position:relative;overflow:hidden}
+.gender-card.male{background:linear-gradient(135deg,#0c1e3a,#1e3a6e);border:1px solid rgba(59,130,246,.25)}
+.gender-card.female{background:linear-gradient(135deg,#2d0a1e,#5b1a38);border:1px solid rgba(236,72,153,.25)}
+.gender-glow{position:absolute;width:200px;height:200px;border-radius:50%;top:-60px;right:-60px;filter:blur(60px);opacity:.3}
+.male .gender-glow{background:#3b82f6}.female .gender-glow{background:#ec4899}
+.gender-header{display:flex;align-items:center;gap:16px;margin-bottom:24px;position:relative;z-index:1}
+.gender-icon{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.male .gender-icon{background:rgba(59,130,246,.2);border:2px solid rgba(59,130,246,.4)}
+.female .gender-icon{background:rgba(236,72,153,.2);border:2px solid rgba(236,72,153,.4)}
+.gender-title{font-size:20px;font-weight:800}
+.male .gender-title{color:#93c5fd}.female .gender-title{color:#f9a8d4}
+.gender-total{font-size:13px;color:var(--muted);margin-top:2px}
+.gender-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;position:relative;z-index:1}
+.gender-stat{padding:16px;border-radius:12px}
+.male .gender-stat{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.15)}
+.female .gender-stat{background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.15)}
+.gender-stat-val{font-size:28px;font-weight:800;font-family:var(--mono);line-height:1}
+.male .gender-stat-val{color:#60a5fa}.female .gender-stat-val{color:#f472b6}
+.gender-stat-lab{font-size:11px;color:var(--muted);margin-top:4px;font-weight:500}
+.gender-bar-wrap{margin-top:16px;position:relative;z-index:1}
+.gender-bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px}
+.gender-bar-bg{background:rgba(255,255,255,.07);border-radius:100px;height:8px;overflow:hidden}
+.gender-bar-fill{height:100%;border-radius:100px}
+.male .gender-bar-fill{background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+.female .gender-bar-fill{background:linear-gradient(90deg,#ec4899,#f472b6)}
+.dot-grid{display:none}
+
+/* ══════════════════════════════════════
+   CHARTS ROW (Dashboard)
+   ══════════════════════════════════════ */
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:28px}
+.charts-row2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:28px}
+.chart-title{font-size:14px;font-weight:700;margin-bottom:20px;color:#fff}
+.chart-subtitle{font-size:11px;color:var(--muted);font-weight:400;margin-left:8px}
+.month-bars{display:flex;flex-direction:column;gap:7px;padding:4px 0}
+.month-row{display:flex;align-items:center;gap:10px}
+.month-lbl{width:22px;font-size:10px;font-weight:700;color:var(--muted);text-align:right;flex-shrink:0;font-family:var(--mono)}
+.month-track{flex:1;height:22px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden;position:relative}
+.month-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#3b82f6,#60a5fa);display:flex;align-items:center;padding-left:8px;min-width:32px;transition:width .4s ease}
+.month-val{font-size:10px;font-family:var(--mono);font-weight:700;color:rgba(255,255,255,.9);white-space:nowrap}
+.month-abs{width:54px;font-size:11px;font-family:var(--mono);font-weight:700;color:#93c5fd;text-align:right;flex-shrink:0}
+.month-pers{font-size:10px;color:var(--muted);flex-shrink:0;width:50px;text-align:right}
+.month-label{font-size:9px;color:var(--muted);font-weight:600}
+.brands-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.brand-card{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:18px;transition:transform .2s,border-color .2s}
+.brand-card:hover{transform:translateY(-2px);border-color:rgba(59,130,246,.3)}
+.brand-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.brand-name{font-size:15px;font-weight:700;color:#fff}
+.brand-roi-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:100px;font-family:var(--mono)}
+.roi-high{background:rgba(16,185,129,.2);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.roi-zero{background:rgba(100,116,139,.2);color:#94a3b8;border:1px solid rgba(100,116,139,.2)}
+.brand-util{font-size:20px;font-weight:800;font-family:var(--mono);color:#10b981;margin-bottom:4px}
+.brand-inv{font-size:11px;color:var(--muted)}
+.brand-bar{height:3px;border-radius:100px;background:rgba(255,255,255,.07);margin-top:12px;overflow:hidden}
+.brand-bar-fill{height:100%;border-radius:100px}
+.empresa-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.empresa-card{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:22px;text-align:center}
+.empresa-logo{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;margin:0 auto 14px;letter-spacing:-1px}
+.empresa-name{font-size:16px;font-weight:800;color:#fff;margin-bottom:4px}
+.empresa-sub{font-size:11px;color:var(--muted);margin-bottom:16px}
+.empresa-stats{display:flex;justify-content:space-around;gap:8px}
+.empresa-stat-val{font-size:22px;font-weight:800;font-family:var(--mono)}
+.empresa-stat-lab{font-size:10px;color:var(--muted);margin-top:2px}
+.prog-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:14px;margin-bottom:4px}
+.prog-bg{background:rgba(255,255,255,.07);border-radius:100px;height:6px;overflow:hidden}
+.prog-fill{height:100%;border-radius:100px}
+.dept-bar-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.dept-name{font-size:12px;width:170px;flex-shrink:0;color:var(--text);font-weight:500}
+.dept-bar-bg{flex:1;background:rgba(255,255,255,.05);border-radius:100px;height:8px;overflow:hidden}
+.dept-bar-fill{height:100%;border-radius:100px}
+.dept-val{font-size:11px;font-family:var(--mono);color:var(--muted);width:70px;text-align:right}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.data-table td{padding:11px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.03)}
+.data-table tr:hover td{background:rgba(255,255,255,.02)}
+.data-table tr:last-child td{border-bottom:none}
+
+/* ══════════════════════════════════════
+   PERSONA CARDS (ROI por Persona tab)
+   ══════════════════════════════════════ */
+.controls-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 40px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.search-box{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:8px 14px;color:var(--text);font-family:var(--sans);font-size:13px;width:260px;outline:none}
+.search-box:focus{border-color:var(--blue-l)}
+.search-box::placeholder{color:var(--muted)}
+.filter-btn{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:7px 14px;color:var(--text);font-family:var(--sans);font-size:12px;cursor:pointer;outline:none;transition:all .2s}
+.filter-btn:hover,.filter-btn.active{border-color:var(--blue-l);color:var(--blue-l);background:rgba(77,168,255,.08)}
+.filter-sep{width:1px;height:24px;background:var(--border2)}
+.count-label{font-size:12px;color:var(--muted);margin-left:auto}
+.count-label span{color:var(--text);font-weight:700;font-family:var(--mono)}
+.p-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px}
+.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
+.sum-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:14px 14px 0 0}
+.c-blue::before{background:linear-gradient(90deg,var(--blue-l),#0070c0)}
+.c-green::before{background:linear-gradient(90deg,var(--green-l),#00a86b)}
+.c-pink::before{background:linear-gradient(90deg,var(--pink),#c2185b)}
+.c-amber::before{background:linear-gradient(90deg,var(--amber-l),#f57c00)}
+.c-gold::before{background:linear-gradient(90deg,var(--gold),#f59e0b)}
+.sum-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.sum-val{font-size:28px;font-weight:800;font-family:var(--mono);line-height:1}
+.sv-blue{color:var(--blue-l)}.sv-green{color:var(--green-l)}.sv-pink{color:var(--pink)}.sv-amber{color:var(--amber-l)}.sv-gold{color:var(--gold)}
+.sum-note{font-size:11px;color:var(--muted);margin-top:5px}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.pcard{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s}
+.pcard:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.pcard.has-crm{border-color:rgba(77,168,255,.2)}
+.pcard.has-crm:hover{border-color:rgba(77,168,255,.4);box-shadow:0 12px 40px rgba(77,168,255,.1)}
+.ch{padding:18px 20px 14px;display:flex;align-items:flex-start;gap:14px;background:var(--surface2);position:relative}
+.ch::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--border)}
+.avatar{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.av-male{background:linear-gradient(135deg,#0a2a4a,#1a56db22);border:1.5px solid rgba(77,168,255,.3)}
+.av-female{background:linear-gradient(135deg,#3d0a24,#ec489933);border:1.5px solid rgba(255,107,186,.3)}
+.gender-badge{position:absolute;bottom:-4px;right:-4px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;border:2px solid var(--surface2)}
+.gb-m{background:var(--blue-l);color:#fff}.gb-f{background:var(--pink);color:#fff}
+.ch-info{flex:1;min-width:0}
+.ch-name{font-size:13px;font-weight:700;color:#e2e8f6;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.ch-cargo{font-size:11px;color:var(--text);margin-top:2px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-roles{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.role-tag{padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700}
+.t-gp{background:rgba(77,168,255,.15);color:var(--blue-l);border:1px solid rgba(77,168,255,.2)}
+.t-gc{background:rgba(182,123,255,.15);color:var(--purple);border:1px solid rgba(182,123,255,.2)}
+.t-emp{background:rgba(34,217,138,.1);color:var(--green-l);border:1px solid rgba(34,217,138,.15)}
+.t-no{background:rgba(90,112,150,.15);color:var(--muted);border:1px solid rgba(90,112,150,.2)}
+.cm{padding:14px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border-bottom:1px solid var(--border)}
+.metric{text-align:center}
+.metric-val{font-size:18px;font-weight:800;font-family:var(--mono);line-height:1}
+.metric-lab{font-size:10px;color:var(--muted);margin-top:3px}
+.cb{padding:12px 20px;border-bottom:1px solid var(--border)}
+.cb-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.bc{display:flex;flex-wrap:wrap;gap:5px}
+.bc-tr{padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600;background:rgba(255,183,77,.1);color:var(--amber-l);border:1px solid rgba(255,183,77,.2)}
+.bc-co{padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600;background:rgba(34,217,138,.15);color:var(--green-l);border:1px solid rgba(34,217,138,.3)}
+.bc-cr{padding:3px 9px;border-radius:6px;font-size:10px;font-weight:600;background:rgba(77,168,255,.1);color:var(--blue-l);border:1px solid rgba(77,168,255,.2)}
+.cdot{width:6px;height:6px;border-radius:50%;background:var(--green-l);display:inline-block;margin-right:3px;box-shadow:0 0 6px var(--green-l)}
+.crm-sec{padding:12px 20px 14px;background:rgba(77,168,255,.03)}
+.crm-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.crm-lbl{font-size:10px;color:var(--muted);font-weight:600}
+.crm-val{font-size:13px;font-weight:700;font-family:var(--mono)}
+.roi-bar-p{height:4px;border-radius:100px;background:rgba(255,255,255,.06);margin-top:8px;overflow:hidden}
+.roi-fill-p{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--green-l),#00d4aa)}
+.rb{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;font-family:var(--mono)}
+.rb-h{background:rgba(34,217,138,.2);color:#00ff9d;border:1px solid rgba(34,217,138,.4);box-shadow:0 0 12px rgba(34,217,138,.2)}
+.rb-p{background:rgba(34,217,138,.12);color:var(--green-l);border:1px solid rgba(34,217,138,.25)}
+.rb-z{background:rgba(90,112,150,.1);color:var(--muted);border:1px solid rgba(90,112,150,.15)}
+.no-crm{padding:12px 20px 14px}
+.no-crm-in{background:rgba(90,112,150,.07);border:1px solid rgba(90,112,150,.12);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.caps{padding:10px 20px 14px}
+.caps-t{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.cap-i{display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--text);opacity:.7;margin-bottom:4px;line-height:1.4}
+.cap-d{width:5px;height:5px;border-radius:50%;background:var(--amber-l);flex-shrink:0;margin-top:5px}
+.p-empty{text-align:center;padding:60px;color:var(--muted);font-size:14px;grid-column:1/-1}
+.hidden{display:none!important}
+
+/* ══════════════════════════════════════
+   EVENTOS TAB
+   ══════════════════════════════════════ */
+.ev-bar-chart{display:flex;flex-direction:column;gap:10px}
+.ev-bar-row{display:flex;align-items:center;gap:12px}
+.ev-bar-label{width:145px;font-size:12px;color:var(--soft);text-align:right;flex-shrink:0;font-weight:600;font-family:var(--mono)}
+.ev-bar-track{flex:1;height:22px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden;position:relative}
+.ev-bar-fill{height:100%;border-radius:5px;display:flex;align-items:center;padding-left:10px;font-size:10px;font-weight:700;transition:width .5s ease;white-space:nowrap;overflow:hidden;color:rgba(255,255,255,.85)}
+.ev-bar-val{width:74px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--soft);flex-shrink:0}
+.prog-wrap{background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;height:6px}
+.prog-bar{height:100%;border-radius:4px}
+.person-cards-ev{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:14px}
+.pcev{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;transition:all .2s}
+.pcev:hover{border-color:rgba(255,255,255,.15);transform:translateY(-1px)}
+.pcev-name{font-size:14px;font-weight:700;color:#fff;margin-bottom:2px}
+.pcev-meta{font-size:10px;color:var(--muted);margin-bottom:8px}
+.pcev-amt{font-size:22px;font-weight:800;font-family:var(--mono);line-height:1;margin-bottom:6px}
+.brand-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.bc-netapp{background:rgba(0,130,255,.12);border:1px solid rgba(0,130,255,.22);color:#60b4ff}
+.bc-hpe{background:rgba(0,192,150,.12);border:1px solid rgba(0,192,150,.22);color:#34d3ac}
+.bc-cisco{background:rgba(27,137,209,.12);border:1px solid rgba(27,137,209,.22);color:#60b4d9}
+.bc-f5{background:rgba(230,60,40,.12);border:1px solid rgba(230,60,40,.22);color:#f87171}
+.bc-paloalto{background:rgba(250,94,27,.12);border:1px solid rgba(250,94,27,.22);color:#fb923c}
+.bc-dynatrace{background:rgba(110,53,205,.12);border:1px solid rgba(110,53,205,.22);color:#c4b5fd}
+.bc-otros{background:rgba(100,116,139,.1);border:1px solid rgba(100,116,139,.2);color:#94a3b8}
+.bc-sin{background:rgba(100,116,139,.07);border:1px solid rgba(100,116,139,.13);color:#64748b;font-style:italic}
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table.ev-tbl{width:100%;border-collapse:collapse;font-size:13px}
+table.ev-tbl thead th{background:#0a1628;padding:10px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
+table.ev-tbl tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+table.ev-tbl tbody tr:last-child{border-bottom:none}
+table.ev-tbl tbody tr:hover{background:rgba(255,255,255,.025)}
+table.ev-tbl td{padding:10px 14px;vertical-align:middle}
+.row-hilda td{background:rgba(139,92,246,.04)!important}
+.row-hilda td:first-child{border-left:2px solid var(--purple)}
+.row-sin td{background:rgba(100,116,139,.03)!important}
+.f-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.ev-fbtn{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--muted);font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;outline:none;transition:all .2s}
+.ev-fbtn:hover,.ev-fbtn.on{border-color:var(--blue-l);color:var(--blue-l);background:rgba(59,130,246,.08)}
+.f-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:6px 13px;color:var(--muted);font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;outline:none;transition:all .2s}
+.f-btn:hover,.f-btn.on{border-color:var(--blue-l);color:var(--blue-l);background:rgba(59,130,246,.08)}
+.f-sep2{width:1px;height:22px;background:var(--border2)}
+.note-box{background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.18);border-radius:10px;padding:14px 18px;font-size:12px;color:#fcd34d;display:flex;gap:10px;margin-bottom:24px}
+.note-icon{flex-shrink:0;margin-top:1px}
+
+/* ══════════════════════════════════════
+   PLATZI TAB
+   ══════════════════════════════════════ */
+.pz-row{display:grid;grid-template-columns:52px 1fr auto;gap:14px;align-items:center;padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.015);transition:all .2s}
+.pz-row:hover{background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.1)}
+.score-ring{width:52px;height:52px;position:relative;flex-shrink:0}
+.score-ring svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:4}
+.ring-fill{fill:none;stroke-width:4;stroke-linecap:round}
+.score-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;font-family:var(--mono)}
+.pz-name{font-size:13px;font-weight:700;color:#fff;line-height:1.3}
+.pz-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.pz-stats{display:flex;gap:12px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+.pz-stat{text-align:center;min-width:44px}
+.pz-sv{font-size:17px;font-weight:800;font-family:var(--mono);line-height:1}
+.pz-sl{font-size:9px;color:var(--muted);margin-top:2px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.nivel-chip{padding:4px 11px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:.4px;white-space:nowrap}
+.n-alto{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#34d399}
+.n-medio{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:#fbbf24}
+.n-bajo{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
+.ruta-tag{font-size:10px;background:rgba(255,255,255,.05);border-radius:4px;padding:1px 6px;margin-right:3px;display:inline-block}
+</style>
+</head>
+<body>
+
+<!-- ══════ HEADER ══════ -->
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-title">📊 ROI Integral · DOS S.A. 2025</div>
+    <div class="hdr-sub">Formación · Pipeline Comercial · Eventos · Plataformas de aprendizaje</div>
+  </div>
+  <div class="hdr-pills">
+    <div class="hdr-pill hp-green">✦ 94 oportunidades Pipeline Comercial</div>
+    <div class="hdr-pill hp-blue">42 personas capacitadas</div>
+    <div class="hdr-pill hp-amber">$64,156 inversión total (formación + eventos + Platzi)</div>
+    <div class="hdr-pill hp-purple">$10,000 Platzi</div>
+  </div>
+</div>
+
+<!-- ══════ NAV ══════ -->
+<nav class="nav">
+  <button class="ntab on"  onclick="showTab('dashboard',this)"><span class="ndot"></span>Dashboard General</button>
+  <button class="ntab"     onclick="showTab('persona',this)"><span class="ndot"></span>ROI por Persona</button>
+  <button class="ntab"     onclick="showTab('platzi',this)"><span class="ndot"></span>Análisis Platzi</button>
+</nav>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 1 — DASHBOARD GENERAL
+     ══════════════════════════════════════════════════════════ -->
+<div id="tab-dashboard" class="tab-page on">
+<div class="main">
+
+<div class="roi-strip">
+  <div class="roi-main">
+    <div class="roi-label">ROI Global de Capacitación · Inversión Total 2025</div>
+    <div class="roi-value">5,752%</div>
+    <div class="roi-sub">Fórmula: (Utilidad Bruta del Pipeline Comercial − Inversión Total) ÷ Inversión Total × 100 &nbsp;·&nbsp; Incluye Formación + Eventos + Platzi</div>
+  </div>
+  <div class="roi-meta">
+    <div class="roi-stat"><div class="roi-stat-val" style="color:#fcd34d">$64,156</div><div class="roi-stat-lab">Inversión Total</div></div>
+    <div class="roi-div"></div>
+    <div class="roi-stat"><div class="roi-stat-val" style="color:#34d399">$3.75M</div><div class="roi-stat-lab">Utilidad Bruta Pipeline</div></div>
+    <div class="roi-div"></div>
+    <div class="roi-stat"><div class="roi-stat-val" style="color:#f9a8d4">94</div><div class="roi-stat-lab">Oportunidades</div></div>
+  </div>
+</div>
+
+<!-- DESGLOSE DE INVERSIÓN -->
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px">
+  <div style="background:linear-gradient(135deg,#0f2040,#1a56db18);border:1px solid rgba(59,130,246,.2);border-radius:14px;padding:18px 22px;display:flex;align-items:center;gap:16px">
+    <div style="width:44px;height:44px;border-radius:12px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎓</div>
+    <div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Formación Técnica</div>
+      <div style="font-size:24px;font-weight:800;font-family:var(--mono);color:#93c5fd;line-height:1">$21,013</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">121 capacitaciones · 42 personas</div>
+    </div>
+    <div style="margin-left:auto;text-align:right"><div style="font-size:16px;font-weight:800;font-family:var(--mono);color:#60a5fa">32.8%</div><div style="font-size:10px;color:var(--muted)">del total</div></div>
+  </div>
+  <div style="background:linear-gradient(135deg,#0f2a1a,#10b98118);border:1px solid rgba(16,185,129,.2);border-radius:14px;padding:18px 22px;display:flex;align-items:center;gap:16px">
+    <div style="width:44px;height:44px;border-radius:12px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">✈️</div>
+    <div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Gastos por Eventos</div>
+      <div style="font-size:24px;font-weight:800;font-family:var(--mono);color:#6ee7b7;line-height:1">$33,817</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">47 transacciones · 14 personas</div>
+    </div>
+    <div style="margin-left:auto;text-align:right"><div style="font-size:16px;font-weight:800;font-family:var(--mono);color:#34d399">51.7%</div><div style="font-size:10px;color:var(--muted)">del total</div></div>
+  </div>
+  <div style="background:linear-gradient(135deg,#2e1065,#8b5cf618);border:1px solid rgba(139,92,246,.2);border-radius:14px;padding:18px 22px;display:flex;align-items:center;gap:16px">
+    <div style="width:44px;height:44px;border-radius:12px;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📚</div>
+    <div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Platzi (e-learning)</div>
+      <div style="font-size:24px;font-weight:800;font-family:var(--mono);color:#c4b5fd;line-height:1">$10,000</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">239 certificados · 36 personas</div>
+    </div>
+    <div style="margin-left:auto;text-align:right"><div style="font-size:16px;font-weight:800;font-family:var(--mono);color:#a78bfa">15.6%</div><div style="font-size:10px;color:var(--muted)">del total</div></div>
+  </div>
+</div>
+
+<p class="section-title">Indicadores Clave</p>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px">
+  <div class="kpi-card blue"><div style="font-size:26px;margin-bottom:8px">👥</div><div class="kpi-val" style="font-size:26px">122</div><div class="kpi-lab">Total Colaboradores</div><div class="kpi-trend" style="color:#93c5fd">3 empresas · DOS, AGILITY, SP</div></div>
+  <div class="kpi-card green"><div style="font-size:26px;margin-bottom:8px">✅</div><div class="kpi-val" style="font-size:26px">42</div><div class="kpi-lab">Personas Capacitadas</div><div class="kpi-trend" style="color:#6ee7b7">34.4% de la fuerza laboral</div></div>
+  <div class="kpi-card amber"><div style="font-size:26px;margin-bottom:8px">💰</div><div class="kpi-val" style="font-size:22px">$64,156</div><div class="kpi-lab">Inversión Total</div><div class="kpi-trend" style="color:#fcd34d">Form. + Eventos + Platzi</div></div>
+  <div class="kpi-card teal"><div style="font-size:26px;margin-bottom:8px">🎓</div><div class="kpi-val" style="font-size:26px">113</div><div class="kpi-lab">Capacitaciones Técnicas</div><div class="kpi-trend" style="color:#5eead4">2.7 prom. por persona</div></div>
+  <div class="kpi-card purple"><div style="font-size:26px;margin-bottom:8px">✈️</div><div class="kpi-val" style="font-size:22px">$19,268</div><div class="kpi-lab">Gastos Eventos</div><div class="kpi-trend" style="color:#c4b5fd">11 personas · 10 marcas</div></div>
+</div>
+
+<p class="section-title">Formación por Género</p>
+<div class="gender-section">
+  <div class="gender-card male">
+    <div class="gender-glow"></div>
+    <div class="gender-header">
+      <div class="gender-icon"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="10" r="6" fill="#60a5fa"/><path d="M6 28c0-5.523 4.477-10 10-10s10 4.477 10 10" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" fill="none"/><circle cx="24" cy="8" r="2.5" fill="#93c5fd" opacity="0.7"/><path d="M22 6l4-4M24 4h3M24 4v3" stroke="#93c5fd" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/></svg></div>
+      <div><div class="gender-title">Masculino ♂</div><div class="gender-total">87 hombres en la empresa</div></div>
+      <div style="margin-left:auto;text-align:right"><div style="font-size:36px;font-weight:900;font-family:var(--mono);color:#60a5fa;line-height:1">87</div><div style="font-size:11px;color:var(--muted)">71.3% del total</div></div>
+    </div>
+    <div class="gender-stats">
+      <div class="gender-stat"><div style="font-size:18px;margin-bottom:6px">✅</div><div class="gender-stat-val">26</div><div class="gender-stat-lab">Capacitados</div></div>
+      <div class="gender-stat"><div style="font-size:18px;margin-bottom:6px">❌</div><div class="gender-stat-val">61</div><div class="gender-stat-lab">Sin capacitar</div></div>
+    </div>
+    <div class="gender-bar-wrap">
+      <div class="gender-bar-label"><span>Tasa de formación</span><span style="color:#60a5fa;font-family:var(--mono);font-weight:700">29.9%</span></div>
+      <div class="gender-bar-bg"><div class="gender-bar-fill" style="width:29.9%"></div></div>
+    </div>
+  </div>
+  <div class="gender-card female">
+    <div class="gender-glow"></div>
+    <div class="gender-header">
+      <div class="gender-icon"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="10" r="6" fill="#f472b6"/><path d="M6 28c0-5.523 4.477-10 10-10s10 4.477 10 10" stroke="#f472b6" stroke-width="2.5" stroke-linecap="round" fill="none"/><line x1="16" y1="18" x2="16" y2="26" stroke="#f472b6" stroke-width="2" stroke-linecap="round"/><line x1="13" y1="23" x2="19" y2="23" stroke="#f472b6" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div><div class="gender-title">Femenino ♀</div><div class="gender-total">35 mujeres en la empresa</div></div>
+      <div style="margin-left:auto;text-align:right"><div style="font-size:36px;font-weight:900;font-family:var(--mono);color:#f472b6;line-height:1">35</div><div style="font-size:11px;color:var(--muted)">28.7% del total</div></div>
+    </div>
+    <div class="gender-stats">
+      <div class="gender-stat"><div style="font-size:18px;margin-bottom:6px">✅</div><div class="gender-stat-val">16</div><div class="gender-stat-lab">Capacitadas</div></div>
+      <div class="gender-stat"><div style="font-size:18px;margin-bottom:6px">❌</div><div class="gender-stat-val">19</div><div class="gender-stat-lab">Sin capacitar</div></div>
+    </div>
+    <div class="gender-bar-wrap">
+      <div class="gender-bar-label"><span>Tasa de formación</span><span style="color:#f472b6;font-family:var(--mono);font-weight:700">45.7%</span></div>
+      <div class="gender-bar-bg"><div class="gender-bar-fill" style="width:45.7%"></div></div>
+    </div>
+  </div>
+</div>
+
+<p class="section-title">Evolución Mensual · Empresas</p>
+<div class="charts-row">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="chart-title" style="margin-bottom:0">Inversión Mensual en Capacitación <span class="chart-subtitle">2025</span></div>
+      <div style="display:flex;gap:14px">
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#3b82f6"></div>Formación</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#10b981"></div>Eventos</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="color:#34d399;font-weight:700;font-size:12px">p</span>Personas</div>
+      </div>
+    </div>
+    <div id="monthly-bars"></div>
+  </div>
+  <div class="card">
+    <div class="chart-title">Personas por Mes <span class="chart-subtitle">capacitadas</span></div>
+    <div id="people-chart" style="height:120px;display:flex;align-items:flex-end;gap:6px;margin-top:8px"></div>
+    <div style="margin-top:20px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600;letter-spacing:1px;text-transform:uppercase">Pico de actividad</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:10px 14px">
+        <span style="font-size:13px;color:#6ee7b7;font-weight:600">🏆 Mayo 2025</span>
+        <span style="font-size:18px;font-weight:800;font-family:var(--mono);color:#34d399">30 personas</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="section-title">Por Empresa</p>
+<div class="empresa-row" id="empresa-row"></div>
+
+<p class="section-title">ROI por Marca — Correlación Formación ↔ Pipeline Comercial Utilidad Bruta del Pipeline Comercial</p>
+<div class="brands-grid" id="brands-grid"></div>
+
+<div class="charts-row2">
+  <div class="card">
+    <div class="chart-title">Inversión por Departamento</div>
+    <div id="dept-bars"></div>
+  </div>
+  <div class="card">
+    <div class="chart-title">Inversión por Cargo</div>
+    <div id="cargo-bars"></div>
+  </div>
+  <div class="card">
+    <div class="chart-title">Métricas Complementarias</div>
+    <table class="data-table">
+      <tr><td style="color:var(--muted);font-size:12px;font-weight:700">Inversión total (todas las fuentes)</td><td style="font-family:var(--mono);font-size:13px;color:#fbbf24;text-align:right;font-weight:700">$64,156</td></tr>
+      <tr><td style="color:var(--muted);font-size:11px;padding-left:20px">— Formación técnica</td><td style="font-family:var(--mono);font-size:12px;color:#93c5fd;text-align:right">$21,013</td></tr>
+      <tr><td style="color:var(--muted);font-size:11px;padding-left:20px">— Eventos y viajes</td><td style="font-family:var(--mono);font-size:12px;color:#6ee7b7;text-align:right">$33,143</td></tr>
+      <tr><td style="color:var(--muted);font-size:11px;padding-left:20px">— Platzi (e-learning)</td><td style="font-family:var(--mono);font-size:12px;color:#c4b5fd;text-align:right">$10,000</td></tr>
+      <tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="color:var(--muted);font-size:12px">Costo total / persona capacitada</td><td style="font-family:var(--mono);font-size:13px;color:#fcd34d;text-align:right">$1,527</td></tr>
+      <tr><td style="color:var(--muted);font-size:12px">Utilidad bruta prom./oportunidad</td><td style="font-family:var(--mono);font-size:13px;color:#34d399;text-align:right">$39,943</td></tr>
+      <tr><td style="color:var(--muted);font-size:12px">PVP promedio / oportunidad</td><td style="font-family:var(--mono);font-size:13px;color:#60a5fa;text-align:right">$141,771</td></tr>
+      <tr><td style="color:var(--muted);font-size:12px">Total oportunidades Pipeline Comercial</td><td style="font-family:var(--mono);font-size:13px;color:#c4b5fd;text-align:right">94</td></tr>
+      <tr><td style="color:var(--muted);font-size:12px">Tasa formación global</td><td style="font-family:var(--mono);font-size:13px;color:#f472b6;text-align:right">34.4%</td></tr>
+      <tr><td style="color:var(--muted);font-size:12px">Marca top utilidad</td><td style="font-family:var(--mono);font-size:13px;color:#60a5fa;text-align:right">NetApp · $1.22M</td></tr>
+      <tr><td style="color:var(--muted);font-size:12px">Mayor gasto eventos (excl. GG)</td><td style="font-family:var(--mono);font-size:13px;color:#34d399;text-align:right">Rubén Suquillo · $10,610</td></tr>
+      <tr><td style="color:var(--muted);font-size:12px">Top Platzi (certificados)</td><td style="font-family:var(--mono);font-size:13px;color:#c4b5fd;text-align:right">Ana Belén · 28 certs.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ── GASTOS POR EVENTOS — integrado en Dashboard ── -->
+<p class="section-title" style="margin-top:8px">Gastos por Eventos · Viajes y Representación 2025</p>
+
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+  <div class="kpi-card pink" style="padding:16px"><div class="kpi-val" style="font-size:20px">$33,143</div><div class="kpi-lab">Total Eventos</div><div class="kpi-trend" style="color:#f9a8d4">44 transacciones</div></div>
+  <div class="kpi-card amber" style="padding:16px"><div class="kpi-val" style="font-size:20px">$6,728</div><div class="kpi-lab">Gerente General</div><div class="kpi-trend" style="color:#fcd34d">Carlos Pinos · HPE + NetApp</div></div>
+  <div class="kpi-card green" style="padding:16px"><div class="kpi-val" style="font-size:18px">$10,610</div><div class="kpi-lab">Mayor gasto · excl. GG</div><div class="kpi-trend" style="color:#6ee7b7">Rubén Suquillo · Cisco Colombia</div></div>
+  <div class="kpi-card teal" style="padding:16px"><div class="kpi-val" style="font-size:20px">$17,822</div><div class="kpi-lab">Marca top · CISCO</div><div class="kpi-trend" style="color:#5eead4">15 transacciones</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px">
+  <div class="card">
+    <div class="chart-title">Gasto total por persona</div>
+    <div id="ev-bar-personas" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+  <div class="card">
+    <div class="chart-title">Gasto total por marca</div>
+    <div id="ev-bar-marcas" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:12px;margin-bottom:20px" id="ev-person-cards"></div>
+
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+  <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px">FILTRAR:</span>
+  <button class="ev-fbtn on" onclick="filterEv2('todos',this)">Todos</button>
+  <div style="width:1px;height:20px;background:var(--border2)"></div>
+  <button class="ev-fbtn" onclick="filterEv2('NET APP',this)">NetApp</button>
+  <button class="ev-fbtn" onclick="filterEv2('HPE',this)">HPE</button>
+  <button class="ev-fbtn" onclick="filterEv2('CISCO',this)">Cisco</button>
+  <button class="ev-fbtn" onclick="filterEv2('F5',this)">F5</button>
+  <button class="ev-fbtn" onclick="filterEv2('PALO ALTO',this)">Palo Alto</button>
+  <button class="ev-fbtn" onclick="filterEv2('DYNATRACE',this)">Dynatrace</button>
+  <button class="ev-fbtn" onclick="filterEv2('OTROS',this)">Otros</button>
+</div>
+
+<div class="tbl-wrap">
+  <table class="ev-tbl">
+    <thead><tr><th>Fecha</th><th>Persona</th><th>Marca</th><th>Descripción</th><th>Establecimiento</th><th style="text-align:right">Valor</th></tr></thead>
+    <tbody id="ev-tbody2"></tbody>
+  </table>
+</div>
+
+</div><!-- /main -->
+</div><!-- /tab-dashboard -->
+
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 2 — ROI POR PERSONA
+     ══════════════════════════════════════════════════════════ -->
+<div id="tab-persona" class="tab-page">
+<div class="controls-bar">
+  <input class="search-box" type="text" id="searchInput" placeholder="Buscar persona, cargo, marca..." oninput="applyFilters()">
+  <div class="filter-sep"></div>
+  <button class="filter-btn active" onclick="setFilter('todos',this)">Todos</button>
+  <button class="filter-btn" onclick="setFilter('crm',this)">Con Pipeline Comercial</button>
+  <button class="filter-btn" onclick="setFilter('gp',this)">Gerentes Producto</button>
+  <button class="filter-btn" onclick="setFilter('gc',this)">Gerentes Cuenta</button>
+  <button class="filter-btn" onclick="setFilter('correlados',this)">Con correlación</button>
+  <div class="filter-sep"></div>
+  <button class="filter-btn" id="gf-todos" onclick="setGenderFilter('todos',this)">Todos</button>
+  <button class="filter-btn" id="gf-m" onclick="setGenderFilter('MASCULINO',this)" style="color:#4da8ff">Masculino</button>
+  <button class="filter-btn" id="gf-f" onclick="setGenderFilter('FEMENINO',this)" style="color:#ff6bba">Femenino</button>
+  <div class="count-label" id="countLabel">Mostrando <span id="countNum">42</span> personas</div>
+</div>
+<div class="pmain">
+  <div class="p-summary">
+    <div class="sum-card c-blue"><div class="sum-label">Total formadas</div><div class="sum-val sv-blue">42</div><div class="sum-note">de 122 colaboradores</div></div>
+    <div class="sum-card c-green"><div class="sum-label">Con presencia Pipeline Comercial</div><div class="sum-val sv-green">19</div><div class="sum-note">como GP o Gte. de Cuenta</div></div>
+    <div class="sum-card c-pink"><div class="sum-label">Inversión total</div><div class="sum-val sv-pink">$64,156</div><div class="sum-note">formación + eventos + Platzi</div></div>
+    <div class="sum-card c-amber"><div class="sum-label">Utilidad Bruta Pipeline Comercial</div><div class="sum-val sv-amber">$3.75M</div><div class="sum-note">oportunidades en pipeline</div></div>
+    <div class="sum-card c-gold"><div class="sum-label">ROI Global</div><div class="sum-val sv-gold">5,752%</div><div class="sum-note">inversión total vs utilidad bruta</div></div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--text)">Perfil individual · Inversión · Correlación · Pipeline Comercial</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">Utilidad Bruta del Pipeline Comercial por persona según Pipeline Comercial 2026 — fuente: CRM CRM · F-CS-001</div>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:#4da8ff"></div>Gte. Producto</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:#b57bff"></div>Gte. Cuenta</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:#ffb74d"></div>Marca formación</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:#22d98a"></div>Correlacionada</div>
+    </div>
+  </div>
+  <div class="pgrid" id="personGrid"></div>
+</div>
+</div><!-- /tab-persona -->
+
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 3 — ANÁLISIS PLATZI
+     ══════════════════════════════════════════════════════════ -->
+<div id="tab-platzi" class="tab-page">
+<div class="main">
+
+<div class="roi-strip">
+  <div class="roi-main">
+    <div class="roi-label">Inversión Platzi 2024–2025</div>
+    <div class="roi-value">$10,000</div>
+    <div class="roi-sub">Licencia para 122 colaboradores · 36 participaron activamente · 239 certificados · 588 horas</div>
+  </div>
+  <div class="roi-meta">
+    <div class="roi-stat"><div class="roi-stat-val" style="color:#34d399">$41.84</div><div class="roi-stat-lab">Costo/certificado</div></div>
+    <div class="roi-div"></div>
+    <div class="roi-stat"><div class="roi-stat-val" style="color:#93c5fd">$81.97</div><div class="roi-stat-lab">Costo/colaborador</div></div>
+    <div class="roi-div"></div>
+    <div class="roi-stat"><div class="roi-stat-val" style="color:#fcd34d">$17.00</div><div class="roi-stat-lab">Costo/hora</div></div>
+    <div class="roi-div"></div>
+    <div class="roi-stat"><div class="roi-stat-val" style="color:#c4b5fd">6.6</div><div class="roi-stat-lab">Certs. promedio</div></div>
+  </div>
+</div>
+
+<div class="g5 mb6">
+  <div class="kpi-card green"><div class="kpi-val" style="font-size:26px">19</div><div class="kpi-lab">Nivel ALTO</div><div class="kpi-trend" style="color:#6ee7b7">52.8% usuarios · score ≥ 0.5</div></div>
+  <div class="kpi-card amber"><div class="kpi-val" style="font-size:26px">17</div><div class="kpi-lab">Nivel MEDIO</div><div class="kpi-trend" style="color:#fcd34d">47.2% usuarios</div></div>
+  <div class="kpi-card red"><div class="kpi-val" style="font-size:26px">0</div><div class="kpi-lab">Nivel BAJO</div><div class="kpi-trend" style="color:#fca5a5">Nadie quedó en cero</div></div>
+  <div class="kpi-card blue"><div class="kpi-val" style="font-size:26px">28</div><div class="kpi-lab">Más certificados</div><div class="kpi-trend" style="color:#93c5fd">Ana Belén · 68.5h</div></div>
+  <div class="kpi-card teal"><div class="kpi-val" style="font-size:26px">588h</div><div class="kpi-lab">Total horas</div><div class="kpi-trend" style="color:#5eead4">16.3h promedio por persona</div></div>
+</div>
+
+<div class="note-box mb6">
+  <div class="note-icon">ℹ️</div>
+  <div>
+    <strong>Metodología de puntuación:</strong>
+    Score compuesto ponderado — <strong>40%</strong> tasa completado · <strong>30%</strong> horas dedicadas (vs. máximo del grupo) · <strong>30%</strong> volumen absoluto de certificados.
+    Todos los cursos del reporte aparecen como <em>Certificado</em>, por lo que la diferenciación real está en el volumen y tiempo dedicado.
+    <strong>ALTO ≥ 0.5 · MEDIO 0.2–0.49 · BAJO &lt; 0.2.</strong><br><br>
+    <strong>Costo Platzi:</strong> La licencia de $10,000 cubre a los <strong>122 colaboradores</strong> de la empresa ($81.97/colaborador). De éstos, <strong>36 participaron activamente</strong> ($277.78/participante). El costo por certificado se calcula sobre el costo del participante activo.
+  </div>
+</div>
+
+<div class="f-bar mb4">
+  <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px">NIVEL:</span>
+  <button class="f-btn pz-nivel-btn on" onclick="filterPz('todos',this)">Todos</button>
+  <button class="f-btn pz-nivel-btn" onclick="filterPz('ALTO',this)">🟢 Alto</button>
+  <button class="f-btn pz-nivel-btn" onclick="filterPz('MEDIO',this)">🟡 Medio</button>
+  <div class="f-sep2"></div>
+  <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px">ÁREA:</span>
+  <button class="f-btn on" id="pza-todos" onclick="filterPzArea('todos',this)">Todas</button>
+  <button class="f-btn pz-area-btn" onclick="filterPzArea('SERVICIOS',this)">Servicios</button>
+  <button class="f-btn pz-area-btn" onclick="filterPzArea('COMERCIAL',this)">Comercial</button>
+  <button class="f-btn pz-area-btn" onclick="filterPzArea('SIN ÁREA',this)">Sin área</button>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px" id="pz-list"></div>
+
+<div class="section-title">Tabla de costos y retorno por persona</div>
+<div class="tbl-wrap mb6">
+  <table class="ev-tbl">
+    <thead><tr>
+      <th>#</th><th>Colaborador</th><th>Área</th><th>Rutas principales</th>
+      <th>Certs.</th><th>Horas</th><th>Costo asignado</th>
+      <th style="text-align:right">Costo/Cert.</th><th>Nivel</th>
+    </tr></thead>
+    <tbody id="pz-cost-tbody"></tbody>
+  </table>
+</div>
+
+<div class="g2">
+  <div class="card">
+    <div class="section-title">Distribución por ruta de aprendizaje</div>
+    <div class="ev-bar-chart" id="ruta-bars"></div>
+  </div>
+  <div class="card">
+    <div class="section-title">Inversión por área de negocio</div>
+    <div style="display:flex;flex-direction:column;gap:10px" id="area-dist"></div>
+  </div>
+</div>
+
+</div>
+</div><!-- /tab-platzi -->
+
+
+<!-- ══════════════════════════════════════════════════════════
+     SCRIPTS
+     ══════════════════════════════════════════════════════════ -->
+<script>
+
+// ── TAB NAVIGATION ──────────────────────────────────────────
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-page').forEach(function(p) { p.classList.remove('on'); });
+  document.querySelectorAll('.ntab').forEach(function(b) { b.classList.remove('on'); });
+  document.getElementById('tab-' + id).classList.add('on');
+  btn.classList.add('on');
+}
+
+// ══════════════════════════════════════════════════════════
+// STATIC DATA — DASHBOARD
+// ══════════════════════════════════════════════════════════
+var MONTHLY_LABELS = ["01","02","03","04","05","06","07","08","09","10","11","12"];
+var MONTHLY_INV    = [4100.0,1808.0,660.0,1703.2,700.0,1490.0,1070.0,800.0,430.0,327.61,364.0,731.53];
+var MONTHLY_PERS   = [4,5,7,12,30,6,3,2,2,3,1,6];
+var EV_MONTHLY     = [1134.07, 3562.76, 12026.22, 3927.00, 7832.01, 1363.72, 0, 188.86, 1018.58, 713.81, 0, 1375.90];
+var COMBINED_MONTHLY = [5234.07, 5370.76, 14686.22, 5630.20, 8532.01, 2853.72, 1070.0, 988.86, 1448.58, 1041.42, 364.0, 2107.43];
+
+var BRANDS = [
+  {"marca":"NetApp","inversion":300.0,"personas":10,"caps":24,"utilidad":1221374.6,"pvp":2133316.0,"opps":3,"roi":407024.9},
+  {"marca":"F5","inversion":1490.0,"personas":4,"caps":10,"utilidad":581653.07,"pvp":2667830.05,"opps":16,"roi":38937.1},
+  {"marca":"CISCO","inversion":9510.0,"personas":15,"caps":30,"utilidad":334236.97,"pvp":2571367.0,"opps":16,"roi":6848.8},
+  {"marca":"Dynatrace","inversion":0.0,"personas":1,"caps":4,"utilidad":275625.7,"pvp":1935983.0,"opps":15,"roi":0},
+  {"marca":"HPE","inversion":147.61,"personas":8,"caps":10,"utilidad":189966.48,"pvp":1243222.0,"opps":12,"roi":128594.9},
+  {"marca":"PALO ALTO","inversion":570.0,"personas":3,"caps":3,"utilidad":49813.4,"pvp":498134.0,"opps":2,"roi":14132.4},
+  {"marca":"Veeam","inversion":0.0,"personas":2,"caps":2,"utilidad":4828.04,"pvp":42292.0,"opps":2,"roi":0},
+  {"marca":"PALO ALTO","inversion":220.0,"personas":1,"caps":1,"utilidad":0,"pvp":0,"opps":0,"roi":-100.0},
+  {"marca":"Arquitectura y Tecnología","inversion":0.0,"personas":17,"caps":18,"utilidad":0,"pvp":0,"opps":0,"roi":0},
+  {"marca":"CLOUDFLARE","inversion":0.0,"personas":2,"caps":2,"utilidad":0,"pvp":0,"opps":0,"roi":0},
+  {"marca":"Compras públicas","inversion":0.0,"personas":4,"caps":4,"utilidad":0,"pvp":0,"opps":0,"roi":0},
+
+  {"marca":"Huawei","inversion":900.0,"personas":2,"caps":3,"utilidad":0,"pvp":0,"opps":0,"roi":-100.0},
+  {"marca":"CISCO","inversion":800.0,"personas":4,"caps":4,"utilidad":0,"pvp":0,"opps":0,"roi":-100.0},
+  {"marca":"ITIL","inversion":103.2,"personas":1,"caps":1,"utilidad":0,"pvp":0,"opps":0,"roi":-100.0},
+  {"marca":"PMP","inversion":468.0,"personas":1,"caps":1,"utilidad":0,"pvp":0,"opps":0,"roi":-100.0},
+  {"marca":"CISCO","inversion":3900.0,"personas":3,"caps":4,"utilidad":0,"pvp":0,"opps":0,"roi":-100.0}
+];
+
+var DEPTS = [
+  {"dept":"Networking","inv":8094.93,"pers":7},
+  {"dept":"Seguridad y aplicaciones","inv":2240.0,"pers":5},
+  {"dept":"Ventas","inv":1750.0,"pers":17},
+  {"dept":"Servicios","inv":1071.2,"pers":1},
+  {"dept":"Datacenter","inv":274.21,"pers":5},
+  {"dept":"Marketing","inv":80.0,"pers":2},
+  {"dept":"Delivery","inv":0.0,"pers":1},
+  {"dept":"Operaciones","inv":0.0,"pers":1}
+];
+
+var CARGOS = [
+  {"cargo":"TECNICO ESPECIALISTA","inv":8454.21,"pers":10},
+  {"cargo":"ANALISTA DE TECNOLOGIA","inv":2154.93,"pers":6},
+  {"cargo":"GERENTE DE PRODUCTO","inv":1250.0,"pers":7},
+  {"cargo":"ARQUITECTO DE SOLUCIONES","inv":1071.2,"pers":1},
+  {"cargo":"GERENTE DE SUCURSAL","inv":500.0,"pers":1},
+  {"cargo":"JEFE DE MARKETING","inv":80.0,"pers":1},
+  {"cargo":"GERENTE DE CUENTAS","inv":0.0,"pers":9}
+];
+
+var EMPRESAS = [
+  {"empresa":"DOS","total":78,"capacitados":40,"inversion":13510.34,"caps":109},
+  {"empresa":"AGILITY","total":25,"capacitados":1,"inversion":2049.18,"caps":19},
+  {"empresa":"SP","total":19,"capacitados":2,"inversion":0.0,"caps":4}
+];
+
+// ══════════════════════════════════════════════════════════
+// BUILD DASHBOARD
+// ══════════════════════════════════════════════════════════
+function buildDashboard() {
+  var maxC = Math.max.apply(null, COMBINED_MONTHLY);
+  var mC = document.getElementById('monthly-bars');
+  if (!mC) return;
+  var monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  MONTHLY_LABELS.forEach(function(m, i) {
+    var combined = COMBINED_MONTHLY[i];
+    var formPct  = Math.round((MONTHLY_INV[i] / maxC) * 100);
+    var evPct    = Math.round((EV_MONTHLY[i]   / maxC) * 100);
+    var totalPct = formPct + evPct;
+    var totalStr = combined >= 1000 ? '$' + (combined/1000).toFixed(1) + 'K' : '$' + combined.toFixed(0);
+    var formStr  = MONTHLY_INV[i] > 0 ? '$' + (MONTHLY_INV[i]/1000).toFixed(1) + 'K' : '';
+    var evStr    = EV_MONTHLY[i]   > 0 ? '$' + (EV_MONTHLY[i]/1000).toFixed(1)  + 'K' : '';
+    var row = document.createElement('div');
+    row.className = 'month-row';
+    // build tooltip
+    var tip = monthNames[i] + ': Form. $' + MONTHLY_INV[i].toFixed(0) + ' + Ev. $' + EV_MONTHLY[i].toFixed(0) + ' = $' + combined.toFixed(0);
+    row.title = tip;
+    row.innerHTML =
+      '<div class="month-lbl">' + monthNames[i] + '</div>' +
+      '<div class="month-track">' +
+        // formacion segment (blue)
+        (formPct > 0 ? '<div style="height:100%;width:' + formPct + '%;background:linear-gradient(90deg,#1a56db,#3b82f6);display:inline-flex;align-items:center;padding-left:' + (formPct>8?'6px':'0') + ';float:left;border-radius:5px 0 0 5px">' +
+          (formPct > 8 ? '<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,.9);white-space:nowrap">' + formStr + '</span>' : '') +
+        '</div>' : '') +
+        // eventos segment (green)
+        (evPct > 0 ? '<div style="height:100%;width:' + evPct + '%;background:linear-gradient(90deg,#059669,#10b981);display:inline-flex;align-items:center;padding-left:' + (evPct>8?'6px':'0') + ';float:left;' + (formPct===0?'border-radius:5px 0 0 5px':'') + '">' +
+          (evPct > 8 ? '<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,.9);white-space:nowrap">' + evStr + '</span>' : '') +
+        '</div>' : '') +
+      '</div>' +
+      '<div class="month-abs">' + totalStr + '</div>' +
+      '<div class="month-pers">' +
+        '<span style="color:#34d399;font-size:11px;font-weight:700">' + MONTHLY_PERS[i] + '</span>' +
+        '<span style="font-size:9px;color:var(--muted)"> p</span>' +
+      '</div>';
+    mC.appendChild(row);
+  });
+
+  var maxP = Math.max.apply(null, MONTHLY_PERS);
+  var pC = document.getElementById('people-chart');
+  if (pC) {
+    MONTHLY_LABELS.forEach(function(m, i) {
+      var h = Math.round((MONTHLY_PERS[i] / maxP) * 100);
+      var c = document.createElement('div');
+      c.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%';
+      c.innerHTML =
+        '<div style="flex:1;width:100%;display:flex;align-items:flex-end">' +
+          '<div style="width:100%;height:' + h + '%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#34d399,#059669);min-height:3px"></div>' +
+        '</div>' +
+        '<div style="font-size:9px;color:var(--muted);font-weight:600">' + m + '</div>';
+      pC.appendChild(c);
+    });
+  }
+
+  var eCols = ['#4da8ff', '#a78bfa', '#5eead4'];
+  var eC = document.getElementById('empresa-row');
+  if (eC) {
+    EMPRESAS.forEach(function(e, i) {
+      var pct = e.total > 0 ? Math.round(e.capacitados / e.total * 100) : 0;
+      var inv = e.inversion > 0 ? '$' + e.inversion.toLocaleString() : '$0';
+      var col = eCols[i];
+      eC.innerHTML +=
+        '<div class="empresa-card">' +
+          '<div class="empresa-logo" style="background:' + col + '33;color:' + col + ';border:1px solid ' + col + '66">' + e.empresa + '</div>' +
+          '<div class="empresa-name">' + e.empresa + '</div>' +
+          '<div class="empresa-sub">' + e.total + ' colaboradores' + (e.empresa === 'AGILITY' ? ' &nbsp;<span style="font-size:10px;background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.3);border-radius:4px;padding:1px 6px">incl. Platzi</span>' : '') + '</div>' +
+          '<div class="empresa-stats">' +
+            '<div><div class="empresa-stat-val" style="color:' + col + '">' + e.capacitados + '</div><div class="empresa-stat-lab">Capacitados</div></div>' +
+            '<div><div class="empresa-stat-val" style="color:#fcd34d">' + inv + '</div><div class="empresa-stat-lab">Inversi\u00f3n</div></div>' +
+            '<div><div class="empresa-stat-val" style="color:#6ee7b7">' + e.caps + '</div><div class="empresa-stat-lab">Caps.</div></div>' +
+          '</div>' +
+          '<div class="prog-label"><span>Tasa formaci\u00f3n</span><span style="color:' + col + '">' + pct + '%</span></div>' +
+          '<div class="prog-bg"><div class="prog-fill" style="width:' + pct + '%;background:' + col + '"></div></div>' +
+        '</div>';
+    });
+  }
+
+  var bColors = ['#4da8ff','#34d399','#fbbf24','#22d3ee','#c4b5fd','#f472b6','#94a3b8'];
+  var maxU = Math.max.apply(null, BRANDS.map(function(b) { return b.utilidad || 0; }));
+  var bG = document.getElementById('brands-grid');
+  if (bG) {
+    BRANDS.forEach(function(b, i) {
+      var roiStr = b.roi > 0 ? b.roi.toLocaleString('es', {maximumFractionDigits:0}) + '%' : 'SIN PIPELINE COMERCIAL';
+      var bClass = b.roi > 0 ? 'roi-high' : 'roi-zero';
+      var utilStr = b.utilidad >= 1e6 ? '$' + (b.utilidad/1e6).toFixed(2) + 'M'
+                  : b.utilidad >= 1e3 ? '$' + (b.utilidad/1e3).toFixed(0) + 'K'
+                  : '$' + Math.round(b.utilidad).toLocaleString();
+      var barPct = maxU > 0 ? Math.round(b.utilidad / maxU * 100) : 0;
+      var col = bColors[i % bColors.length];
+      bG.innerHTML +=
+        '<div class="brand-card" style="border-color:' + col + '55">' +
+          '<div class="brand-top">' +
+            '<div><div style="font-size:10px;color:' + col + ';font-weight:700;letter-spacing:1px;margin-bottom:2px">\ud83d\udce6 ' + b.marca + '</div>' +
+            '<div class="brand-name">' + b.marca + '</div></div>' +
+            '<div class="brand-roi-badge ' + bClass + '">' + roiStr + '</div>' +
+          '</div>' +
+          '<div class="brand-util" style="color:' + col + '">' + utilStr + '</div>' +
+          '<div class="brand-inv">Utilidad Bruta Pipeline \u00b7 ' + b.opps + ' oportunidades</div>' +
+          '<div class="brand-inv" style="margin-top:4px;color:#fcd34d">Inversi\u00f3n: $' + b.inversion.toLocaleString() + ' \u00b7 ' + b.personas + ' personas</div>' +
+          '<div class="brand-bar"><div class="brand-bar-fill" style="width:' + barPct + '%;background:linear-gradient(90deg,' + col + '88,' + col + ')"></div></div>' +
+          '<div style="margin-top:8px;font-size:10px;color:var(--muted)">\u00d7' + b.personas + ' capacitados \u00b7 ' + b.caps + ' caps.</div>' +
+        '</div>';
+    });
+  }
+
+  var dCols = ['#1a56db','#0d9488','#8b5cf6','#ec4899','#f59e0b','#06b6d4','#64748b','#94a3b8'];
+  var maxD = Math.max.apply(null, DEPTS.map(function(d) { return d.inv; }));
+  var dC = document.getElementById('dept-bars');
+  if (dC) {
+    DEPTS.forEach(function(d, i) {
+      var p = maxD > 0 ? Math.round(d.inv / maxD * 100) : 0;
+      dC.innerHTML +=
+        '<div class="dept-bar-row">' +
+          '<div class="dept-name">' + d.dept + '</div>' +
+          '<div class="dept-bar-bg"><div class="dept-bar-fill" style="width:' + p + '%;background:' + dCols[i] + '"></div></div>' +
+          '<div class="dept-val">$' + d.inv.toLocaleString() + '</div>' +
+        '</div>';
+    });
+  }
+
+  var maxCa = Math.max.apply(null, CARGOS.map(function(c) { return c.inv; }));
+  var caC = document.getElementById('cargo-bars');
+  if (caC) {
+    CARGOS.forEach(function(c, i) {
+      var p = maxCa > 0 ? Math.round(c.inv / maxCa * 100) : 0;
+      caC.innerHTML +=
+        '<div class="dept-bar-row">' +
+          '<div class="dept-name" style="width:190px;font-size:11px">' + c.cargo + '</div>' +
+          '<div class="dept-bar-bg"><div class="dept-bar-fill" style="width:' + p + '%;background:' + dCols[i] + '"></div></div>' +
+          '<div class="dept-val">$' + c.inv.toLocaleString() + '</div>' +
+        '</div>';
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// PERSONAS — ROI POR PERSONA
+// ══════════════════════════════════════════════════════════
+// DATA array inserted below by Python
+
+const DATA = [{"nombre":"HERRERA ESCOBAR GABRIELA CAROLINA","genero":"FEMENINO","empresa":"DOS","cargo":"GERENTE DE CUENTAS","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":3,"marcas_formacion":["HPE","Arquitectura y Tecnología","CLOUDFLARE"],"caps_detalle":["HPE Sales Pro","Arquitectura y Tecnología","CLOUDFLARE"],"es_gp":false,"es_gc":true,"crm_nombre_gp":"","crm_nombre_gc":"Gabriela Carolina Herrera Escobar","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":1259380,"pvp_como_gc":2681516,"opps_gc":5,"marcas_crm_gc":["NETAPP","DYNATRACE","HPE"],"util_total":1259380,"pvp_total":2681516,"opps_total":5,"roi":null,"marcas_correlacionadas":["HPE"]},{"nombre":"CONDO ESPINOZA PAUL FROILAN","genero":"MASCULINO","empresa":"DOS","cargo":"GERENTE DE PRODUCTO","area":"Comercial","dpto":"Ventas","inversion":300.0,"n_caps":5,"marcas_formacion":["NetApp","HPE","Arquitectura y Tecnología","CISCO"],"caps_detalle":["EXAMEN CERTIFICACION NET APP NS0-163 DATA ADMINISTRATOR","Data Administrator NetApp","HPE Sales Pro","Arquitectura y Tecnología","COMPRA DE EXAMEN NETAPP CISCO FLEXPOD"],"es_gp":true,"es_gc":false,"crm_nombre_gp":"PAUL CONDO","crm_nombre_gc":"","util_como_gp":1214770,"pvp_como_gp":2222016,"opps_gp":3,"marcas_crm_gp":["HPE","NETAPP"],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":1214770,"pvp_total":2222016,"opps_total":3,"roi":404823.2,"marcas_correlacionadas":["NetApp","HPE"]},{"nombre":"CALLE MENDEZ CESAR ALFREDO","genero":"MASCULINO","empresa":"DOS","cargo":"GERENTE DE SUCURSAL","area":"Comercial","dpto":"Ventas","inversion":500.0,"n_caps":2,"marcas_formacion":["CISCO","CISCO"],"caps_detalle":["RENOVACION DE CERTIFICACION - New invoice from 591Lab","EXAMEN PARA RENOVACION DE CERTIFICADO DE CISCO"],"es_gp":false,"es_gc":true,"crm_nombre_gp":"","crm_nombre_gc":"Cesar Calle","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":782234,"pvp_como_gc":1309800,"opps_gc":3,"marcas_crm_gc":["ALEPO"],"util_total":782234,"pvp_total":1309800,"opps_total":3,"roi":156346.8,"marcas_correlacionadas":[]},{"nombre":"CARDENAS ESPINOZA ROMEO DAVID","genero":"MASCULINO","empresa":"SP","cargo":"GERENTE DE PRODUCTO","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":1,"marcas_formacion":["Arquitectura y Tecnología"],"caps_detalle":["Arquitectura y Tecnología"],"es_gp":true,"es_gc":false,"crm_nombre_gp":"ROMEO CARDENAS ESPINOZA","crm_nombre_gc":"","util_como_gp":593921,"pvp_como_gp":2996228,"opps_gp":17,"marcas_crm_gp":["F5","PALO ALTO","ABNORMAL","BLACKBERRY","DOS"],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":593921,"pvp_total":2996228,"opps_total":17,"roi":null,"marcas_correlacionadas":[]},{"nombre":"MORENO ROJAS ANA BELEN","genero":"FEMENINO","empresa":"DOS","cargo":"GERENTE DE CUENTAS","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":3,"marcas_formacion":["NetApp"],"caps_detalle":["Selling NetApp for data protection","Selling NetApp solutions to protect","Selling Ontap"],"es_gp":false,"es_gc":true,"crm_nombre_gp":"","crm_nombre_gc":"Ana Moreno Rojas","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":432188,"pvp_como_gc":1678153,"opps_gc":12,"marcas_crm_gc":["DYNATRACE","CISCO","HPE","ALLOT","F5","DOS"],"util_total":432188,"pvp_total":1678153,"opps_total":12,"roi":null,"marcas_correlacionadas":[]},{"nombre":"PEÑA SANCHEZ WASHINGTON DAVID","genero":"MASCULINO","empresa":"DOS","cargo":"GERENTE DE PRODUCTO","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":6,"marcas_formacion":["Dynatrace","NetApp","Arquitectura y Tecnología"],"caps_detalle":["Dynatrace Partner Sales","Dynatrace Associate Certification","Dynatrace Partner Sales Specialist","Dynatrace Partner Sales Engineer","Cloud Native Associate","Arquitectura y Tecnología"],"es_gp":true,"es_gc":false,"crm_nombre_gp":"DAVID PEÑA SANCHEZ","crm_nombre_gc":"","util_como_gp":387057,"pvp_como_gp":2243177,"opps_gp":18,"marcas_crm_gp":["DYNATRACE","MICROSOFT","SERVICIOS ADMINISTRADOS"],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":387057,"pvp_total":2243177,"opps_total":18,"roi":null,"marcas_correlacionadas":["Dynatrace"]},{"nombre":"FIERRO PIÑEIROS GABRIEL DARIO","genero":"MASCULINO","empresa":"DOS","cargo":"GERENTE DE PRODUCTO","area":"Comercial","dpto":"Ventas","inversion":80.0,"n_caps":2,"marcas_formacion":["Arquitectura y Tecnología","CISCO"],"caps_detalle":["Arquitectura y Tecnología","EXAMEN CISCO"],"es_gp":true,"es_gc":false,"crm_nombre_gp":"GABRIEL FIERRO","crm_nombre_gc":"","util_como_gp":256521,"pvp_como_gp":2050460,"opps_gp":9,"marcas_crm_gp":["CISCO","ALLOT"],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":256521,"pvp_total":2050460,"opps_total":9,"roi":320551.0,"marcas_correlacionadas":["CISCO"]},{"nombre":"PONCE ZAMBRANO TANIA KATIUSKA","genero":"FEMENINO","empresa":"DOS","cargo":"GERENTE DE CUENTAS","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":2,"marcas_formacion":["Arquitectura y Tecnología","Compras públicas"],"caps_detalle":["Arquitectura y Tecnología","Compras Públicas"],"es_gp":false,"es_gc":true,"crm_nombre_gp":"","crm_nombre_gc":"Tania Ponce","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":230873,"pvp_como_gc":1990900,"opps_gc":14,"marcas_crm_gc":["F5","CISCO","DOS","HPE","DYNATRACE","PALO ALTO","OUTSOURCING DE IMPRESIÓN","NETAPP"],"util_total":230873,"pvp_total":1990900,"opps_total":14,"roi":null,"marcas_correlacionadas":[]},{"nombre":"VEGA VELASCO CARLOS ERNESTO","genero":"MASCULINO","empresa":"DOS","cargo":"GERENTE DE PRODUCTO","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":3,"marcas_formacion":["HPE","Arquitectura y Tecnología"],"caps_detalle":["HPE Sales Pro","HPE Sales Certified - AI and As-a-Service Solutions","Arquitectura y Tecnología"],"es_gp":true,"es_gc":false,"crm_nombre_gp":"CARLOS VEGA","crm_nombre_gc":"","util_como_gp":190456,"pvp_como_gp":1143854,"opps_gp":14,"marcas_crm_gp":["HPE","NETAPP","VMWARE","VEEAM"],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":190456,"pvp_total":1143854,"opps_total":14,"roi":null,"marcas_correlacionadas":["HPE"]},{"nombre":"BOWEN RUGEL KARLA ESTEFANIA","genero":"FEMENINO","empresa":"DOS","cargo":"GERENTE DE CUENTAS","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":1,"marcas_formacion":["HPE"],"caps_detalle":["HPE Sales Pro"],"es_gp":false,"es_gc":true,"crm_nombre_gp":"","crm_nombre_gc":"Karla Bowen Rugel","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":186839,"pvp_como_gc":727279,"opps_gc":17,"marcas_crm_gc":["XEROX","F5","DOS","DYNATRACE","HPE","CISCO","VMWARE","VEEAM","ABNORMAL","PALO ALTO"],"util_total":186839,"pvp_total":727279,"opps_total":17,"roi":null,"marcas_correlacionadas":["HPE"]},{"nombre":"HIDALGO JUMBO MARIUXI GISSELLE","genero":"FEMENINO","empresa":"DOS","cargo":"GERENTE DE CUENTAS","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":2,"marcas_formacion":["Arquitectura y Tecnología","Compras públicas"],"caps_detalle":["Arquitectura y Tecnología","Compras Públicas"],"es_gp":false,"es_gc":true,"crm_nombre_gp":"","crm_nombre_gc":"Gisselle Hidalgo Jumbo","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":186309,"pvp_como_gc":721750,"opps_gc":6,"marcas_crm_gc":["SERVICIOS ADMINISTRADOS","HPE","CISCO","F5"],"util_total":186309,"pvp_total":721750,"opps_total":6,"roi":null,"marcas_correlacionadas":[]},{"nombre":"CHAVEZ ALCIVAR ESTEFFANYS CAROLINA","genero":"FEMENINO","empresa":"DOS","cargo":"GERENTE DE CUENTAS","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":1,"marcas_formacion":["HPE"],"caps_detalle":["HPE Sales Pro"],"es_gp":false,"es_gc":true,"crm_nombre_gp":"","crm_nombre_gc":"Esteffannys Chavez Alcívar","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":170637,"pvp_como_gc":888587,"opps_gc":10,"marcas_crm_gc":["CISCO","DYNATRACE","F5","HPE","DOS"],"util_total":170637,"pvp_total":888587,"opps_total":10,"roi":null,"marcas_correlacionadas":["HPE"]},{"nombre":"JUMA CHIMBO MARITZA ELIZABETH","genero":"FEMENINO","empresa":"DOS","cargo":"GERENTE DE CUENTAS","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":3,"marcas_formacion":["NetApp"],"caps_detalle":["Selling NetApp for data protection","Selling NetApp solutions to protect","Selling Ontap"],"es_gp":false,"es_gc":true,"crm_nombre_gp":"","crm_nombre_gc":"Maritza Juma","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":153840,"pvp_como_gc":883792,"opps_gc":10,"marcas_crm_gc":["DYNATRACE","DOS","HPE","CISCO","MICROSOFT","VEEAM"],"util_total":153840,"pvp_total":883792,"opps_total":10,"roi":null,"marcas_correlacionadas":[]},{"nombre":"MORA MORA STEFANIE GIANINA","genero":"FEMENINO","empresa":"DOS","cargo":"GERENTE DE CUENTAS","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":5,"marcas_formacion":["HPE","CLOUDFLARE","NetApp"],"caps_detalle":["HPE Sales Pro","CLOUDFLARE","Selling NetApp for data protection","Selling NetApp solutions to protect","Selling Ontap"],"es_gp":false,"es_gc":true,"crm_nombre_gp":"","crm_nombre_gc":"Stefanie Mora Mora","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":145745,"pvp_como_gc":720297,"opps_gc":10,"marcas_crm_gc":["CISCO","NETAPP","F5","DYNATRACE","HPE","BLACKBERRY"],"util_total":145745,"pvp_total":720297,"opps_total":10,"roi":null,"marcas_correlacionadas":["HPE","NetApp"]},{"nombre":"JARRIN RODRIGUEZ THELMO GUSTAVO","genero":"MASCULINO","empresa":"DOS","cargo":"GERENTE DE PRODUCTO","area":"Comercial","dpto":"Ventas","inversion":870.0,"n_caps":4,"marcas_formacion":["Arquitectura y Tecnología","CISCO","PALO ALTO"],"caps_detalle":["Arquitectura y Tecnología","MATERIAL DE EXAMEN CISCO 300-445","MATERIAL PARA EXAMEN","EXAMEN CISCO RECERT"],"es_gp":true,"es_gc":false,"crm_nombre_gp":"THELMO JARRÍN","crm_nombre_gc":"","util_como_gp":131057,"pvp_como_gp":649306,"opps_gp":12,"marcas_crm_gp":["CISCO","ALLOT","DOS"],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":131057,"pvp_total":649306,"opps_total":12,"roi":14964.0,"marcas_correlacionadas":["CISCO"]},{"nombre":"MEJIA MONTENEGRO MARIA AUGUSTA","genero":"FEMENINO","empresa":"DOS","cargo":"COORDINADORA CAS","area":"Servicios","dpto":"Servicios Administrados","inversion":0.0,"n_caps":1,"marcas_formacion":["Arquitectura y Tecnología"],"caps_detalle":["Arquitectura y Tecnología"],"es_gp":true,"es_gc":false,"crm_nombre_gp":"MARIA AUGUSTA MEJIA","crm_nombre_gc":"","util_como_gp":112438,"pvp_como_gp":299478,"opps_gp":6,"marcas_crm_gp":["XEROX","DOS"],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":112438,"pvp_total":299478,"opps_total":6,"roi":null,"marcas_correlacionadas":[]},{"nombre":"ORTIZ BARBA AMALIA PATRICIA","genero":"FEMENINO","empresa":"DOS","cargo":"GERENTE DE CUENTAS","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":3,"marcas_formacion":["NetApp"],"caps_detalle":["Selling NetApp for data protection","Selling NetApp solutions to protect","Selling Ontap"],"es_gp":false,"es_gc":true,"crm_nombre_gp":"","crm_nombre_gc":"Amalia Ortiz Barba","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":97636,"pvp_como_gc":594011,"opps_gc":4,"marcas_crm_gc":["HPE","CISCO","DYNATRACE","ALLOT"],"util_total":97636,"pvp_total":594011,"opps_total":4,"roi":null,"marcas_correlacionadas":[]},{"nombre":"OLALLA LOJAN GABRIEL JESUS","genero":"MASCULINO","empresa":"DOS","cargo":"TECNICO PREVENTA","area":"Comercial","dpto":"Servicios Administrados","inversion":0.0,"n_caps":1,"marcas_formacion":["Arquitectura y Tecnología"],"caps_detalle":["Arquitectura y Tecnología"],"es_gp":true,"es_gc":false,"crm_nombre_gp":"GABRIEL OLALLA","crm_nombre_gc":"","util_como_gp":29600,"pvp_como_gp":148000,"opps_gp":2,"marcas_crm_gp":["OUTSOURCING DE IMPRESIÓN","HPE"],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":29600,"pvp_total":148000,"opps_total":2,"roi":null,"marcas_correlacionadas":[]},{"nombre":"CADENA LOZANO LUIS ALFREDO","genero":"MASCULINO","empresa":"DOS","cargo":"ARQUITECTO DE SOLUCIONES","area":"SERVICIOS","dpto":"Servicios","inversion":1071.2,"n_caps":5,"marcas_formacion":["PMP","ITIL","Arquitectura y Tecnología","CISCO","CISCO"],"caps_detalle":["EXAMEN PMP","RENOVACION ITIL 3 ANIOS","Arquitectura y Tecnología","COMPRA DE EXAMEN CISCO 300-820","COMPRA DE MATERIAL EXAMEN CISCO"],"es_gp":true,"es_gc":false,"crm_nombre_gp":"LUIS CADENA","crm_nombre_gc":"","util_como_gp":4001,"pvp_como_gp":8368,"opps_gp":2,"marcas_crm_gp":["DOS","CISCO"],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":4001,"pvp_total":8368,"opps_total":2,"roi":273.5,"marcas_correlacionadas":["CISCO"]},{"nombre":"ACURIO NOROÑA LISSETTE ESTEFANÍA","genero":"FEMENINO","empresa":"DOS","cargo":"INGENIERO DE PREVENTA","area":"Comercial","dpto":"Seguridad y aplicaciones","inversion":204.78,"n_caps":2,"marcas_formacion":["Compras públicas","Arquitectura y Tecnología"],"caps_detalle":["Compras Públicas ($204.78)","Arquitectura y Tecnología"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"ALARCON CALLE JIMMY SEBASTIAN","genero":"MASCULINO","empresa":"DOS","cargo":"ANALISTA DE TECNOLOGIA","area":"SERVICIOS","dpto":"Networking","inversion":269.93,"n_caps":4,"marcas_formacion":["HPE","CISCO","HPE"],"caps_detalle":["CERTIFICADO HPE PRESS","CERTIFICADO HPE PRESS","EXAMEN CISCO","HPE Product Certified - HPE OneView ($75)"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"ALOMOTO TIPANLUISA LUIS FERNANDO","genero":"MASCULINO","empresa":"DOS","cargo":"TECNICO ESPECIALISTA","area":"SERVICIOS","dpto":"Seguridad y aplicaciones","inversion":540.0,"n_caps":3,"marcas_formacion":["F5"],"caps_detalle":["EXAMEN F5","EXAMEN RENOVACION F5","RENOVACION DE EXAMEN"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"ALTAMIRANO CALLE HENRY SAUL","genero":"MASCULINO","empresa":"DOS","cargo":"ANALISTA DE TECNOLOGIA","area":"Servicios","dpto":"Datacenter","inversion":0.0,"n_caps":1,"marcas_formacion":["Arquitectura y Tecnología"],"caps_detalle":["Arquitectura y Tecnología"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"APUNTE CASPI JOHN JAIRO","genero":"MASCULINO","empresa":"DOS","cargo":"TECNICO ESPECIALISTA","area":"SERVICIOS","dpto":"Seguridad y aplicaciones","inversion":1464.0,"n_caps":4,"marcas_formacion":["F5"],"caps_detalle":["EXAMEN F5 BIG IP LTM","EXAM CERTIFICACION F5 301A BIG IP LTM SPECIALIST ARCHITECT","301A F5 LTM ESPECIALIST","Configuring BIG-IP DNS with F5 ($924)"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"BAJAÑA VELIZ DIEGO OLMEDO","genero":"MASCULINO","empresa":"DOS","cargo":"ANALISTA DE TECNOLOGIA","area":"Servicios","dpto":"Networking","inversion":800.0,"n_caps":2,"marcas_formacion":["CISCO"],"caps_detalle":["EXAMEN CISCO 350-401 ENCORE","EXAMEN Cisco 350-401 Encor"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"BORBOR MEREJILDO DARWIN FABRICIO","genero":"MASCULINO","empresa":"DOS","cargo":"TECNICO ESPECIALISTA","area":"Servicios","dpto":"Networking","inversion":0.0,"n_caps":1,"marcas_formacion":["CISCO"],"caps_detalle":["Secury Identity Management Implementation"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"BURBANO ARAGUNDI DANIEL DAVID","genero":"MASCULINO","empresa":"DOS","cargo":"TECNICO ESPECIALISTA","area":"Servicios","dpto":"Networking","inversion":500.0,"n_caps":2,"marcas_formacion":["Huawei","CISCO"],"caps_detalle":["EXAMEN HUAWEI H12-311_V3.0","EXAMEN CISCO 300-410 ENARSI"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"CANTOS LEON OSCAR ANTONIO","genero":"MASCULINO","empresa":"DOS","cargo":"TECNICO ESPECIALISTA","area":"SERVICIOS","dpto":"Datacenter","inversion":2120.0,"n_caps":2,"marcas_formacion":["Veeam"],"caps_detalle":["Veeam Availability Suite: Configuration and Management (VMCE) - Curso","Veeam Examen Certificación ($2,120 total)"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"CORONEL DELGADO PEDRO XAVIER","genero":"MASCULINO","empresa":"DOS","cargo":"TECNICO ESPECIALISTA","area":"SERVICIOS","dpto":"Networking","inversion":2700.0,"n_caps":5,"marcas_formacion":["CISCO","CISCO"],"caps_detalle":["Curso Cisco SD-WAN","EXAMEN 350-401 ENCORE CISCO","EXAMEN 350-401 ENCORE CISCO PEDRO CORONEL","Cisco Certified Specialist - Enterprise Core","Examen Cisco SD-WAN Cisco 300-415"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"CRUZ CAIZA GABRIELA ALEJANDRA","genero":"FEMENINO","empresa":"DOS","cargo":"ASISTENTE DE OPERACIONES","area":"Comercial","dpto":"Operaciones","inversion":0.0,"n_caps":3,"marcas_formacion":["NetApp"],"caps_detalle":["Selling Ontap","Selling NetApp solutions to protect","Selling NetApp for data protection"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"HARO LLERENA FRANCISCO XAVIER","genero":"MASCULINO","empresa":"DOS","cargo":"TECNICO ESPECIALISTA","area":"SERVICIOS","dpto":"Datacenter","inversion":3396.53,"n_caps":5,"marcas_formacion":["NetApp","Veeam","HPE"],"caps_detalle":["EXAMEN CERTIFICACION NET APP NS0-163","Data Administrator ONTAP","Veeam Availability Suite: Configuration and Management","Titulación 3er Nivel - Universidad Israel ($3,150)","VM Essential HPE Morpheus ($96.53)"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"JARAMILLO VELOZ VICTOR MARCELO","genero":"MASCULINO","empresa":"DOS","cargo":"GERENTE DE PROYECTO","area":"Servicios","dpto":"Proyectos","inversion":0.0,"n_caps":1,"marcas_formacion":["Arquitectura y Tecnología"],"caps_detalle":["Arquitectura y Tecnología"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"LALALEO PANCHI ALISON GIOMARA","genero":"FEMENINO","empresa":"DOS","cargo":"ANALISTA DE MARKETING","area":"Comercial","dpto":"Marketing","inversion":0.0,"n_caps":1,"marcas_formacion":["Arquitectura y Tecnología"],"caps_detalle":["Arquitectura y Tecnología"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"MONROY MORAN CARLOS ANDRES","genero":"MASCULINO","empresa":"DOS","cargo":"TECNICO ESPECIALISTA","area":"SERVICIOS","dpto":"Datacenter","inversion":177.68,"n_caps":3,"marcas_formacion":["HPE","CISCO","HPE"],"caps_detalle":["CERTIFICADO HPE PRESS","EXAMEN CISCO","VM Essential HPE ($75)"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"PUPIALES CUENCA ERIKA MARIELA","genero":"FEMENINO","empresa":"DOS","cargo":"ANALISTA DE TECNOLOGIA","area":"SERVICIOS","dpto":"Seguridad y aplicaciones","inversion":629.78,"n_caps":4,"marcas_formacion":["Compras públicas","F5","CISCO","PALO ALTO"],"caps_detalle":["Compras Públicas ($204.78)","EXAMEN F5","Certificación PCNSE Pronaca - CISCO ($200)","COMPRA DE EXAMEN PALO ALTO"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"RODRIGUEZ GUAYAQUIL CARLOS EDUARDO","genero":"MASCULINO","empresa":"DOS","cargo":"TECNICO ESPECIALISTA","area":"SERVICIOS","dpto":"Networking","inversion":2000.0,"n_caps":7,"marcas_formacion":["Huawei","CISCO","CISCO"],"caps_detalle":["MATERIAL ESTUDIO HUAWEI","EXAMEN HUAWEI WLAN","EXAMEN CISCO 350-401 CCNP ENCORE","Specialist Enterprise Core","EXAMEN CISCO 300-410 ENARSI","EXAMEN CISCO 300-410","EXAMEN CISCO 300-410 ENARSI 2"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"ROMERO GONZALEZ LUIS ALBERTO","genero":"MASCULINO","empresa":"DOS","cargo":"TECNICO ESPECIALISTA","area":"SERVICIOS","dpto":"Networking","inversion":1900.0,"n_caps":2,"marcas_formacion":["CISCO","CISCO"],"caps_detalle":["Curso Cisco SD-WAN","Cisco SD-WAN Solutions ENSDWI 300-415"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"RUEDA PAREDES PABLO ERNESTO","genero":"MASCULINO","empresa":"DOS","cargo":"GERENTE DE DELIVERY","area":"SERVICIOS","dpto":"Delivery","inversion":0.0,"n_caps":2,"marcas_formacion":["Arquitectura y Tecnología"],"caps_detalle":["Arquitectura y Tecnología","Arquitectura y Tecnología"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"SUAREZ CARVAJAL MICHAEL ALEXIS","genero":"MASCULINO","empresa":"DOS","cargo":"ANALISTA DE TECNOLOGIA","area":"Servicios","dpto":"Seguridad y aplicaciones","inversion":735.0,"n_caps":5,"marcas_formacion":["F5","CISCO","PALO ALTO"],"caps_detalle":["EXAM CERTIFICACION F5 101 DELIVERY FUNDAMENTALS","Application Delivery Fundamentals","201 F5 TMOS ADMINISTRATION","Certificación PCNSE Pronaca - CISCO ($175)","COMPRA DE EXAMEN PALO ALTO"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"TAY LASSO ENRIQUE LUIS","genero":"MASCULINO","empresa":"DOS","cargo":"ANALISTA DE TECNOLOGIA","area":"Servicios","dpto":"Datacenter","inversion":0.0,"n_caps":1,"marcas_formacion":["CISCO"],"caps_detalle":["Cisco Certified Specialist - Enterprise Core"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"VERDUGA GARCIA HILDA MARIA","genero":"FEMENINO","empresa":"SP","cargo":"GERENTE DE PRODUCTO","area":"Comercial","dpto":"Ventas","inversion":0.0,"n_caps":3,"marcas_formacion":["NetApp"],"caps_detalle":["Selling Ontap","Selling NetApp solutions to protect","Selling NetApp for data protection"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]},{"nombre":"ZURITA BATALLA KARLA DANIELA","genero":"FEMENINO","empresa":"DOS","cargo":"JEFE DE MARKETING","area":"Comercial","dpto":"Marketing","inversion":80.0,"n_caps":2,"marcas_formacion":["NetApp","CISCO"],"caps_detalle":["Selling NetApp solutions to protect ransomeware","EXAMEN CISCO"],"es_gp":false,"es_gc":false,"crm_nombre_gp":"","crm_nombre_gc":"","util_como_gp":0,"pvp_como_gp":0,"opps_gp":0,"marcas_crm_gp":[],"util_como_gc":0,"pvp_como_gc":0,"opps_gc":0,"marcas_crm_gc":[],"util_total":0,"pvp_total":0,"opps_total":0,"roi":null,"marcas_correlacionadas":[]}];
+
+// ══════════════════════════════════════════════════════════
+// PERSONAS RENDER FUNCTIONS
+// ══════════════════════════════════════════════════════════
+var activeFilter = 'todos';
+var activeGender = 'todos';
+
+function fmtP(n) {
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(0) + 'K';
+  return '$' + Math.round(n).toLocaleString();
+}
+
+function shortName(name) {
+  var p = name.trim().split(' ');
+  if (p.length >= 3) return p[2].charAt(0) + p[2].slice(1).toLowerCase() + ' ' + p[0].charAt(0) + p[0].slice(1).toLowerCase();
+  return name;
+}
+
+function getPersonEvents(nombre) {
+  // Match by first + last name fragments (EVENTOS uses UPPERCASE last-first)
+  var parts = nombre.trim().split(' ');
+  // Try matching apellido1 and nombre1 against EVENTOS persona field
+  var matches = [];
+  EVENTOS.forEach(function(e) {
+    if (e.p === '(Sin registro)') return;
+    var ep = e.p.toLowerCase();
+    // Match if at least 2 parts of the nombre appear in the evento persona
+    var hits = 0;
+    parts.forEach(function(pt) {
+      if (pt.length > 2 && ep.indexOf(pt.toLowerCase()) >= 0) hits++;
+    });
+    if (hits >= 2) matches.push(e);
+  });
+  return matches;
+}
+
+function buildCard(p) {
+  var hasCRM = p.util_total > 0;
+  var hasCorr = p.marcas_correlacionadas && p.marcas_correlacionadas.length > 0;
+  var isMale = p.genero === 'MASCULINO';
+
+  var rHtml = '';
+  if (p.es_gp) rHtml += '<span class="role-tag t-gp">Gte. Producto</span>';
+  if (p.es_gc) rHtml += '<span class="role-tag t-gc">Gte. Cuenta</span>';
+  if (!p.es_gp && !p.es_gc) rHtml += '<span class="role-tag t-no">Tecnico/Operativo</span>';
+  rHtml += '<span class="role-tag t-emp">' + p.empresa + '</span>';
+
+  var bHtml = '<div class="bc">';
+  p.marcas_formacion.forEach(function(m) {
+    var isC = p.marcas_correlacionadas && p.marcas_correlacionadas.indexOf(m) >= 0;
+    bHtml += isC
+      ? '<span class="bc-co"><span class="cdot"></span>' + m + ' ok</span>'
+      : '<span class="bc-tr">' + m + '</span>';
+  });
+  bHtml += '</div>';
+
+  var aB = (p.marcas_crm_gp || []).concat(p.marcas_crm_gc || []);
+  var cbH = '';
+  if (aB.length > 0) {
+    var u = aB.filter(function(v, i, a) { return a.indexOf(v) === i; }).slice(0, 8);
+    cbH = '<div class="bc" style="margin-top:6px">' + u.map(function(b) { return '<span class="bc-cr">' + b + '</span>'; }).join('') + '</div>';
+  }
+
+  var cH = p.caps_detalle.map(function(c) { var cd = c.replace(/\s*\(\$[\d,\.]+\)/g, '').trim(); return '<div class="cap-i"><div class="cap-d"></div><span>' + cd + '</span></div>'; }).join('');
+
+  var iC = p.inversion > 0 ? 'var(--amber-l)' : 'var(--muted)';
+  var uC = p.util_total >= 1e6 ? 'var(--green-l)' : p.util_total > 0 ? 'var(--blue-l)' : 'var(--muted)';
+  // Combined inversion = formacion + eventos (calculated after getPersonEvents)
+  var pEventsEarly = getPersonEvents(p.nombre);
+  var evTotalEarly = pEventsEarly.reduce(function(s,e){return s+e.v;},0);
+  var combinedInv  = p.inversion + evTotalEarly;
+  var iCcomb = combinedInv > 0 ? 'var(--amber-l)' : 'var(--muted)';
+
+  var roiH = '';
+  if (p.roi && p.roi > 0) {
+    var rS = p.roi > 9999 ? p.roi.toLocaleString('es', {maximumFractionDigits:0}) + '%' : p.roi.toFixed(0) + '%';
+    roiH = '<span class="rb rb-h">ROI: ' + rS + '</span>';
+  } else if (hasCRM) {
+    roiH = '<span class="rb rb-p">Pipeline Comercial vinculado</span>';
+  } else {
+    roiH = '<span class="rb rb-z">Sin Pipeline Comercial directo</span>';
+  }
+
+  var crmS = '';
+  if (hasCRM) {
+    var bP = Math.min((p.util_total / 1300000) * 100, 100);
+    var rL = p.es_gp ? 'Como Gerente de Producto' : 'Como Gerente de Cuenta';
+    var cId = p.crm_nombre_gp || p.crm_nombre_gc;
+    crmS =
+      '<div class="crm-sec">' +
+        '<div class="crm-row"><span class="crm-lbl">' + rL + ' (' + cId + ')</span>' + roiH + '</div>' +
+        '<div class="crm-row" style="margin-top:8px"><span class="crm-lbl">Utilidad Bruta del Pipeline Comercial</span><span class="crm-val" style="color:' + uC + '">' + fmtP(p.util_total) + '</span></div>' +
+        '<div class="crm-row"><span class="crm-lbl">PVP Estimado Pipeline Comercial</span><span class="crm-val" style="color:var(--muted)">' + fmtP(p.pvp_total) + '</span></div>' +
+        '<div class="crm-row"><span class="crm-lbl">Oportunidades</span><span class="crm-val" style="color:var(--purple)">' + p.opps_total + '</span></div>' +
+        '<div class="roi-bar-p"><div class="roi-fill-p" style="width:' + bP + '%"></div></div>' +
+        (cbH ? '<div style="margin-top:8px;font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Marcas en Pipeline Comercial</div>' + cbH : '') +
+      '</div>';
+  } else {
+    crmS = '<div class="no-crm"><div class="no-crm-in"><span style="font-size:16px">+</span>' + roiH + '<span style="margin-left:4px">Perfil t\u00e9cnico \u2014 habilita ventas indirectamente</span></div></div>';
+  }
+
+  // ── EVENTOS section ──────────────────────────────
+  var pEvents = getPersonEvents(p.nombre);
+  var evSec = '';
+  if (pEvents.length > 0) {
+    var evTotal = pEvents.reduce(function(s,e){return s+e.v;},0);
+    var evRows = pEvents.map(function(e) {
+      var cls = bClsMap[e.b] || 'bc-otros';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
+        '<div style="display:flex;align-items:center;gap:6px;min-width:0">' +
+          '<span class="brand-chip ' + cls + '" style="font-size:9px;flex-shrink:0">' + (bEmoji[e.b]||'\u2022') + ' ' + e.b + '</span>' +
+          '<span style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + e.d + '</span>' +
+        '</div>' +
+        '<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:#fbbf24;flex-shrink:0;margin-left:8px">' + fmtEv(e.v) + '</span>' +
+      '</div>';
+    }).join('');
+    evSec = '<div style="padding:10px 20px 12px;background:rgba(251,191,36,.03);border-top:1px solid rgba(255,255,255,.05)">' +
+      '<div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--amber-l);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">' +
+        '<span>\u2708\ufe0f Gastos en Eventos</span>' +
+        '<span style="font-family:var(--mono);font-size:12px;color:#fbbf24">' + fmtEv(evTotal) + '</span>' +
+      '</div>' +
+      evRows +
+    '</div>';
+  }
+
+  var avatarFill = isMale ? '#4da8ff' : '#ff6bba';
+  var avClass = isMale ? 'av-male' : 'av-female';
+  var gbClass = isMale ? 'gb-m' : 'gb-f';
+  var gbLetter = isMale ? 'M' : 'F';
+  var invStr = p.inversion > 0 ? '$' + p.inversion.toLocaleString('es', {maximumFractionDigits:0}) : '\u2014';
+
+  return '<div class="pcard ' + (hasCRM ? 'has-crm' : '') + '">' +
+    '<div class="ch">' +
+      '<div class="avatar ' + avClass + '">' +
+        '<svg width="28" height="28" viewBox="0 0 28 28" fill="none">' +
+          '<circle cx="14" cy="9" r="5" fill="' + avatarFill + '" opacity="0.9"/>' +
+          '<path d="M4 26c0-5.523 4.477-10 10-10s10 4.477 10 10" stroke="' + avatarFill + '" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.9"/>' +
+        '</svg>' +
+        '<div class="gender-badge ' + gbClass + '">' + gbLetter + '</div>' +
+      '</div>' +
+      '<div class="ch-info">' +
+        '<div class="ch-name" title="' + p.nombre + '">' + shortName(p.nombre) + '</div>' +
+        '<div class="ch-meta">' + p.dpto + ' \u00b7 ' + p.area + '</div>' +
+        '<div class="ch-cargo">' + p.cargo + '</div>' +
+        '<div class="ch-roles">' + rHtml + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="cm">' +
+      '<div class="metric"><div class="metric-val" style="color:' + iCcomb + ';font-size:' + (combinedInv >= 1000 ? '14px' : '18px') + '">' + (combinedInv > 0 ? '$' + combinedInv.toLocaleString('es',{maximumFractionDigits:0}) : '\u2014') + '</div><div class="metric-lab">Inv. total</div></div>' +
+      '<div class="metric"><div class="metric-val" style="color:var(--blue-l)">' + p.n_caps + '</div><div class="metric-lab">Capacitaciones</div></div>' +
+      '<div class="metric"><div class="metric-val" style="color:' + uC + '">' + (p.util_total > 0 ? fmtP(p.util_total) : '\u2014') + '</div><div class="metric-lab">Utilidad Bruta Pipeline</div></div>' +
+    '</div>' +
+    '<div class="cb"><div class="cb-title">Formaci\u00f3n en marcas ' + (hasCorr ? '<span style="color:var(--green-l)">\u2713 correlaci\u00f3n</span>' : '') + '</div>' + bHtml + '</div>' +
+    crmS +
+    evSec +
+    '<div class="caps"><div class="caps-t">Capacitaciones realizadas</div>' + cH + '</div>' +
+  '</div>';
+}
+
+function renderPersonas() {
+  var s = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
+  var g = document.getElementById('personGrid');
+  if (!g) return;
+  var f = DATA.filter(function(p) {
+    var ms = !s || p.nombre.toLowerCase().indexOf(s) >= 0 || p.cargo.toLowerCase().indexOf(s) >= 0
+              || (p.marcas_formacion || []).join(' ').toLowerCase().indexOf(s) >= 0
+              || p.dpto.toLowerCase().indexOf(s) >= 0;
+    var mg = activeGender === 'todos' || p.genero === activeGender;
+    var mf = true;
+    if (activeFilter === 'crm') mf = p.util_total > 0;
+    else if (activeFilter === 'gp') mf = p.es_gp;
+    else if (activeFilter === 'gc') mf = p.es_gc;
+    else if (activeFilter === 'correlados') mf = p.marcas_correlacionadas && p.marcas_correlacionadas.length > 0;
+    return ms && mg && mf;
+  });
+  var countEl = document.getElementById('countNum');
+  if (countEl) countEl.textContent = f.length;
+  g.innerHTML = f.length === 0
+    ? '<div class="p-empty">No se encontraron personas con esos criterios</div>'
+    : f.map(buildCard).join('');
+}
+
+function setFilter(f, b) {
+  activeFilter = f;
+  document.querySelectorAll('.controls-bar .filter-btn').forEach(function(x) { x.classList.remove('active'); });
+  b.classList.add('active');
+  renderPersonas();
+}
+
+function setGenderFilter(g, b) {
+  activeGender = g;
+  document.querySelectorAll('[id^="gf-"]').forEach(function(x) { x.classList.remove('active'); });
+  b.classList.add('active');
+  renderPersonas();
+}
+
+function applyFilters() { renderPersonas(); }
+
+// ══════════════════════════════════════════════════════════
+// EVENTOS DATA
+// ══════════════════════════════════════════════════════════
+var EVENTOS = [
+  {f:'2025-01-15',p:'DAVID PE\u00d1A',       b:'DYNATRACE',  v:472.36,  d:'Evento Dynatrace Las Vegas',                            e:'HOTELS.COM'},
+  {f:'2025-01-29',p:'RUBEN SUQUILLO',    b:'HPE Y CISCO',v:434.41,  d:'Boleto UIO-Lima \u00b7 Reuni\u00f3n HPE y Cisco',          e:'LATAM'},
+  {f:'2025-01-29',p:'RUBEN SUQUILLO',    b:'HPE Y CISCO',v:227.30,  d:'Hospedaje Lima \u00b7 Reuni\u00f3n HPE y Cisco',           e:'HOTELS.COM / Los Tallanes'},
+  {f:'2025-02-04',p:'VALERIA AGUIRRE',   b:'CISCO',      v:521.51,  d:'Hospedaje 18-21 feb \u00b7 EBC Cisco Bogot\u00e1',         e:'NH Collection Bogot\u00e1'},
+  {f:'2025-02-04',p:'ANA MORENO',        b:'CISCO',      v:521.51,  d:'Hospedaje 18-21 feb \u00b7 EBC Cisco Bogot\u00e1',         e:'NH Collection Bogot\u00e1'},
+  {f:'2025-02-04',p:'VALERIA AGUIRRE',   b:'CISCO',      v:53.12,   d:'Boletos GYE-Bogot\u00e1 \u00b7 EBS Banco Pac\u00edfico',   e:'IATA Aerogal'},
+  {f:'2025-02-04',p:'ANA MORENO',        b:'CISCO',      v:53.12,   d:'Boletos GYE-Bogot\u00e1 \u00b7 EBS Banco Pac\u00edfico',   e:'IATA Aerogal'},
+  {f:'2025-02-04',p:'VALERIA AGUIRRE',   b:'CISCO',      v:260.75,  d:'Hospedaje adicional \u00b7 EBC Cisco Bogot\u00e1',         e:'NH Collection Bogot\u00e1'},
+  {f:'2025-02-04',p:'ANA MORENO',        b:'CISCO',      v:260.75,  d:'Hospedaje adicional \u00b7 EBC Cisco Bogot\u00e1',         e:'NH Collection Bogot\u00e1'},
+  {f:'2025-02-19',p:'CARLOS PINOS',      b:'NET APP',    v:957.69,  d:'Boleto UIO-Canc\u00fan \u00b7 Nexys Forum',                e:'COPA Airlines'},
+  {f:'2025-02-21',p:'CARLOS PINOS',      b:'NET APP',    v:879.11,  d:'Boleto Canc\u00fan \u00b7 Evento NetApp mar-2025',          e:'COPA AIR'},
+  {f:'2025-02-21',p:'CARLOS PINOS',      b:'NET APP',    v:55.20,   d:'Asiento boleto Canc\u00fan',                               e:'COPA AIR'},
+  {f:'2025-03-07',p:'MARITZA JUMA',      b:'CISCO',      v:871.13,  d:'Boleto CUE-Lima \u00b7 Cisco Synnex',                      e:'LATAM Airlines'},
+  {f:'2025-03-07',p:'MARITZA JUMA',      b:'CISCO',      v:435.60,  d:'Hospedaje Lima',                                           e:'HOTELS.COM / Los Tallanes'},
+  {f:'2025-03-10',p:'ROMEO CARDENAS',    b:'PALO ALTO',  v:155.51,  d:'Boleto UIO-GYE \u00b7 Workshop Palo Alto 26-mar',          e:'LATAM Airlines'},
+  {f:'2025-03-11',p:'HILDA VERDUGA',     b:'SIN MARCA',  v:237.16,  d:'Boleto GYE-UIO \u00b7 Taller GTH 14-mar',                 e:'LATAM Airlines'},
+  {f:'2025-03-12',p:'CARLOS PINOS',      b:'TD SYNNEX',  v:14.40,   d:'Impuesto entrada Canc\u00fan',                             e:'GOB EDO DE QROO'},
+  {f:'2025-03-12',p:'KARLA ZURITA',      b:'TD SYNNEX',  v:14.40,   d:'Impuesto entrada Canc\u00fan',                             e:'GOB EDO DE QROO'},
+  {f:'2025-03-13',p:'KARLA ZURITA',      b:'PALO ALTO',  v:183.11,  d:'Boleto UIO-GYE \u00b7 Workshop Palo Alto 25-mar',          e:'LATAM Airlines'},
+  {f:'2025-03-13',p:'KARLA ZURITA',      b:'PALO ALTO',  v:70.25,   d:'Hospedaje GYE \u00b7 Workshop Palo Alto',                  e:'Swisshotel Quito'},
+  {f:'2025-03-17',p:'CARLOS PINOS',      b:'TD SYNNEX',  v:70.26,   d:'Atenci\u00f3n TD Synnex \u00b7 Evento Canc\u00fan',        e:'ATTENZA DF Ecuador'},
+  {f:'2025-03-17',p:'KARLA ZURITA',      b:'TD SYNNEX',  v:26.00,   d:'Atenci\u00f3n TD Synnex \u00b7 Evento Canc\u00fan',        e:'ATTENZA DF Ecuador'},
+  {f:'2025-05-06',p:'(Sin registro)',    b:'SIN MARCA',  v:111.00,  d:'Conferencia Econom\u00eda Azul \u00b7 Cena Comercial',      e:'RAQERI'},
+  {f:'2025-05-07',p:'CARLOS PINOS',      b:'HPE',        v:1995.00, d:'Pase PGS HPE 2025 Las Vegas',                              e:'Avidity HPE Discover'},
+  {f:'2025-05-07',p:'CARLOS PINOS',      b:'HPE',        v:1104.40, d:'Hospedaje PGS HPE 2025 Las Vegas',                         e:'Venetian Resort'},
+  {f:'2025-05-07',p:'CARLOS PINOS',      b:'HPE',        v:938.88,  d:'Boleto PGS HPE 2025 Las Vegas',                            e:'IATA COPA AIR'},
+  {f:'2025-05-19',p:'HILDA VERDUGA',     b:'F5',         v:651.88,  d:'Boleto GYE-Canc\u00fan \u00b7 F5 Revolution',              e:'IATA COPA AIR'},
+  {f:'2025-05-19',p:'HILDA VERDUGA',     b:'F5',         v:1000.00, d:'Pase F5 Revolution Canc\u00fan',                           e:'F5 Revolution'},
+  {f:'2025-05-19',p:'HILDA VERDUGA',     b:'F5',         v:1197.51, d:'Hospedaje Canc\u00fan \u00b7 F5 Revolution',               e:'Hilton Canc\u00fan'},
+  {f:'2025-05-26',p:'ROMEO CARDENAS',    b:'PALO ALTO',  v:391.47,  d:'Boleto UIO-Bogot\u00e1 \u00b7 Evento Palo Alto 3-jun',     e:'LATAM Airlines'},
+  {f:'2025-05-26',p:'LISETH ACURIO',     b:'PALO ALTO',  v:441.87,  d:'Boleto UIO-Bogot\u00e1 \u00b7 Evento Palo Alto 3-jun',     e:'LATAM Airlines'},
+  {f:'2025-06-04',p:'DAVID PE\u00d1A',   b:'NET APP',    v:1273.89, d:'Reserva hotel \u00b7 Entrenamiento NetApp San Jos\u00e9',   e:'BOOKING.COM'},
+  {f:'2025-06-16',p:'DAVID PE\u00d1A',   b:'NET APP',    v:89.83,   d:'Almuerzo comercial \u00b7 Retroalimentaci\u00f3n NetApp',   e:'ALIMAR'},
+  {f:'2025-08-14',p:'KARLA ZURITA',      b:'DYNATRACE',  v:188.86,  d:'Boleto UIO-GYE \u00b7 Evento Dynatrace Generaci\u00f3n',   e:'LATAM Airlines'},
+  {f:'2025-09-18',p:'(Sin registro)',    b:'SIN MARCA',  v:49.57,   d:'Consumo Cena \u00b7 Speakers TED X 2025',                  e:'Farmers Bistro'},
+  {f:'2025-09-23',p:'THELMO JARRIN',     b:'CISCO',      v:497.95,  d:'Boleto GYE-CAN 29-sep',                                    e:'COPA Airlines'},
+  {f:'2025-09-23',p:'THELMO JARRIN',     b:'CISCO',      v:455.44,  d:'Boleto CAN-GYE 2-oct',                                     e:'AVIANCA'},
+  {f:'2025-09-24',p:'THELMO JARRIN',     b:'CISCO',      v:15.62,   d:'Impuesto visita Canc\u00fan \u00b7 Cisco Connect 2025',     e:'VISITAX'},
+  {f:'2025-10-11',p:'CARLOS PINOS',      b:'NET APP',    v:87.05,   d:'2 asientos \u00b7 Las Vegas evento NetApp',                 e:'American Airlines'},
+  {f:'2025-10-13',p:'CARLOS PINOS',      b:'NET APP',    v:626.76,  d:'Hospedaje Las Vegas \u00b7 Evento NetApp',                  e:'MGM Grand'},
+  {f:'2025-12-29',p:'KARLA ZURITA',      b:'DYNATRACE',  v:1375.90, d:'Pasaje \u00b7 Dynatrace Perform 2026',                     e:'UNITED Airlines'},
+  // ── NUEVOS GASTOS (REPORTE_DE_GSTOS_EVENTO_CON_TC.xlsx) ──
+  {f:'2025-03-27',p:'RUBEN SUQUILLO',    b:'CISCO',      v:6021.40, d:'CXC Security by TD Synnex \u0026 Cisco - Eje Cafetero (1/2)', e:'Cisco TD Synnex Colombia'},
+  {f:'2025-03-27',p:'RUBEN SUQUILLO',    b:'CISCO',      v:3927.00, d:'CXC Security by TD Synnex \u0026 Cisco - Eje Cafetero (2/2)', e:'Cisco TD Synnex Colombia'},
+  {f:'2025-04-03',p:'GABRIEL FIERRO',    b:'CISCO',      v:3927.00, d:'CXC Security by TD Synnex \u0026 Cisco - Eje Cafetero',      e:'Cisco TD Synnex Colombia'},
+
+
+  {f:'2025-02-26',p:'(Sin registro)',    b:'CISCO',      v:360.00,  d:'Certificaciones Comerciales Status Members\u00eda',          e:'Genuine Genius Technologies - COMERCIAL'}
+];
+
+var bClsMap = {
+  'NET APP':'bc-netapp','HPE':'bc-hpe','HPE Y CISCO':'bc-hpe','CISCO':'bc-cisco',
+  'F5':'bc-f5','PALO ALTO':'bc-paloalto','DYNATRACE':'bc-dynatrace',
+  'TD SYNNEX':'bc-otros','SIN MARCA':'bc-sin','OTROS':'bc-otros'
+};
+var bEmoji = {
+  'NET APP':'\ud83d\udd37','HPE':'\ud83d\udfe2','HPE Y CISCO':'\ud83d\udfe2',
+  'CISCO':'\ud83d\udd35','F5':'\ud83d\udd34','PALO ALTO':'\ud83d\udfe0',
+  'DYNATRACE':'\ud83d\udfe3','TD SYNNEX':'\ud83d\udd18','SIN MARCA':'\u2b1c','OTROS':'\ud83d\udccc'
+};
+var bColor = {
+  'HPE':'#14b8a6','HPE Y CISCO':'#14b8a6','NET APP':'#3b82f6','CISCO':'#60a5fa',
+  'DYNATRACE':'#a78bfa','F5':'#f87171','PALO ALTO':'#fb923c',
+  'TD SYNNEX':'#64748b','SIN MARCA':'#475569','OTROS':'#475569'
+};
+
+function fmtEv(n) {
+  return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+var grand = EVENTOS.reduce(function(s, e) { return s + e.v; }, 0);
+
+// ── BUILD EVENTOS IN DASHBOARD ──────────────────────────────
+function buildEvDashboard() {
+  var byP = {}, byB = {};
+  EVENTOS.forEach(function(e) {
+    if (!byP[e.p]) byP[e.p] = {t:0, n:0, bs:[]};
+    byP[e.p].t += e.v; byP[e.p].n++;
+    if (byP[e.p].bs.indexOf(e.b) < 0) byP[e.p].bs.push(e.b);
+    if (!byB[e.b]) byB[e.b] = {t:0, n:0, ps:[]};
+    byB[e.b].t += e.v; byB[e.b].n++;
+    if (byB[e.b].ps.indexOf(e.p) < 0) byB[e.b].ps.push(e.p);
+  });
+
+  var persons = Object.keys(byP).map(function(k) { return [k, byP[k]]; }).sort(function(a,b) { return b[1].t - a[1].t; });
+  var brands  = Object.keys(byB).map(function(k) { return [k, byB[k]]; }).sort(function(a,b) { return b[1].t - a[1].t; });
+  var maxP = persons[0][1].t;
+  var maxB = brands[0][1].t;
+
+  var bp = document.getElementById('ev-bar-personas');
+  if (bp) {
+    bp.innerHTML = persons.map(function(item) {
+      var p = item[0], d = item[1];
+      var isH = p === 'HILDA VERDUGA', isS = p === '(Sin registro)';
+      var col = isH ? 'linear-gradient(90deg,#7c3aed,#a78bfa)' : isS ? 'linear-gradient(90deg,#374151,#6b7280)' : 'linear-gradient(90deg,#1a56db,#3b82f6)';
+      var nm = isS ? '<em style="color:var(--muted)">Sin registro</em>' : p.split(' ').map(function(w) { return w.charAt(0) + w.slice(1).toLowerCase(); }).join(' ');
+      var pct = (d.t / maxP * 100).toFixed(1);
+      return '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div style="width:130px;font-size:11px;color:var(--soft);text-align:right;flex-shrink:0;font-family:var(--mono);font-weight:600">' + nm + '</div>' +
+        '<div style="flex:1;height:20px;background:rgba(255,255,255,.05);border-radius:4px;overflow:hidden">' +
+          '<div style="height:100%;width:' + pct + '%;background:' + col + ';display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:700;color:rgba(255,255,255,.8)">' + d.n + ' gastos</div>' +
+        '</div>' +
+        '<div style="width:72px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--soft);flex-shrink:0">' + fmtEv(d.t) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  var bm = document.getElementById('ev-bar-marcas');
+  if (bm) {
+    bm.innerHTML = brands.map(function(item) {
+      var b = item[0], d = item[1];
+      var col = bColor[b] || '#64748b';
+      var pct = (d.t / maxB * 100).toFixed(1);
+      return '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div style="width:85px;font-size:10px;color:var(--soft);text-align:right;flex-shrink:0;font-weight:600">' + b + '</div>' +
+        '<div style="flex:1;height:18px;background:rgba(255,255,255,.05);border-radius:4px;overflow:hidden">' +
+          '<div style="height:100%;width:' + pct + '%;background:' + col + ';opacity:.85;display:flex;align-items:center;padding-left:6px;font-size:9px;font-weight:700;color:rgba(255,255,255,.85)">' + d.n + '</div>' +
+        '</div>' +
+        '<div style="width:66px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--soft);flex-shrink:0">' + fmtEv(d.t) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  var pc = document.getElementById('ev-person-cards');
+  if (pc) {
+    pc.innerHTML = persons.map(function(item) {
+      var p = item[0], d = item[1];
+      var isH = p === 'HILDA VERDUGA', isS = p === '(Sin registro)';
+      var col = isH ? '#c4b5fd' : isS ? '#94a3b8' : '#60a5fa';
+      var nm = isS ? 'Sin Registro' : p.split(' ').map(function(w) { return w.charAt(0) + w.slice(1).toLowerCase(); }).join(' ');
+      var bArr = d.bs.filter(function(x) { return x !== 'OTROS' && x !== 'SIN MARCA'; });
+      var chips = bArr.map(function(b) {
+        var cls = bClsMap[b] || 'bc-otros';
+        var em = bEmoji[b] || '\u2022';
+        return '<span class="brand-chip ' + cls + '">' + em + ' ' + b + '</span>';
+      }).join('');
+      return '<div style="background:var(--card);border:1px solid ' + (isH ? 'rgba(139,92,246,.3)' : 'var(--border)') + ';border-radius:12px;padding:16px 18px">' +
+        '<div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:1px">' + nm + '</div>' +
+        '<div style="font-size:10px;color:var(--muted);margin-bottom:7px">' + d.n + ' gastos \u00b7 ' + (d.t/grand*100).toFixed(1) + '% del total</div>' +
+        '<div style="font-size:20px;font-weight:800;font-family:var(--mono);color:' + col + ';margin-bottom:6px">' + fmtEv(d.t) + '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:3px">' + chips + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  renderEvTable2();
+}
+
+var evFilter2 = 'todos';
+
+function renderEvTable2() {
+  var tb = document.getElementById('ev-tbody2');
+  if (!tb) return;
+  var rows = EVENTOS.filter(function(e) { return evFilter2 === 'todos' || e.b === evFilter2; });
+  tb.innerHTML = rows.map(function(e) {
+    var isH = e.p === 'HILDA VERDUGA', isS = e.p === '(Sin registro)';
+    var nm = isS
+      ? '<em style="color:var(--muted)">(Sin registro)</em>'
+      : e.p.split(' ').map(function(w) { return w.charAt(0) + w.slice(1).toLowerCase(); }).join(' ');
+    var cls = bClsMap[e.b] || 'bc-otros';
+    var em = bEmoji[e.b] || '\u2022';
+    return '<tr class="' + (isH ? 'row-hilda' : isS ? 'row-sin' : '') + '">' +
+      '<td style="font-family:var(--mono);font-size:11px;color:var(--muted)">' + e.f + '</td>' +
+      '<td style="font-weight:600;' + (isH ? 'color:#c4b5fd' : '') + '">' + nm + '</td>' +
+      '<td><span class="brand-chip ' + cls + '" style="font-size:9px">' + em + ' ' + e.b + '</span></td>' +
+      '<td style="font-size:12px;color:var(--muted)">' + e.d + '</td>' +
+      '<td style="font-size:11px;color:var(--muted)">' + e.e + '</td>' +
+      '<td style="font-family:var(--mono);font-weight:800;text-align:right">' + fmtEv(e.v) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function filterEv2(f, btn) {
+  evFilter2 = f;
+  document.querySelectorAll('.ev-fbtn').forEach(function(b) { b.classList.remove('on'); });
+  btn.classList.add('on');
+  renderEvTable2();
+}
+
+// ══════════════════════════════════════════════════════════
+// PLATZI DATA + RENDER
+// ══════════════════════════════════════════════════════════
+// PLATZI array inserted below by Python
+
+const PLATZI=[
+  {n:'Ana Belén',                      e:'amoreno',     a:'COMERCIAL',  c:28,hrs:68.5,sc:1.000,nv:'ALTO', r:['Comercial','Habilidades Blandas','Inteligencia Artificial']},
+  {n:'Andres Arreaga',                 e:'aarreaga',    a:'AGILITY',    c:19,hrs:66.1,sc:0.893,nv:'ALTO', r:['Ciberseguridad','Nube','Inteligencia Artificial']},
+  {n:'Gabriela Cruz Caiza',            e:'gcruz',       a:'COMERCIAL',  c:19,hrs:58.8,sc:0.861,nv:'ALTO', r:['Comercial','Área Comercial Oblig.','Inteligencia Artificial','Inglés']},
+  {n:'Diana Soria',                    e:'dsoria',      a:'SERVICIOS',  c:15,hrs:31.5,sc:0.699,nv:'ALTO', r:['Inglés','Inteligencia Artificial','Área Servicios Oblig.']},
+  {n:'SANTIAGO SUÁREZ',                e:'ssuarez',     a:'SERVICIOS',  c:14,hrs:26.8,sc:0.667,nv:'ALTO', r:['Inteligencia Artificial','Nube','Ciberseguridad','Habilidades Blandas']},
+  {n:'Colon Dominguez',                e:'cdominguez',  a:'SERVICIOS',  c:9, hrs:37.6,sc:0.661,nv:'ALTO', r:['Inteligencia Artificial','Inglés']},
+  {n:'Jorge Guerrero Briones',         e:'jguerrero',   a:'SERVICIOS',  c:10,hrs:32.1,sc:0.648,nv:'ALTO', r:['Inteligencia Artificial','Inglés']},
+  {n:'Victor Jaramillo V',             e:'vjaramillo',  a:'SERVICIOS',  c:13,hrs:24.7,sc:0.647,nv:'ALTO', r:['Inglés','Inteligencia Artificial','Ciberseguridad','Área Servicios']},
+  {n:'Leonardo Salazar',               e:'lsalazar',    a:'SERVICIOS',  c:11,hrs:28.4,sc:0.642,nv:'ALTO', r:['Habilidades Blandas','Nube','Ciberseguridad','Inteligencia Artificial','Inglés']},
+  {n:'Erika Pupiales',                 e:'epupiales',   a:'SERVICIOS',  c:9, hrs:22.8,sc:0.596,nv:'ALTO', r:['Nube','Ciberseguridad','Comercial','Inteligencia Artificial','Habilidades Blandas']},
+  {n:'PABLO RUEDA',                    e:'prueda',      a:'SERVICIOS',  c:9, hrs:19.0,sc:0.580,nv:'ALTO', r:['Área Servicios Oblig.','Inteligencia Artificial','Inglés']},
+  {n:'Alison Lalaleo',                 e:'alalaleo',    a:'MARKETING',  c:8, hrs:16.5,sc:0.558,nv:'ALTO', r:['Inglés','Área Marketing Oblig.','Inteligencia Artificial']},
+  {n:'Gabriel Olalla',                 e:'golalla',     a:'SERVICIOS',  c:11,hrs:8.7, sc:0.556,nv:'ALTO', r:['Ciberseguridad','Área Servicios Oblig.','Inglés','Inteligencia Artificial']},
+  {n:'DIANA BUSTOS',                   e:'dbustos',     a:'GTH',        c:6, hrs:16.0,sc:0.534,nv:'ALTO', r:['Inteligencia Artificial','Área GTH Oblig.','Habilidades Blandas','Inglés']},
+  {n:'Guillermo Campuzano',            e:'gcampuzano',  a:'SERVICIOS',  c:5, hrs:14.1,sc:0.515,nv:'ALTO', r:['Inglés','Inteligencia Artificial','Área Servicios Oblig.']},
+  {n:'César Calle',                    e:'ccalle',      a:'COMERCIAL',  c:6, hrs:11.2,sc:0.513,nv:'ALTO', r:['Inteligencia Artificial','Inglés']},
+  {n:'Christian Mantilla Yunga',       e:'cmantilla',   a:'SERVICIOS',  c:5, hrs:12.4,sc:0.508,nv:'ALTO', r:['Ciberseguridad']},
+  {n:'Avelina Yanez',                  e:'ayanez',      a:'FINANZAS',   c:7, hrs:7.1, sc:0.506,nv:'ALTO', r:['Habilidades Blandas','Área Finanzas Oblig.','Inteligencia Artificial','Inglés','Comercial']},
+  {n:'Henry Saúl Altamirano',          e:'haltamirano', a:'SERVICIOS',  c:2, hrs:18.9,sc:0.504,nv:'ALTO', r:['Habilidades Blandas','Comercial','Inteligencia Artificial','Ciberseguridad','Nube']},
+  {n:'Thelmo Jarrín Rodríguez',        e:'tjarrin',     a:'COMERCIAL',  c:6, hrs:4.5, sc:0.484,nv:'MEDIO',r:['Nube','Área Comercial Oblig.','Inglés','Inteligencia Artificial','Habilidades Blandas']},
+  {n:'JIMMY SEBASTIAN ALARCON',        e:'jalarcon',    a:'SERVICIOS',  c:4, hrs:8.8, sc:0.481,nv:'MEDIO',r:['Inteligencia Artificial','Comercial','Ciberseguridad','Nube','Habilidades Blandas']},
+  {n:'ANA SUAREZ',                     e:'ventas',      a:'COMERCIAL',  c:3, hrs:8.6, sc:0.470,nv:'MEDIO',r:['Inteligencia Artificial','Ciberseguridad','Habilidades Blandas','Comercial','Inglés']},
+  {n:'Carlos Rodriguez',               e:'crodriguez',  a:'SERVICIOS',  c:4, hrs:5.3, sc:0.466,nv:'MEDIO',r:['Área Servicios Oblig.','Inteligencia Artificial','Inglés']},
+  {n:'Luis Fernando Alomoto',          e:'lalomoto',    a:'SERVICIOS',  c:2, hrs:8.8, sc:0.460,nv:'MEDIO',r:['Área Servicios Oblig.','Inteligencia Artificial','Inglés']},
+  {n:'Estalin Benitez',                e:'ebenitez',    a:'SERVICIOS',  c:2, hrs:8.6, sc:0.459,nv:'MEDIO',r:['Inteligencia Artificial','Nube','Inglés']},
+  {n:'Valeria Aguirre Salas',          e:'vaguirre',    a:'SERVICIOS',  c:2, hrs:6.5, sc:0.450,nv:'MEDIO',r:['Inglés','Área Servicios Oblig.','Inteligencia Artificial']},
+  {n:'LUIS EDUARDO MONTENEGRO',        e:'emontenegro', a:'FINANZAS',   c:1, hrs:2.8, sc:0.423,nv:'MEDIO',r:['Inteligencia Artificial','Área Finanzas Oblig.','Inglés']},
+  {n:'Jessica Macas',                  e:'jmacas',      a:'COMERCIAL',  c:1, hrs:2.8, sc:0.423,nv:'MEDIO',r:['Inglés','Área Comercial Oblig.','Inteligencia Artificial']},
+  {n:'Francisco Haro',                 e:'fharo',       a:'SERVICIOS',  c:1, hrs:2.4, sc:0.421,nv:'MEDIO',r:['Inteligencia Artificial','Comercial','Inglés','Nube','Ciberseguridad','Habilidades Blandas']},
+  {n:'Stefanie Mora',                  e:'smora',       a:'COMERCIAL',  c:1, hrs:2.2, sc:0.420,nv:'MEDIO',r:['Habilidades Blandas','Inglés','Inteligencia Artificial','Comercial']},
+  {n:'Adrian Salazar Grijalva',        e:'aasalazar',   a:'SERVICIOS',  c:1, hrs:1.5, sc:0.417,nv:'MEDIO',r:['Inteligencia Artificial','Inglés']},
+  {n:'CARLOS MONROY',                  e:'cmonroy',     a:'SERVICIOS',  c:1, hrs:1.1, sc:0.416,nv:'MEDIO',r:['Inglés','Área Servicios Oblig.','Inteligencia Artificial']},
+  {n:'Darwin Merejildo',               e:'dborbor',     a:'SERVICIOS',  c:1, hrs:1.2, sc:0.416,nv:'MEDIO',r:['Inteligencia Artificial','Inglés']},
+  {n:'Esteffanys Chávez Alcívar',      e:'echavez',     a:'COMERCIAL',  c:1, hrs:0.9, sc:0.415,nv:'MEDIO',r:['Inteligencia Artificial','Ciberseguridad']},
+  {n:'Hernán De La Torre',             e:'hdelatorre',  a:'SERVICIOS',  c:1, hrs:1.0, sc:0.415,nv:'MEDIO',r:['Inglés','Inteligencia Artificial']},
+  {n:'Maria Auxiliadora Flores',       e:'mariuflores', a:'SERVICIOS',  c:1, hrs:0.0, sc:0.411,nv:'MEDIO',r:['Inglés','Inteligencia Artificial','Ciberseguridad','Nube']},
+];
+
+
+var pzFlt = 'todos';
+var pzArea = 'todos';
+var COST_PU = 277.78;
+
+function scColor(s) {
+  return s >= 0.5 ? '#10b981' : s >= 0.2 ? '#f59e0b' : '#ef4444';
+}
+
+var aColors = {
+  'SERVICIOS':'#14b8a6','COMERCIAL':'#3b82f6','SIN \u00c1REA':'#8b5cf6',
+  'GTH':'#ec4899','FINANZAS':'#f59e0b','MARKETING':'#10b981','AGILITY':'#f97316'
+};
+
+function renderPzList() {
+  var list = document.getElementById('pz-list');
+  if (!list) return;
+  var maxC = Math.max.apply(null, PLATZI.map(function(p) { return p.c; }));
+  var maxH = Math.max.apply(null, PLATZI.map(function(p) { return p.hrs; }));
+  var f = PLATZI.filter(function(p) {
+    return (pzFlt === 'todos' || p.nv === pzFlt) && (pzArea === 'todos' || p.a === pzArea);
+  });
+  if (f.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Sin resultados</div>';
+    return;
+  }
+  list.innerHTML = f.map(function(p) {
+    var col = scColor(p.sc);
+    var r = 22, circ = 2 * Math.PI * r;
+    var dash = (circ * p.sc).toFixed(1), gap = (circ - circ * p.sc).toFixed(1);
+    var aC = aColors[p.a] || '#64748b';
+    var cpc = (COST_PU / p.c).toFixed(2);
+    var certPct = (p.c / maxC * 100).toFixed(0);
+    var hrsPct  = (p.hrs / maxH * 100).toFixed(0);
+    var levelHtml = '<span class="nivel-chip n-' + p.nv.toLowerCase() + '">' +
+      (p.nv === 'ALTO' ? '\ud83d\udfe2' : p.nv === 'MEDIO' ? '\ud83d\udfe1' : '\ud83d\udd34') + ' ' + p.nv + '</span>';
+    var rutaTags = p.r.slice(0,3).map(function(x) { return '<span class="ruta-tag">' + x + '</span>'; }).join('');
+    var moreRutas = p.r.length > 3 ? '<span style="font-size:10px;color:var(--muted)">+' + (p.r.length-3) + '</span>' : '';
+    return '<div class="pz-row">' +
+      '<div class="score-ring">' +
+        '<svg width="52" height="52" viewBox="0 0 52 52">' +
+          '<circle class="ring-bg" cx="26" cy="26" r="' + r + '"/>' +
+          '<circle class="ring-fill" cx="26" cy="26" r="' + r + '" stroke="' + col + '" stroke-dasharray="' + dash + ' ' + gap + '"/>' +
+        '</svg>' +
+        '<div class="score-center" style="color:' + col + '">' + Math.round(p.sc*100) + '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div class="pz-name">' + p.n + '</div>' +
+        '<div class="pz-meta"><span style="color:' + aC + ';font-weight:700">' + p.a + '</span><span style="margin:0 6px;opacity:.3">\u00b7</span>' + rutaTags + moreRutas + '</div>' +
+        '<div style="display:flex;gap:16px;margin-top:8px">' +
+          '<div style="display:flex;flex-direction:column;gap:3px;width:120px"><div style="font-size:9px;color:var(--muted);font-weight:600;letter-spacing:.5px">CERTIFICADOS</div><div class="prog-wrap"><div class="prog-bar" style="width:' + certPct + '%;background:' + col + '"></div></div></div>' +
+          '<div style="display:flex;flex-direction:column;gap:3px;width:120px"><div style="font-size:9px;color:var(--muted);font-weight:600;letter-spacing:.5px">HORAS</div><div class="prog-wrap"><div class="prog-bar" style="width:' + hrsPct + '%;background:' + col + ';opacity:.6"></div></div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pz-stats">' +
+        '<div class="pz-stat"><div class="pz-sv" style="color:' + col + '">' + p.c + '</div><div class="pz-sl">Certs.</div></div>' +
+        '<div class="pz-stat"><div class="pz-sv" style="color:var(--soft)">' + p.hrs + '</div><div class="pz-sl">Horas</div></div>' +
+        '<div class="pz-stat"><div class="pz-sv" style="color:var(--amber-l);font-size:12px">$' + cpc + '</div><div class="pz-sl">$/Cert.</div></div>' +
+        levelHtml +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderPzCost() {
+  var tb = document.getElementById('pz-cost-tbody');
+  if (!tb) return;
+  tb.innerHTML = PLATZI.map(function(p, i) {
+    var col = scColor(p.sc);
+    var aC = aColors[p.a] || '#64748b';
+    var cpc = (COST_PU / p.c).toFixed(2);
+    var cpcColor = parseFloat(cpc) < 50 ? '#34d399' : parseFloat(cpc) < 150 ? '#fbbf24' : '#f87171';
+    return '<tr>' +
+      '<td style="color:var(--muted);font-size:11px">' + (i+1) + '</td>' +
+      '<td style="font-weight:600">' + p.n + '</td>' +
+      '<td style="font-size:11px;font-weight:700;color:' + aC + '">' + p.a + '</td>' +
+      '<td style="font-size:11px;color:var(--muted)">' + p.r.slice(0,2).join(', ') + (p.r.length>2 ? ' +' + (p.r.length-2) : '') + '</td>' +
+      '<td style="font-family:var(--mono);font-weight:800;color:' + col + '">' + p.c + '</td>' +
+      '<td style="font-family:var(--mono)">' + p.hrs + '</td>' +
+      '<td style="font-family:var(--mono)">$' + COST_PU.toFixed(2) + '</td>' +
+      '<td style="font-family:var(--mono);font-weight:800;text-align:right;color:' + cpcColor + '">$' + cpc + '</td>' +
+      '<td><span class="nivel-chip n-' + p.nv.toLowerCase() + '">' + (p.nv==='ALTO'?'\ud83d\udfe2':'\ud83d\udfe1') + ' ' + p.nv + '</span></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function buildRutaBars() {
+  var rCount = {};
+  PLATZI.forEach(function(p) { p.r.forEach(function(r) { rCount[r] = (rCount[r] || 0) + 1; }); });
+  var sorted = Object.keys(rCount).map(function(r) { return [r, rCount[r]]; }).sort(function(a,b) { return b[1]-a[1]; });
+  var mx = sorted[0][1];
+  var rColors = {
+    'Inteligencia Artificial':'#8b5cf6','Ciberseguridad':'#ef4444','Nube':'#06b6d4',
+    'Habilidades Blandas':'#10b981','Comercial':'#3b82f6','Ingl\u00e9s':'#f59e0b',
+    '\u00c1rea Servicios Oblig.':'#14b8a6','Area Servicios Oblig.':'#14b8a6',
+    '\u00c1rea Comercial Oblig.':'#1a56db','Area Comercial Oblig.':'#1a56db',
+    '\u00c1rea GTH Oblig.':'#ec4899','Area GTH Oblig.':'#ec4899',
+    '\u00c1rea Finanzas Oblig.':'#f59e0b','Area Finanzas Oblig.':'#f59e0b',
+    '\u00c1rea Marketing Oblig.':'#10b981','Area Marketing Oblig.':'#10b981'
+  };
+  var el = document.getElementById('ruta-bars');
+  if (!el) return;
+  el.innerHTML = sorted.map(function(item) {
+    var r = item[0], n = item[1];
+    var col = rColors[r] || '#64748b';
+    var pct = (n / mx * 100).toFixed(0);
+    return '<div style="display:flex;align-items:center;gap:10px">' +
+      '<div style="width:160px;font-size:10px;color:var(--soft);text-align:right;flex-shrink:0;font-weight:600">' + r + '</div>' +
+      '<div style="flex:1;height:18px;background:rgba(255,255,255,.05);border-radius:4px;overflow:hidden">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + col + ';opacity:.75;display:flex;align-items:center;padding-left:6px;font-size:9px;font-weight:700;color:rgba(255,255,255,.9)">' + n + ' pers.</div>' +
+      '</div>' +
+      '<div style="width:32px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--soft);flex-shrink:0">' + n + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function buildAreaDist() {
+  var byA = {};
+  PLATZI.forEach(function(p) {
+    if (!byA[p.a]) byA[p.a] = {n:0, c:0, hrs:0};
+    byA[p.a].n++; byA[p.a].c += p.c; byA[p.a].hrs += p.hrs;
+  });
+  var sorted = Object.keys(byA).map(function(a) { return [a, byA[a]]; }).sort(function(a,b) { return b[1].c - a[1].c; });
+  var el = document.getElementById('area-dist');
+  if (!el) return;
+  el.innerHTML = sorted.map(function(item) {
+    var a = item[0], d = item[1];
+    var aC = aColors[a] || '#64748b';
+    var cpc = (COST_PU * d.n / d.c).toFixed(2);
+    return '<div style="padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.02)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+        '<span style="font-weight:700;color:' + aC + '">' + a + '</span>' +
+        '<span style="background:rgba(255,255,255,.06);color:' + aC + ';border:1px solid rgba(255,255,255,.1);padding:2px 10px;border-radius:100px;font-size:11px;font-weight:700">' + d.n + ' usuarios</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:20px">' +
+        '<div><div style="font-size:18px;font-weight:800;font-family:var(--mono);color:#fff">' + d.c + '</div><div style="font-size:10px;color:var(--muted)">certificados</div></div>' +
+        '<div><div style="font-size:18px;font-weight:800;font-family:var(--mono);color:var(--soft)">' + d.hrs.toFixed(1) + '</div><div style="font-size:10px;color:var(--muted)">horas</div></div>' +
+        '<div><div style="font-size:16px;font-weight:800;font-family:var(--mono);color:var(--amber-l)">$' + cpc + '</div><div style="font-size:10px;color:var(--muted)">$/cert.</div></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function filterPz(f, btn) {
+  pzFlt = f;
+  document.querySelectorAll('.pz-nivel-btn').forEach(function(b) { b.classList.remove('on'); });
+  btn.classList.add('on');
+  renderPzList();
+}
+
+function filterPzArea(f, btn) {
+  pzArea = f;
+  document.querySelectorAll('.pz-area-btn').forEach(function(b) { b.classList.remove('on'); });
+  btn.classList.add('on');
+  renderPzList();
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT — runs after all data is defined
+// ══════════════════════════════════════════════════════════
+buildDashboard();
+renderPersonas();
+buildEvDashboard();
+renderPzList();
+renderPzCost();
+buildRutaBars();
+buildAreaDist();
+
+</script>
+</body>
+</html>

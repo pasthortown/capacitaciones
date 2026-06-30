@@ -23,6 +23,8 @@ const {
   buildReporteConveniosFilename,
   renderDashboardConveniosHtml,
   buildDashboardConveniosFilename,
+  renderLiquidacionHtml,
+  buildLiquidacionFilename,
   ValidationError
 } = require('./template');
 const { renderPdf, closeBrowser } = require('./renderer');
@@ -187,6 +189,38 @@ app.post('/emitir/dashboard-convenios', async (req, res) => {
     }
     // eslint-disable-next-line no-console
     console.error('[emisor] error al emitir dashboard de convenios:', err);
+    return res.status(500).json({ error: 'InternalError', message: err.message || 'Error interno' });
+  }
+});
+
+/**
+ * Liquidación por Desvinculación (montos a reintegrar a la fecha de salida). A4 landscape,
+ * layout por la @page del HTML. PDF en OUTPUT_DIR con nombre `Liquidacion_{cedula}.pdf`.
+ */
+app.post('/emitir/liquidacion-convenios', async (req, res) => {
+  try {
+    const html = renderLiquidacionHtml(req.body);
+    const cedula = req.body.colaborador && req.body.colaborador.cedula;
+
+    const filename = buildLiquidacionFilename(cedula);
+    const outPath = path.join(config.outputDir, filename);
+
+    await fsp.mkdir(config.outputDir, { recursive: true });
+
+    const pdfBuffer = await renderPdf(html, config.templatesDir, {
+      landscape: true,
+      preferCSSPageSize: true,
+      margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' }
+    });
+    await fsp.writeFile(outPath, pdfBuffer);
+
+    return res.status(201).json({ ruta: `/output/${filename}` });
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({ error: 'ValidationError', message: err.message });
+    }
+    // eslint-disable-next-line no-console
+    console.error('[emisor] error al emitir liquidación por desvinculación:', err);
     return res.status(500).json({ error: 'InternalError', message: err.message || 'Error interno' });
   }
 });

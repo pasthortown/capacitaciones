@@ -14,6 +14,7 @@ const REPORTE_TEMPLATE_PATH = path.join(config.templatesDir, 'reporte_asistencia
 const CONVENIO_TEMPLATE_PATH = path.join(config.templatesDir, 'convenio.html');
 const REPORTE_CONVENIOS_TEMPLATE_PATH = path.join(config.templatesDir, 'reporte_convenios.html');
 const DASHBOARD_CONVENIOS_TEMPLATE_PATH = path.join(config.templatesDir, 'dashboard_convenios.html');
+const LIQUIDACION_CONVENIOS_TEMPLATE_PATH = path.join(config.templatesDir, 'liquidacion_convenios.html');
 
 // Mapeo artículo + sustantivo por tipo de actividad (case-insensitive, sin acentos).
 const ACTIVIDAD_MAP = {
@@ -983,6 +984,124 @@ function buildDashboardConveniosFilename() {
   return 'Dashboard_Convenios.pdf';
 }
 
+// ========== 4) Liquidación por Desvinculación ========================================
+
+/**
+ * Valida el payload de la liquidación por desvinculación. Estructura:
+ *   {
+ *     colaborador: { nombre, cedula, cargo, area, empresa },
+ *     fechaSalida,
+ *     convenios: [ { codigoRegistro, titulo, nombreCurso, marca, clasificacion,
+ *                    modalidadReintegro, estado, fechaIngreso, valorAsumidoEmpresa,
+ *                    mesesADevengar, mesesTranscurridosASalida, montoReintegro } ],
+ *     totalReintegro
+ *   }
+ *
+ * Obligatorio: `colaborador.cedula`. `convenios` (si viene) debe ser arreglo.
+ */
+function validateLiquidacionPayload(body) {
+  if (!body || typeof body !== 'object') {
+    throw new ValidationError('Payload vacío o no es un objeto.');
+  }
+  const { colaborador, convenios } = body;
+  if (!colaborador || typeof colaborador !== 'object') {
+    throw new ValidationError('`colaborador` es obligatorio.');
+  }
+  if (!colaborador.cedula) throw new ValidationError('`colaborador.cedula` es obligatorio.');
+  if (convenios !== undefined && !Array.isArray(convenios)) {
+    throw new ValidationError('`convenios` debe ser un arreglo.');
+  }
+}
+
+function buildLiquidacionColaboradorHtml(colaborador) {
+  const campos = [
+    ['Colaborador', valorOGuion(colaborador.nombre)],
+    ['Cédula', valorOGuion(colaborador.cedula)],
+    ['Cargo', valorOGuion(colaborador.cargo)],
+    ['Área', valorOGuion(colaborador.area)],
+    ['Empresa', valorOGuion(colaborador.empresa)]
+  ];
+  return `<div class="colab-box">${campos
+    .map(([label, value]) => `<div class="cf"><label>${escapeHtml(label)}</label><span>${value}</span></div>`)
+    .join('')}</div>`;
+}
+
+function buildLiquidacionTablaHtml(convenios, totalReintegro) {
+  const filas = (Array.isArray(convenios) ? convenios : [])
+    .map((c) => {
+      // Título principal + curso como subtítulo (si difieren). Si solo hay uno, se muestra ese.
+      const tituloTxt = String(c.titulo || '').trim();
+      const cursoTxt = String(c.nombreCurso || '').trim();
+      let tituloHtml = '—';
+      if (tituloTxt && cursoTxt && tituloTxt !== cursoTxt) {
+        tituloHtml = `${escapeHtml(tituloTxt)}<span style="color:#77787B;font-size:7.5pt;display:block;">${escapeHtml(cursoTxt)}</span>`;
+      } else {
+        tituloHtml = valorOGuion(tituloTxt || cursoTxt);
+      }
+      return `<tr>
+        <td class="col-cod center">${valorOGuion(c.codigoRegistro)}</td>
+        <td class="col-titulo">${tituloHtml}</td>
+        <td class="col-marca">${valorOGuion(c.marca)}</td>
+        <td class="col-clas">${valorOGuion(c.clasificacion)}</td>
+        <td class="col-mod">${valorOGuion(c.modalidadReintegro)}</td>
+        <td class="col-fing center">${formatFechaEsOGuion(c.fechaIngreso)}</td>
+        <td class="col-mes center">${valorOGuion(c.mesesTranscurridosASalida)}</td>
+        <td class="col-mon num">${formatMonedaUsd(c.valorAsumidoEmpresa)}</td>
+        <td class="col-mon num reintegro-cell">${formatMonedaUsd(c.montoReintegro)}</td>
+      </tr>`;
+    })
+    .join('');
+
+  const filasHtml = filas || `<tr><td colspan="9" class="center">Sin convenios con reintegro a la fecha indicada.</td></tr>`;
+  const totalHtml = filas ? formatMonedaUsd(totalReintegro) : formatMonedaUsd(0);
+
+  return `<table class="conv">
+    <thead>
+      <tr>
+        <th class="col-cod">Código</th>
+        <th class="col-titulo">Convenio</th>
+        <th class="col-marca">Marca</th>
+        <th class="col-clas">Clasificación</th>
+        <th class="col-mod">Modalidad de reintegro</th>
+        <th class="col-fing">Fecha de ingreso</th>
+        <th class="col-mes">Meses a la salida</th>
+        <th class="col-mon">Valor asumido</th>
+        <th class="col-mon">Monto a reintegrar</th>
+      </tr>
+    </thead>
+    <tbody>${filasHtml}</tbody>
+    <tfoot>
+      <tr>
+        <td colspan="8">Total a reintegrar</td>
+        <td class="num">${totalHtml}</td>
+      </tr>
+    </tfoot>
+  </table>`;
+}
+
+function renderLiquidacionHtml(payload) {
+  validateLiquidacionPayload(payload);
+
+  const { colaborador, convenios, fechaSalida, totalReintegro } = payload;
+
+  const tokens = {
+    fechaSalida: formatFechaEsOGuion(fechaSalida),
+    colaboradorBox: buildLiquidacionColaboradorHtml(colaborador),
+    tablaConvenios: buildLiquidacionTablaHtml(convenios, totalReintegro)
+  };
+
+  const template = fs.readFileSync(LIQUIDACION_CONVENIOS_TEMPLATE_PATH, 'utf8');
+  return Object.keys(tokens).reduce((html, key) => {
+    const re = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g');
+    return html.replace(re, tokens[key]);
+  }, template);
+}
+
+function buildLiquidacionFilename(cedula) {
+  const safe = sanitizeFilenamePart(cedula) || 'COLABORADOR';
+  return `Liquidacion_${safe}.pdf`;
+}
+
 module.exports = {
   renderHtml,
   buildPdfFilename,
@@ -994,5 +1113,8 @@ module.exports = {
   buildReporteConveniosFilename,
   renderDashboardConveniosHtml,
   buildDashboardConveniosFilename,
+  validateLiquidacionPayload,
+  renderLiquidacionHtml,
+  buildLiquidacionFilename,
   ValidationError
 };

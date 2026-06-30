@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Resumen de Convenios</title>
+  <title>Liquidación por Desvinculación</title>
   <style>
     /* ===== Tipografías oficiales (§6.1 instrucciones.md) ===== */
     @font-face { font-family: 'Uni Sans'; src: url('./fonts/UniSans/UniSans-Thin.otf') format('opentype');       font-weight: 100; font-style: normal; }
@@ -26,7 +26,7 @@
     @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-BoldItalic.otf') format('opentype'); font-weight: 700; font-style: italic; }
 
     /* ===== Página ===== */
-    @page { size: A4; margin: 12mm; }
+    @page { size: A4 landscape; margin: 12mm; }
 
     * { box-sizing: border-box; }
 
@@ -35,7 +35,7 @@
       padding: 0 1.5mm;
       font-family: 'Montserrat', Arial, sans-serif;
       color: #1a1a1a;
-      font-size: 9.5pt;
+      font-size: 9pt;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -52,119 +52,121 @@
       vertical-align: middle;
       padding: 2mm 3mm;
     }
-    .page-header .logo-cell { width: 34mm; text-align: center; padding: 2mm; }
-    .page-header .logo-cell img { width: 26mm; height: auto; object-fit: contain; }
+    .page-header .logo-cell { width: 36mm; text-align: center; padding: 2mm; }
+    .page-header .logo-cell img { width: 28mm; height: auto; object-fit: contain; }
     .page-header .title-cell {
       text-align: center;
       font-family: 'Plus Jakarta Sans', Arial, sans-serif;
       font-weight: 700;
-      font-size: 14pt;
+      font-size: 13pt;
       letter-spacing: 0.4px;
       color: #221E20;
     }
     .page-header .meta-cell {
-      width: 48mm;
+      width: 52mm;
       font-size: 8.5pt;
       line-height: 1.4;
     }
     .page-header .meta-cell .lbl { color: #77787B; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 0.3px; }
-    .red-bar { height: 3px; background: #E20000; margin-bottom: 5mm; }
+    .page-header .meta-cell .fecha-salida { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-weight: 700; font-size: 10.5pt; color: #E20000; }
+    .red-bar { height: 3px; background: #E20000; margin-bottom: 4mm; }
 
-    /* ===== Tabla por curso ===== */
-    .resumen {
+    /* ===== Datos del colaborador ===== */
+    .colab-box {
+      border: 1px solid #e2e2e2;
+      border-left: 4px solid #E20000;
+      border-radius: 3px;
+      padding: 2.6mm 4mm;
+      margin-bottom: 4mm;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5mm 6mm;
+      background: #fafafa;
+    }
+    .colab-box .cf label {
+      font-size: 7.5pt; color: #77787B;
+      text-transform: uppercase; letter-spacing: 0.3px; display: block;
+    }
+    .colab-box .cf span { font-size: 10pt; font-weight: 600; }
+
+    /* ===== Banda de fecha de desvinculación (prominente) ===== */
+    .desvinculacion-banner {
+      border: 1.5px solid #E20000;
+      border-radius: 4px;
+      background: #feeded;
+      padding: 2.8mm 5mm;
+      margin-bottom: 4mm;
+      display: flex;
+      align-items: baseline;
+      gap: 4mm;
+    }
+    .desvinculacion-banner .lbl {
+      font-size: 8.5pt; color: #77787B;
+      text-transform: uppercase; letter-spacing: 0.4px; font-weight: 700;
+    }
+    .desvinculacion-banner .val {
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+      font-weight: 700; font-size: 14pt; color: #E20000;
+    }
+
+    /* ===== Tabla de convenios ===== */
+    .conv {
       width: 100%;
       border: 1px solid #221E20;
       border-collapse: collapse;
       table-layout: fixed;
-      margin-bottom: 7mm;
     }
-    .resumen th, .resumen td {
+    .conv th, .conv td {
       border: 1px solid #cfcfcf;
-      padding: 1.8mm 2.5mm;
-      font-size: 9pt;
+      padding: 1.6mm 2mm;
+      font-size: 8.5pt;
       vertical-align: top;
       word-wrap: break-word;
     }
-    .resumen thead th {
+    .conv thead th {
       background: #221E20; color: #fff;
       font-weight: 700; text-transform: uppercase;
-      font-size: 7.8pt; letter-spacing: 0.3px;
-      text-align: center; vertical-align: middle;
+      font-size: 7.5pt; letter-spacing: 0.3px;
+      text-align: center;
+      vertical-align: middle;
     }
-    .resumen .num { text-align: right; white-space: nowrap; }
-    .resumen .sub { font-size: 7.5pt; color: #77787B; display: block; }
-    .resumen tbody tr:nth-child(even) { background: #f7f7f7; }
-    .resumen tfoot td {
+    .conv .num { text-align: right; white-space: nowrap; }
+    .conv .center { text-align: center; }
+    .conv .reintegro-cell { color: #E20000; font-weight: 700; }
+    .conv tbody tr:nth-child(even) { background: #f7f7f7; }
+    .conv tfoot td {
       font-weight: 700;
       background: #fde6e6;
       color: #E20000;
       font-size: 9.5pt;
     }
-    .resumen .col-curso { width: 34%; }
-    .resumen .col-mon   { width: 16.5%; }
-
-    /* ===== Gráfico de pastel ===== */
-    .chart-section {
-      display: flex;
-      align-items: center;
-      gap: 14mm;
-      border: 1px solid #e2e2e2;
-      border-radius: 4px;
-      padding: 6mm 8mm;
-      background: #fafafa;
-    }
-    .chart-title {
-      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
-      font-weight: 700; font-size: 11pt; color: #221E20;
-      text-transform: uppercase; letter-spacing: 0.4px;
-      margin-bottom: 4mm;
-    }
-    .pie {
-      width: 48mm; height: 48mm; border-radius: 50%;
-      background: {{pieGradient}};
-      flex-shrink: 0;
-    }
-    .legend { flex: 1; }
-    .legend .li { display: flex; align-items: center; gap: 3mm; margin-bottom: 3mm; }
-    .legend .swatch { width: 5mm; height: 5mm; border-radius: 2px; flex-shrink: 0; }
-    .legend .swatch.dev { background: #1d7a3a; }
-    .legend .swatch.pen { background: #E20000; }
-    .legend .ltext { font-size: 10pt; }
-    .legend .ltext strong { font-weight: 700; }
-    .legend .lpct { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-weight: 700; }
-    .legend .nota { font-size: 8pt; color: #77787B; margin-top: 2mm; line-height: 1.4; }
+    .conv .col-cod    { width: 9%; }
+    .conv .col-titulo { width: 18%; }
+    .conv .col-marca  { width: 8%; }
+    .conv .col-clas   { width: 11%; }
+    .conv .col-mod    { width: 12%; }
+    .conv .col-fing   { width: 9%; }
+    .conv .col-mes    { width: 7%; }
+    .conv .col-mon    { width: 9%; }
   </style>
 </head>
 <body>
   <table class="page-header">
     <tr>
       <td class="logo-cell"><img src="./logotipo-DOS-Color.png" alt="DOS" /></td>
-      <td class="title-cell">Resumen de Convenios</td>
-      <td class="meta-cell"><span class="lbl">Fecha de corte</span><br/>{{fechaCorte}}</td>
+      <td class="title-cell">Liquidación por Desvinculación</td>
+      <td class="meta-cell"><span class="lbl">Fecha de desvinculación</span><br/><span class="fecha-salida">{{fechaSalida}}</span></td>
     </tr>
   </table>
   <div class="red-bar"></div>
 
-  {{tablaCursos}}
-
-  <div>
-    <div class="chart-title">Distribución del costo asumido por DOS</div>
-    <div class="chart-section">
-      <div class="pie"></div>
-      <div class="legend">
-        <div class="li">
-          <span class="swatch dev"></span>
-          <span class="ltext">Devengado <span class="lpct">{{pctDevengado}}</span> · {{montoDevengado}}</span>
-        </div>
-        <div class="li">
-          <span class="swatch pen"></span>
-          <span class="ltext">Por devengar <span class="lpct">{{pctPorDevengar}}</span> · {{montoPorDevengar}}</span>
-        </div>
-        <div class="nota">
-          Porcentajes calculados sobre el costo total asumido por DOS ({{costoAsumidoDOS}}).
-        </div>
-      </div>
-    </div>
+  <div class="desvinculacion-banner">
+    <span class="lbl">Fecha de desvinculación</span>
+    <span class="val">{{fechaSalida}}</span>
   </div>
+
+  {{colaboradorBox}}
+
+  {{tablaConvenios}}
 </body>
 </html>

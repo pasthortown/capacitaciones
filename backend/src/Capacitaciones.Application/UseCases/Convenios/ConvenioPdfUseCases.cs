@@ -323,3 +323,53 @@ public class LiquidacionColaboradorUseCase
         };
     }
 }
+
+/// <summary>Genera el PDF de liquidación por desvinculación (reusa el cálculo de
+/// <see cref="LiquidacionColaboradorUseCase"/>) y lo devuelve para descarga.</summary>
+public class DescargarReporteLiquidacionUseCase
+{
+    private readonly LiquidacionColaboradorUseCase _liquidacion;
+    private readonly IEmisorDocumentosClient _emisor;
+    private readonly CertificadosOptions _options;
+
+    public DescargarReporteLiquidacionUseCase(LiquidacionColaboradorUseCase liquidacion, IEmisorDocumentosClient emisor, CertificadosOptions options)
+    {
+        _liquidacion = liquidacion;
+        _emisor = emisor;
+        _options = options;
+    }
+
+    public async Task<CertificadoDescargaDto> ExecuteAsync(string cedula, DateTime fechaSalida, CancellationToken ct = default)
+    {
+        var d = await _liquidacion.ExecuteAsync(cedula, fechaSalida, ct);
+
+        var req = new LiquidacionReporteRequest
+        {
+            Colaborador = new ConvenioImprimirColaboradorDto
+            {
+                Nombre = d.Nombre, Cedula = d.Cedula, Cargo = d.Cargo,
+                Area = d.Area, Empresa = d.Empresa, Origen = d.Origen,
+            },
+            FechaSalida = ConvenioPdfHelpers.Fmt(d.FechaSalida),
+            TotalReintegro = d.TotalReintegro,
+            Convenios = d.Convenios.Select(c => new LiquidacionReporteConvenioDto
+            {
+                CodigoRegistro = c.CodigoRegistro,
+                Titulo = c.Titulo,
+                NombreCurso = c.NombreCurso,
+                Marca = c.Marca,
+                Clasificacion = c.Clasificacion,
+                ModalidadReintegro = c.ModalidadReintegro,
+                Estado = c.Estado,
+                FechaIngreso = ConvenioPdfHelpers.Fmt(c.FechaIngreso),
+                ValorAsumidoEmpresa = c.ValorAsumidoEmpresa,
+                MesesADevengar = c.MesesADevengar,
+                MesesTranscurridosASalida = c.MesesTranscurridosASalida,
+                MontoReintegro = c.MontoReintegro,
+            }).ToList(),
+        };
+
+        var resultado = await _emisor.EmitirLiquidacionConveniosAsync(req, ct);
+        return ConvenioPdfHelpers.ReadOutput(_options.OutputDir, resultado.Ruta);
+    }
+}

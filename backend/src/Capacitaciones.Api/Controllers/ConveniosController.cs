@@ -31,6 +31,7 @@ public class ConveniosController : ControllerBase
     private readonly DescargarReporteConveniosUseCase _reporte;
     private readonly DashboardConveniosUseCase _dashboard;
     private readonly LiquidacionColaboradorUseCase _liquidacion;
+    private readonly DescargarReporteLiquidacionUseCase _reporteLiquidacion;
 
     public ConveniosController(
         ListarConveniosUseCase listar,
@@ -47,7 +48,8 @@ public class ConveniosController : ControllerBase
         ImprimirConvenioUseCase imprimir,
         DescargarReporteConveniosUseCase reporte,
         DashboardConveniosUseCase dashboard,
-        LiquidacionColaboradorUseCase liquidacion)
+        LiquidacionColaboradorUseCase liquidacion,
+        DescargarReporteLiquidacionUseCase reporteLiquidacion)
     {
         _listar = listar;
         _obtener = obtener;
@@ -64,6 +66,7 @@ public class ConveniosController : ControllerBase
         _reporte = reporte;
         _dashboard = dashboard;
         _liquidacion = liquidacion;
+        _reporteLiquidacion = reporteLiquidacion;
     }
 
     // --- Numeración de convenios (GIC-EC-REG-###) ---
@@ -193,6 +196,11 @@ public class ConveniosController : ControllerBase
         }
         catch (ConvenioServiceException ex) { return MapError(ex); }
     }
+
+    /// <summary>C) PDF de liquidación por desvinculación a una fecha de salida.</summary>
+    [HttpGet("colaborador/{cedula}/liquidacion/reporte")]
+    public Task<IActionResult> ReporteLiquidacion(string cedula, [FromQuery] DateTime? fechaSalida, CancellationToken ct)
+        => EmitirPdf(() => _reporteLiquidacion.ExecuteAsync(cedula, fechaSalida ?? DateTime.UtcNow, ct));
 
     /// <summary>Ejecuta un caso de uso que devuelve un PDF; traduce fallas del emisor a 503.</summary>
     private async Task<IActionResult> EmitirPdf(Func<Task<Capacitaciones.Application.Dtos.Certificados.CertificadoDescargaDto>> exec)
