@@ -899,24 +899,37 @@ function HistorialTab({ toast }) {
 }
 
 /* ------------------------------- Pestaña Dashboard ------------------------------- */
-function DimBars({ titulo, grupos }) {
-  const max = Math.max(1, ...grupos.map((g) => Number(g.inversion) || 0));
+function SectionTitle({ children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: 'var(--spacing-5) 0 var(--spacing-3)', fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--color-text-secondary, #6b7280)' }}>
+      <span>{children}</span>
+      <span style={{ flex: 1, height: 1, background: 'var(--color-border, #e5e7eb)' }} />
+    </div>
+  );
+}
+
+function DimBars({ titulo, grupos, top = 8 }) {
+  const visibles = grupos.slice(0, top);
+  const resto = grupos.length - visibles.length;
+  const max = Math.max(1, ...visibles.map((g) => Number(g.inversion) || 0));
   return (
     <div className="card">
       <div className="card__header"><h3 className="card__title">{titulo}</h3></div>
-      <div className="card__body" style={{ display: 'grid', gap: 'var(--spacing-3)' }}>
-        {grupos.length === 0 && <div className="text-secondary">Sin datos.</div>}
-        {grupos.map((g) => (
+      <div className="card__body" style={{ display: 'grid', gap: 'var(--spacing-4)' }}>
+        {visibles.length === 0 && <div className="text-secondary">Sin datos.</div>}
+        {visibles.map((g) => (
           <div key={g.etiqueta}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 3, gap: 8 }}>
-              <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.etiqueta}</span>
-              <span className="text-secondary" style={{ whiteSpace: 'nowrap' }}>{g.cantidad} conv · {g.personas} pers · {money(g.inversion)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5, gap: 12 }}>
+              <span style={{ fontWeight: 600, fontSize: 13 }}>{g.etiqueta}</span>
+              <span className="text-secondary" style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{money(g.inversion)}</span>
             </div>
-            <div style={{ height: 10, background: 'var(--color-surface-2, #eef0f3)', borderRadius: 5, overflow: 'hidden' }}>
-              <div style={{ width: `${Math.round((Number(g.inversion) || 0) / max * 100)}%`, height: '100%', background: 'var(--color-primary, #2563eb)' }} />
+            <div style={{ height: 12, background: 'var(--color-surface-2, #eef0f3)', borderRadius: 6, overflow: 'hidden' }}>
+              <div style={{ width: `${Math.round((Number(g.inversion) || 0) / max * 100)}%`, height: '100%', background: 'var(--color-primary, #2563eb)', borderRadius: 6 }} />
             </div>
+            <div className="text-secondary" style={{ fontSize: 11, marginTop: 3 }}>{g.cantidad} convenios · {g.personas} colaboradores</div>
           </div>
         ))}
+        {resto > 0 && <div className="text-secondary" style={{ fontSize: 12 }}>+{resto} más…</div>}
       </div>
     </div>
   );
@@ -926,15 +939,15 @@ function MesesBars({ porMes }) {
   const max = Math.max(1, ...porMes.map((m) => Number(m.inversion) || 0));
   return (
     <div className="card">
-      <div className="card__header"><h3 className="card__title">Inversión por mes</h3></div>
-      <div className="card__body" style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 170, overflowX: 'auto' }}>
+      <div className="card__body" style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 200, overflowX: 'auto', paddingTop: 'var(--spacing-4)' }}>
         {porMes.length === 0 && <div className="text-secondary">Sin datos.</div>}
         {porMes.map((m) => (
-          <div key={m.mes} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 44 }} title={`${m.mes}: ${money(m.inversion)} (${m.convenios} conv)`}>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', width: 24 }}>
-              <div style={{ width: '100%', height: `${Math.round((Number(m.inversion) || 0) / max * 100)}%`, background: 'var(--color-primary, #2563eb)', borderRadius: '3px 3px 0 0', minHeight: 2 }} />
+          <div key={m.mes} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 52 }} title={`${m.mes}: ${money(m.inversion)} (${m.convenios} conv)`}>
+            <div className="text-secondary" style={{ fontSize: 10, marginBottom: 4 }}>{money(m.inversion)}</div>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', width: 28 }}>
+              <div style={{ width: '100%', height: `${Math.round((Number(m.inversion) || 0) / max * 100)}%`, background: 'var(--color-primary, #2563eb)', borderRadius: '4px 4px 0 0', minHeight: 2 }} />
             </div>
-            <div style={{ fontSize: 10, marginTop: 4, color: 'var(--color-text-secondary, #666)' }}>{m.mes}</div>
+            <div style={{ fontSize: 10, marginTop: 6, color: 'var(--color-text-secondary, #666)' }}>{m.mes}</div>
           </div>
         ))}
       </div>
@@ -1004,18 +1017,21 @@ function DashboardTab({ toast }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--spacing-3)', marginBottom: 'var(--spacing-4)' }}>
+      <SectionTitle>Indicadores</SectionTitle>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-4)' }}>
         {kpis.map((k) => (
-          <div key={k.label} className="card"><div className="card__body">
-            <div className="text-xs text-secondary">{k.label}</div>
-            <div style={{ fontFamily: 'var(--font-family-display)', fontSize: 20, fontWeight: 700, color: 'var(--color-primary)' }}>{k.value}</div>
+          <div key={k.label} className="card"><div className="card__body" style={{ padding: 'var(--spacing-4)' }}>
+            <div className="text-xs text-secondary" style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>{k.label}</div>
+            <div style={{ fontFamily: 'var(--font-family-display)', fontSize: 28, fontWeight: 800, lineHeight: 1.1, marginTop: 6, color: 'var(--color-primary)' }}>{k.value}</div>
           </div></div>
         ))}
       </div>
 
+      <SectionTitle>Inversión en el tiempo</SectionTitle>
       <MesesBars porMes={data.porMes || []} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--spacing-4)', marginTop: 'var(--spacing-4)' }}>
+      <SectionTitle>Distribución</SectionTitle>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: 'var(--spacing-5)', alignItems: 'start' }}>
         {(data.dimensiones || []).map((dim) => (
           <DimBars key={dim.clave} titulo={dim.titulo} grupos={dim.grupos} />
         ))}
