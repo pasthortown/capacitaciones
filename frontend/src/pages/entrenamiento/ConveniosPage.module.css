@@ -34,6 +34,18 @@
   margin-top: var(--spacing-3);
 }
 
+/* Fila de filtros (buscador/fechas + botones): alinea inputs y botones al fondo
+   anulando el margin-bottom que .form-group trae por defecto. */
+.filtersRow {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.filtersRow :global(.form-group) {
+  margin-bottom: 0;
+}
+
 @media (max-width: 640px) {
   .grid2 { grid-template-columns: 1fr; }
 }

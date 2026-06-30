@@ -816,15 +816,15 @@ function HistorialTab({ toast }) {
   return (
     <>
       <div className="toolbar">
-        <div className="toolbar__filters" style={{ display: 'flex', gap: 'var(--spacing-2)', alignItems: 'flex-end' }}>
+        <div className={`toolbar__filters ${styles.filtersRow}`}>
           <div style={{ minWidth: 240 }}>
             <TextField label="Cédula del colaborador" name="hist-cedula" value={cedula} onChange={setCedula} />
           </div>
-          <button type="button" className="btn btn--primary" onClick={buscar} disabled={loading} style={{ marginBottom: 2 }}>
+          <button type="button" className="btn btn--primary" onClick={buscar} disabled={loading}>
             <Search width={16} height={16} /><span>{loading ? 'Buscando…' : 'Buscar'}</span>
           </button>
           {rows !== null && (
-            <button type="button" className="btn btn--secondary" onClick={descargarReporte} disabled={descargando} style={{ marginBottom: 2 }}>
+            <button type="button" className="btn btn--secondary" onClick={descargarReporte} disabled={descargando}>
               <FileDown width={16} height={16} /><span>{descargando ? 'Generando…' : 'Descargar Reporte'}</span>
             </button>
           )}
@@ -1036,7 +1036,7 @@ function DesvinculacionTab({ toast }) {
   return (
     <>
       <div className="toolbar">
-        <div className="toolbar__filters" style={{ display: 'flex', gap: 'var(--spacing-2)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <div className={`toolbar__filters ${styles.filtersRow}`}>
           <div style={{ minWidth: 220 }}>
             <TextField label="Cédula del colaborador" name="desv-cedula" value={cedula} onChange={setCedula} />
           </div>
@@ -1044,7 +1044,7 @@ function DesvinculacionTab({ toast }) {
             <label className="form-label" style={{ position: 'static' }} htmlFor="desv-fecha">Fecha de salida</label>
             <input id="desv-fecha" type="date" className="form-input" value={fechaSalida} onChange={(e) => setFechaSalida(e.target.value)} />
           </div>
-          <button type="button" className="btn btn--primary" onClick={calcular} disabled={loading} style={{ marginBottom: 2 }}>
+          <button type="button" className="btn btn--primary" onClick={calcular} disabled={loading}>
             <Search width={16} height={16} /><span>{loading ? 'Calculando…' : 'Calcular reintegro'}</span>
           </button>
         </div>
