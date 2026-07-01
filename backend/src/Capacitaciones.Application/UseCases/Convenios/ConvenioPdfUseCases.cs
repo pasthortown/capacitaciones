@@ -320,7 +320,7 @@ public class LiquidacionColaboradorUseCase
             if (reintegro <= 0m) continue;
 
             var clasif = ConvenioMapper.Clasificar(c.Tipo);
-            var ancla = (c.FechaIngreso ?? c.Fecha).Date;
+            var ancla = (c.FechaInicioCurso ?? c.FechaIngreso ?? c.Fecha).Date;
             lineas.Add(new LiquidacionConvenioDto
             {
                 Id = c.Id,
@@ -329,8 +329,7 @@ public class LiquidacionColaboradorUseCase
                 NombreCurso = c.NombreCurso,
                 Marca = c.Marca,
                 Clasificacion = clasif,
-                ModalidadReintegro = ConvenioMapper.EsEscalonado(clasif)
-                    ? ConvenioMapper.ModalidadEscalonado : ConvenioMapper.ModalidadProporcional,
+                ModalidadReintegro = ConvenioMapper.ModalidadProporcional,
                 Estado = c.Estado.ToString(),
                 FechaIngreso = c.FechaIngreso,
                 ValorAsumidoEmpresa = c.ValorAsumidoEmpresa,

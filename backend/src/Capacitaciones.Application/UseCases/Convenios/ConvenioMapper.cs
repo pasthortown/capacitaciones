@@ -9,7 +9,9 @@ namespace Capacitaciones.Application.UseCases.Convenios;
 
 /// <summary>Mapeo, clasificación y cálculo de devengo del módulo Convenios (según
 /// <see cref="EstadoConvenio"/>). La base de devengo es <see cref="Convenio.ValorAsumidoEmpresa"/>
-/// y el conteo se ancla en <see cref="Convenio.FechaIngreso"/> (fallback a <see cref="Convenio.Fecha"/>).</summary>
+/// y el conteo se ancla en <see cref="Convenio.FechaInicioCurso"/> (fallback a
+/// <see cref="Convenio.FechaIngreso"/> y luego a <see cref="Convenio.Fecha"/>). El reintegro es
+/// siempre proporcional mensual: base × mesesPendientes / MesesADevengar.</summary>
 public static class ConvenioMapper
 {
     public static readonly int[] MesesPermitidos = { 0, 12, 24, 36 };
@@ -21,7 +23,6 @@ public static class ConvenioMapper
     public const string ClasifRevisar = "Revisar";
 
     public const string ModalidadProporcional = "Reintegro proporcional mensual";
-    public const string ModalidadEscalonado = "Reintegro escalonado especial";
 
     /// <summary>Umbral mínimo de valor para que exista obligación de reintegro.</summary>
     public const decimal UmbralMinimo = 60m;
@@ -87,7 +88,7 @@ public static class ConvenioMapper
 
         var clasif = Clasificar(c.Tipo);
         dto.Clasificacion = clasif;
-        dto.ModalidadReintegro = EsEscalonado(clasif) ? ModalidadEscalonado : ModalidadProporcional;
+        dto.ModalidadReintegro = ModalidadProporcional;
         var (plazoSug, plazoTxt) = PlazoSugerido(clasif, baseDev);
         dto.PlazoSugerido = plazoSug;
         dto.PlazoSugeridoTexto = plazoTxt;
@@ -174,8 +175,6 @@ public static class ConvenioMapper
         return ClasifRevisar;
     }
 
-    public static bool EsEscalonado(string clasif) => clasif == ClasifCertificaciones;
-
     /// <summary>Plazo sugerido (meses) según clasificación y valor base. Devuelve (-1, "Anexo especial")
     /// para montos altos sin tramo y (0, "N/A") si el valor está bajo el umbral.</summary>
     public static (int meses, string texto) PlazoSugerido(string clasif, decimal valor)
@@ -201,8 +200,9 @@ public static class ConvenioMapper
 
     // ----- Devengo -----
 
-    /// <summary>Ancla del devengo: fecha de ingreso del colaborador (fallback a la fecha del convenio).</summary>
-    private static DateTime DevengoStart(Convenio c) => (c.FechaIngreso ?? c.Fecha).Date;
+    /// <summary>Ancla del devengo: fecha de inicio del curso (fallback a la fecha de ingreso del
+    /// colaborador y luego a la fecha del convenio, para convenios legados sin inicio de curso).</summary>
+    private static DateTime DevengoStart(Convenio c) => (c.FechaInicioCurso ?? c.FechaIngreso ?? c.Fecha).Date;
 
     private static bool AplicaDevengo(Convenio c) => c.MesesADevengar > 0 && c.ValorAsumidoEmpresa >= UmbralMinimo;
 
@@ -213,13 +213,6 @@ public static class ConvenioMapper
         var baseDev = c.ValorAsumidoEmpresa;
         var meses = MesesTranscurridos(DevengoStart(c), at);
         if (meses < 0) meses = 0;
-
-        if (EsEscalonado(Clasificar(c.Tipo)))
-        {
-            // Reintegro escalonado: el pendiente decae por tramos de antigüedad.
-            var pct = meses <= 12 ? 100m : meses <= 24 ? 50m : meses <= 36 ? 25m : 0m;
-            return Round(baseDev * pct / 100m);
-        }
 
         // Proporcional mensual sobre el plazo (MesesADevengar).
         if (meses > c.MesesADevengar) meses = c.MesesADevengar;
@@ -233,15 +226,6 @@ public static class ConvenioMapper
         if (!AplicaDevengo(c)) return (0, 0, 0m, 0m);
         var meses = MesesTranscurridos(DevengoStart(c), at);
         if (meses < 0) meses = 0;
-
-        if (EsEscalonado(Clasificar(c.Tipo)))
-        {
-            var trans = Math.Min(meses, 36);
-            var pendAmt = PendienteEn(c, at);
-            var baseDev = c.ValorAsumidoEmpresa;
-            var pctPend = baseDev > 0m ? Round(pendAmt / baseDev * 100m) : 0m;
-            return (trans, Math.Max(0, 36 - trans), Round(100m - pctPend), pctPend);
-        }
 
         var t = Math.Min(meses, c.MesesADevengar);
         var p = c.MesesADevengar - t;

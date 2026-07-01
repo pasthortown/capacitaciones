@@ -50,8 +50,8 @@ function clasificar(tipo) {
   if (['diplomado', 'programa especializado'].includes(t)) return 'Diplomados o programas especializados';
   return 'Revisar';
 }
-const modalidadDe = (clasif) =>
-  clasif === 'Certificaciones y exámenes' ? 'Reintegro escalonado especial' : 'Reintegro proporcional mensual';
+// El reintegro es siempre proporcional mensual (base × mesesPendientes / MesesADevengar).
+const modalidadDe = () => 'Reintegro proporcional mensual';
 function plazoSugerido(clasif, valor) {
   const v = Number(valor) || 0;
   if (v < 60) return { meses: 0, texto: 'N/A (valor < $60)' };
