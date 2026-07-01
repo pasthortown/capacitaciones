@@ -155,6 +155,78 @@ function SiNoGroup({ label, value, onChange, name }) {
   );
 }
 
+// Carga (una vez) todos los colaboradores DOS + Externos para filtrar en el cliente. Reusable.
+function useColaboradoresCache() {
+  const [colaboradores, setColaboradores] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [dosDisponible, setDosDisponible] = useState(true);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const [dosRes, extRes] = await Promise.all([
+          colaboradoresService.listDos({}).catch(() => ({ integracionDisponible: false, items: [] })),
+          colaboradoresService.listExternos({}).catch(() => []),
+        ]);
+        if (!mounted.current) return;
+        const norm = (e, origen) => ({
+          cedula: String(e.cedula || '').trim(), name: e.name || '',
+          cargo: e.jobPosition || '', area: e.workArea || '', empresa: e.society || '', origen,
+        });
+        const dos = (dosRes?.items || []).map((e) => norm(e, 'DOS'));
+        const ext = (Array.isArray(extRes) ? extRes : []).map((e) => norm(e, 'Externo'));
+        setDosDisponible(dosRes?.integracionDisponible !== false);
+        const map = new Map();
+        [...dos, ...ext].forEach((c) => { if (c.cedula && !map.has(c.cedula)) map.set(c.cedula, c); });
+        setColaboradores([...map.values()]);
+      } finally {
+        if (mounted.current) setLoading(false);
+      }
+    })();
+    return () => { mounted.current = false; };
+  }, []);
+  return { colaboradores, loading, dosDisponible };
+}
+
+// Combobox de colaborador: filtra en memoria por nombre o cédula y sugiere coincidencias.
+function ColaboradorCombo({ colaboradores, loading, onSelect, minWidth = 320 }) {
+  const [q, setQ] = useState('');
+  const matches = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (s.length < 2) return [];
+    return colaboradores
+      .filter((c) => c.name.toLowerCase().includes(s) || c.cedula.toLowerCase().includes(s))
+      .slice(0, 25);
+  }, [colaboradores, q]);
+  return (
+    <div className={styles.combo} style={{ minWidth }}>
+      <div className={styles.comboInputWrap}>
+        <Search width={16} height={16} className={styles.comboIcon} />
+        <input className="form-input" style={{ paddingLeft: 34 }} autoComplete="off"
+          placeholder={loading ? 'Cargando colaboradores…' : 'Busca por nombre o cédula…'}
+          value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
+      {q.trim().length >= 2 && (
+        <div className={styles.comboMenu}>
+          {matches.length === 0 ? (
+            <div className={styles.comboEmpty}>Sin coincidencias.</div>
+          ) : matches.map((c) => (
+            <button type="button" key={`${c.origen}-${c.cedula}`} className={styles.comboItem}
+              onClick={() => { onSelect(c); setQ(''); }}>
+              <span>{c.name}</span>
+              <span className="text-secondary" style={{ fontSize: 12 }}>
+                {c.cedula} · {c.origen}{c.cargo ? ` · ${c.cargo}` : ''}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const emptyForm = {
   cedula: '', nombreColaborador: '', origenColaborador: '', cargoColaborador: '', areaColaborador: '',
   empresaColaborador: '', centroCostos: '', jefeInmediato: '', relacionLaboral: '',
@@ -989,14 +1061,15 @@ function HistorialTab({ toast }) {
   const [rows, setRows] = useState(null); // null = aún no buscó
   const [loading, setLoading] = useState(false);
   const [colaborador, setColaborador] = useState(null);
+  const { colaboradores, loading: colabLoading } = useColaboradoresCache();
 
-  const buscar = async () => {
-    const ced = cedula.trim();
-    if (!ced) { toast.error('Ingresa la cédula del colaborador.'); return; }
+  const buscar = async (cedForce) => {
+    const ced = String(cedForce ?? cedula).trim();
+    if (!ced) { toast.error('Busca y selecciona un colaborador (nombre o cédula).'); return; }
     setLoading(true);
     try {
       const [data, colab] = await Promise.all([
-        conveniosService.historial(ced, true),
+        conveniosService.historial(ced, false), // false = todos los convenios (no solo con saldo)
         conveniosService.buscarColaborador(ced),
       ]);
       setRows(Array.isArray(data) ? data : []);
@@ -1047,13 +1120,9 @@ function HistorialTab({ toast }) {
   return (
     <>
       <div className="toolbar">
-        <div className={`toolbar__filters ${styles.filtersRow}`}>
-          <div style={{ minWidth: 240 }}>
-            <TextField label="Cédula del colaborador" name="hist-cedula" value={cedula} onChange={setCedula} />
-          </div>
-          <button type="button" className="btn btn--primary" onClick={buscar} disabled={loading}>
-            <Search width={16} height={16} /><span>{loading ? 'Buscando…' : 'Buscar'}</span>
-          </button>
+        <div className={`toolbar__filters ${styles.filtersRow}`} style={{ alignItems: 'flex-start' }}>
+          <ColaboradorCombo colaboradores={colaboradores} loading={colabLoading}
+            onSelect={(c) => { setCedula(c.cedula); buscar(c.cedula); }} />
           {rows !== null && (
             <button type="button" className="btn btn--secondary" onClick={descargarReporte} disabled={descargando}>
               <FileDown width={16} height={16} /><span>{descargando ? 'Generando…' : 'Descargar Reporte'}</span>
@@ -1275,13 +1344,15 @@ function DashboardTab({ toast }) {
 /* ----------------------------- Pestaña Desvinculación ----------------------------- */
 function DesvinculacionTab({ toast }) {
   const [cedula, setCedula] = useState('');
+  const [nombreSel, setNombreSel] = useState('');
   const [fechaSalida, setFechaSalida] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { colaboradores, loading: colabLoading } = useColaboradoresCache();
 
-  const calcular = async () => {
-    const ced = cedula.trim();
-    if (!ced) { toast.error('Ingresa la cédula del colaborador.'); return; }
+  const calcular = async (cedForce) => {
+    const ced = String(cedForce ?? cedula).trim();
+    if (!ced) { toast.error('Busca y selecciona un colaborador (nombre o cédula).'); return; }
     setLoading(true);
     try {
       const d = await conveniosService.liquidacion(ced, fechaSalida || undefined);
@@ -1321,15 +1392,17 @@ function DesvinculacionTab({ toast }) {
   return (
     <>
       <div className="toolbar">
-        <div className={`toolbar__filters ${styles.filtersRow}`}>
-          <div style={{ minWidth: 220 }}>
-            <TextField label="Cédula del colaborador" name="desv-cedula" value={cedula} onChange={setCedula} />
+        <div className={`toolbar__filters ${styles.filtersRow}`} style={{ alignItems: 'flex-start' }}>
+          <div>
+            <ColaboradorCombo colaboradores={colaboradores} loading={colabLoading}
+              onSelect={(c) => { setCedula(c.cedula); setNombreSel(c.name); }} minWidth={280} />
+            {cedula && <div className="text-secondary" style={{ fontSize: 12, marginTop: 4 }}>Seleccionado: {nombreSel || cedula} ({cedula})</div>}
           </div>
           <div className="form-group" style={{ position: 'static' }}>
             <label className="form-label" style={{ position: 'static' }} htmlFor="desv-fecha">Fecha de salida</label>
             <input id="desv-fecha" type="date" className="form-input" value={fechaSalida} onChange={(e) => setFechaSalida(e.target.value)} />
           </div>
-          <button type="button" className="btn btn--primary" onClick={calcular} disabled={loading}>
+          <button type="button" className="btn btn--primary" onClick={() => calcular()} disabled={loading}>
             <Search width={16} height={16} /><span>{loading ? 'Calculando…' : 'Calcular reintegro'}</span>
           </button>
         </div>
