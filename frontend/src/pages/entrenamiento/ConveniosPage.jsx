@@ -1366,17 +1366,32 @@ function DesvinculacionTab({ toast }) {
   };
 
   const [descargando, setDescargando] = useState(false);
-  const descargarReporte = async () => {
+  // Descarga TODO en un ZIP: reporte de liquidación + PDF de cada convenio + todos sus anexos.
+  const descargarTodo = async () => {
     if (!data) return;
     setDescargando(true);
     try {
-      await conveniosService.descargarReporteLiquidacion(data.cedula, fechaSalida || undefined);
+      await conveniosService.descargarPaqueteDesvinculacion(data.cedula, fechaSalida || undefined);
     } catch (err) {
       if (err instanceof HttpError && err.status === 503) toast.error('El servicio de emisión no está disponible. Intenta en unos minutos.');
-      else toast.error(err?.message || 'No se pudo descargar el reporte.');
+      else toast.error(err?.message || 'No se pudo descargar el paquete.');
     } finally {
       setDescargando(false);
     }
+  };
+
+  const [rowBusy, setRowBusy] = useState(null); // id de la fila con descarga en curso
+  const imprimirConvenio = async (row) => {
+    setRowBusy(`pdf-${row.id}`);
+    try { await conveniosService.imprimir(row.id, `Convenio_${row.codigoRegistro || row.id}.pdf`); }
+    catch (err) { toast.error(err?.message || 'No se pudo generar el PDF.'); }
+    finally { setRowBusy(null); }
+  };
+  const descargarAnexosConvenio = async (row) => {
+    setRowBusy(`anx-${row.id}`);
+    try { await conveniosService.descargarAnexosZip(row.id, `Anexos_${row.codigoRegistro || row.id}.zip`); }
+    catch (err) { toast.error(err?.message || 'No se pudieron descargar los anexos.'); }
+    finally { setRowBusy(null); }
   };
 
   const columns = useMemo(() => [
@@ -1387,7 +1402,22 @@ function DesvinculacionTab({ toast }) {
     { key: 'meses', header: 'Meses a la salida', align: 'center', accessor: (r) => r.mesesTranscurridosASalida },
     { key: 'valorAsumido', header: 'Valor asumido', align: 'right', accessor: (r) => money(r.valorAsumidoEmpresa) },
     { key: 'reintegro', header: 'Reintegro', align: 'right', accessor: (r) => money(r.montoReintegro) },
-  ], []);
+    {
+      key: 'acciones', header: 'Acciones', align: 'center',
+      accessor: (r) => (
+        <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+          <button type="button" className="btn btn--ghost btn--sm btn--icon" title="Imprimir convenio (PDF)"
+            onClick={() => imprimirConvenio(r)} disabled={rowBusy === `pdf-${r.id}`}>
+            <Printer width={16} height={16} />
+          </button>
+          <button type="button" className="btn btn--ghost btn--sm btn--icon" title="Descargar anexos (ZIP)"
+            onClick={() => descargarAnexosConvenio(r)} disabled={rowBusy === `anx-${r.id}`}>
+            <Download width={16} height={16} />
+          </button>
+        </div>
+      ),
+    },
+  ], [rowBusy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
@@ -1420,8 +1450,9 @@ function DesvinculacionTab({ toast }) {
             </div>
             <div style={{ display: 'flex', gap: 'var(--spacing-2)', alignItems: 'center' }}>
               <span className="badge badge--inactive">Total a reintegrar: {money(data.totalReintegro)}</span>
-              <button type="button" className="btn btn--secondary btn--sm" onClick={descargarReporte} disabled={descargando}>
-                <FileDown width={16} height={16} /><span>{descargando ? 'Generando…' : 'Descargar Reporte'}</span>
+              <button type="button" className="btn btn--primary btn--sm" onClick={descargarTodo} disabled={descargando}
+                title="Descarga el reporte + PDF de cada convenio + todos los anexos">
+                <Download width={16} height={16} /><span>{descargando ? 'Generando ZIP…' : 'Descargar todo (ZIP)'}</span>
               </button>
             </div>
           </div>

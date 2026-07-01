@@ -128,6 +128,21 @@ export function liquidacion(cedula, fechaSalida) {
   return http.get(`${BASE}/colaborador/${encodeURIComponent(cedula)}/liquidacion${q ? `?${q}` : ''}`);
 }
 
+/** Descarga en un ZIP todos los anexos de un convenio. */
+export function descargarAnexosZip(id, fallbackFilename) {
+  return http.downloadBlob(`${BASE}/${id}/anexos/zip`, { fallbackFilename: fallbackFilename || 'Anexos.zip' });
+}
+
+/** C) Paquete de desvinculación (ZIP): reporte + PDF de cada convenio + todos sus anexos. */
+export function descargarPaqueteDesvinculacion(cedula, fechaSalida, fallbackFilename) {
+  const p = new URLSearchParams();
+  if (fechaSalida) p.set('fechaSalida', fechaSalida);
+  const q = p.toString();
+  return http.downloadBlob(
+    `${BASE}/colaborador/${encodeURIComponent(cedula)}/desvinculacion/paquete${q ? `?${q}` : ''}`,
+    { fallbackFilename: fallbackFilename || `Desvinculacion_${cedula}.zip` });
+}
+
 /** C) PDF de liquidación por desvinculación. */
 export function descargarReporteLiquidacion(cedula, fechaSalida, fallbackFilename) {
   const p = new URLSearchParams();
@@ -153,5 +168,5 @@ export default {
   subirAnexo, eliminarAnexo, descargarAnexo,
   obtenerNumeracion, actualizarNumeracion,
   imprimir, descargarReporteColaborador, dashboard, descargarDashboardPdf, liquidacion,
-  descargarReporteLiquidacion,
+  descargarReporteLiquidacion, descargarAnexosZip, descargarPaqueteDesvinculacion,
 };

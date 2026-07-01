@@ -32,6 +32,8 @@ public class ConveniosController : ControllerBase
     private readonly DashboardConveniosUseCase _dashboard;
     private readonly LiquidacionColaboradorUseCase _liquidacion;
     private readonly DescargarReporteLiquidacionUseCase _reporteLiquidacion;
+    private readonly DescargarAnexosConvenioZipUseCase _anexosZip;
+    private readonly PaqueteDesvinculacionUseCase _paqueteDesvinculacion;
 
     public ConveniosController(
         ListarConveniosUseCase listar,
@@ -49,7 +51,9 @@ public class ConveniosController : ControllerBase
         DescargarReporteConveniosUseCase reporte,
         DashboardConveniosUseCase dashboard,
         LiquidacionColaboradorUseCase liquidacion,
-        DescargarReporteLiquidacionUseCase reporteLiquidacion)
+        DescargarReporteLiquidacionUseCase reporteLiquidacion,
+        DescargarAnexosConvenioZipUseCase anexosZip,
+        PaqueteDesvinculacionUseCase paqueteDesvinculacion)
     {
         _listar = listar;
         _obtener = obtener;
@@ -67,6 +71,8 @@ public class ConveniosController : ControllerBase
         _dashboard = dashboard;
         _liquidacion = liquidacion;
         _reporteLiquidacion = reporteLiquidacion;
+        _anexosZip = anexosZip;
+        _paqueteDesvinculacion = paqueteDesvinculacion;
     }
 
     // --- Numeración de convenios (GIC-EC-REG-###) ---
@@ -201,6 +207,32 @@ public class ConveniosController : ControllerBase
     [HttpGet("colaborador/{cedula}/liquidacion/reporte")]
     public Task<IActionResult> ReporteLiquidacion(string cedula, [FromQuery] DateTime? fechaSalida, CancellationToken ct)
         => EmitirPdf(() => _reporteLiquidacion.ExecuteAsync(cedula, fechaSalida ?? DateTime.UtcNow, ct));
+
+    /// <summary>C) Paquete de desvinculación (ZIP): reporte de liquidación + PDF de cada convenio del
+    /// colaborador + todos sus anexos.</summary>
+    [HttpGet("colaborador/{cedula}/desvinculacion/paquete")]
+    public async Task<IActionResult> PaqueteDesvinculacion(string cedula, [FromQuery] DateTime? fechaSalida, CancellationToken ct)
+    {
+        try
+        {
+            var (content, filename) = await _paqueteDesvinculacion.ExecuteAsync(cedula, fechaSalida ?? DateTime.UtcNow, ct);
+            return File(content, "application/zip", filename);
+        }
+        catch (ConvenioServiceException ex) { return MapError(ex); }
+    }
+
+    /// <summary>Descarga en un ZIP todos los anexos de un convenio.</summary>
+    [HttpGet("{id:guid}/anexos/zip")]
+    public async Task<IActionResult> AnexosZip(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var (content, filename) = await _anexosZip.ExecuteAsync(id, ct);
+            return File(content, "application/zip", filename);
+        }
+        catch (ConvenioNotFoundException) { return NotFound(); }
+        catch (ConvenioServiceException ex) { return MapError(ex); }
+    }
 
     /// <summary>Ejecuta un caso de uso que devuelve un PDF; traduce fallas del emisor a 503.</summary>
     private async Task<IActionResult> EmitirPdf(Func<Task<Capacitaciones.Application.Dtos.Certificados.CertificadoDescargaDto>> exec)
