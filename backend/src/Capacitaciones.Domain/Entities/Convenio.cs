@@ -67,7 +67,6 @@ public class Convenio
     /// certificación, Diplomado, Programa especializado, Material de estudio). Determina la
     /// clasificación, plazo y modalidad de reintegro.</summary>
     public string? Tipo { get; set; }
-    public string? TipoCurso { get; set; }
     public string? NombreCurso { get; set; }
     public string? Marca { get; set; }
 

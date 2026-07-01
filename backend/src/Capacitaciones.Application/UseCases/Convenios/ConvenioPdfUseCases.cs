@@ -67,7 +67,6 @@ public class ImprimirConvenioUseCase
                     : string.Join(" - ", new[] { dto.ConvenioReferenciaCodigo, dto.ConvenioReferenciaNombre }
                         .Where(s => !string.IsNullOrWhiteSpace(s))),
                 Tipo = c.Tipo,
-                TipoCurso = c.TipoCurso,
                 NombreCurso = c.NombreCurso,
                 Marca = c.Marca,
                 FechaConvenio = ConvenioPdfHelpers.Fmt(c.Fecha),

@@ -26,7 +26,7 @@
     @font-face { font-family: 'Plus Jakarta Sans'; src: url('./fonts/PlusJakartaSans/PlusJakartaSans-BoldItalic.otf') format('opentype'); font-weight: 700; font-style: italic; }
 
     /* ===== Página ===== */
-    @page { size: A4; margin: 12mm 0; }
+    @page { size: A4; margin: 5mm 0; }
 
     * { box-sizing: border-box; }
 
@@ -35,7 +35,7 @@
       padding: 0;
       font-family: 'Montserrat', Arial, sans-serif;
       color: #1a1a1a;
-      font-size: 9.5pt;
+      font-size: 8.5pt;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -70,7 +70,7 @@
       text-align: center;
       font-family: 'Plus Jakarta Sans', Arial, sans-serif;
       font-weight: 700;
-      font-size: 13pt;
+      font-size: 11pt;
       letter-spacing: 0.3px;
       color: #221E20;
     }
@@ -93,11 +93,11 @@
     }
     .hdr-meta .meta-val { font-size: 10pt; font-weight: 600; }
     .hdr-meta .meta-val.reg { color: #E20000; }
-    .red-bar { height: 3px; background: #E20000; margin-bottom: 5mm; }
+    .red-bar { height: 3px; background: #E20000; margin-bottom: 2.5mm; }
 
     /* ===== Secciones ===== */
-    .ps { margin-bottom: 5mm; }
-    .ps-hdr { display: flex; align-items: center; gap: 2.4mm; margin-bottom: 2.6mm; }
+    .ps { margin-bottom: 2.6mm; }
+    .ps-hdr { display: flex; align-items: center; gap: 2.4mm; margin-bottom: 1.8mm; }
     .ps-num {
       background: #E20000; color: #fff;
       width: 5mm; height: 5mm; border-radius: 50%;
@@ -106,28 +106,28 @@
     }
     .ps-ttl {
       font-family: 'Plus Jakarta Sans', Arial, sans-serif;
-      font-weight: 700; font-size: 10.5pt; color: #221E20;
+      font-weight: 700; font-size: 9pt; color: #221E20;
       text-transform: uppercase; letter-spacing: 0.4px;
     }
 
-    .pgrid2 {
+    .pgrid3 {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2mm 6mm;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.6mm 5mm;
       border: 1px solid #e2e2e2;
       border-radius: 3px;
-      padding: 3mm 4mm;
+      padding: 2.4mm 3.5mm;
     }
     .pf { display: flex; flex-direction: column; }
-    .pf.pspan2 { grid-column: 1 / span 2; }
+    .pf.pspan2 { grid-column: 1 / -1; }
     .pf label {
-      font-size: 7.5pt; color: #77787B;
+      font-size: 6.5pt; color: #77787B;
       text-transform: uppercase; letter-spacing: 0.3px;
     }
     .pf span {
-      font-size: 10pt; font-weight: 500;
+      font-size: 8.5pt; font-weight: 500;
       border-bottom: 1px solid #e2e2e2;
-      padding-bottom: 1.4mm; min-height: 5mm;
+      padding-bottom: 0.9mm; min-height: 3.8mm;
       word-wrap: break-word;
     }
     .pf span.hi { color: #E20000; font-weight: 700; }
@@ -140,14 +140,14 @@
     }
     .costos th, .costos td {
       border: 1px solid #cfcfcf;
-      padding: 1.8mm 3mm;
-      font-size: 9pt;
+      padding: 1.2mm 3mm;
+      font-size: 8pt;
       vertical-align: middle;
     }
     .costos thead th {
       background: #221E20; color: #fff;
       font-weight: 700; text-transform: uppercase;
-      font-size: 8pt; letter-spacing: 0.4px;
+      font-size: 7pt; letter-spacing: 0.4px;
       text-align: left;
     }
     .costos .num { text-align: right; white-space: nowrap; }
@@ -166,27 +166,27 @@
       border: 1px solid #e2e2e2;
       border-left: 4px solid #E20000;
       border-radius: 3px;
-      padding: 3mm 4mm;
-      margin-bottom: 6mm;
+      padding: 2.4mm 3.5mm;
+      margin-bottom: 2.5mm;
       background: #fafafa;
     }
     .auth-title {
       font-family: 'Plus Jakarta Sans', Arial, sans-serif;
-      font-weight: 700; font-size: 10pt; color: #221E20;
+      font-weight: 700; font-size: 9pt; color: #221E20;
       text-transform: uppercase; letter-spacing: 0.4px;
-      margin-bottom: 2mm;
+      margin-bottom: 1.4mm;
     }
-    .auth-txt { font-size: 9pt; line-height: 1.5; color: #333; text-align: justify; }
+    .auth-txt { font-size: 8pt; line-height: 1.35; color: #333; text-align: justify; }
 
     /* ===== Firmas ===== */
-    .firmas-row { display: flex; gap: 16mm; margin-bottom: 8mm; }
+    .firmas-row { display: flex; gap: 16mm; margin-bottom: 2mm; }
     .firma-col { flex: 1; text-align: center; }
-    .firma-line { border-bottom: 1.5px solid #221E20; height: 16mm; margin-bottom: 2mm; }
+    .firma-line { border-bottom: 1.5px solid #221E20; height: 6mm; margin-bottom: 2mm; }
     .firma-lbl {
-      font-weight: 700; font-size: 9pt; text-transform: uppercase;
+      font-weight: 700; font-size: 8.5pt; text-transform: uppercase;
       letter-spacing: 0.4px; color: #221E20;
     }
-    .firma-sub { font-size: 8.5pt; color: #555; }
+    .firma-sub { font-size: 8pt; color: #555; }
 
     /* ===== Pie ===== */
     .print-ft {

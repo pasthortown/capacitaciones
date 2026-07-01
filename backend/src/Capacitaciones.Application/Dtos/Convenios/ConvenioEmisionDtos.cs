@@ -25,7 +25,6 @@ public class ConvenioImprimirConvenioDto
     public string CodigoFormato { get; set; } = "GIC-EC-ANX-01";
     public string Version { get; set; } = "v1";
     public string? Tipo { get; set; }
-    public string? TipoCurso { get; set; }
     public string? NombreCurso { get; set; }
     public string? Marca { get; set; }
     /// <summary>Referencia a un convenio previo ("código - nombre"), si este es parte/continuación.</summary>

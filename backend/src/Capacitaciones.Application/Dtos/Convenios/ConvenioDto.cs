@@ -28,7 +28,6 @@ public class ConvenioDto
 
     public string? Descripcion { get; set; }
     public string? Tipo { get; set; }
-    public string? TipoCurso { get; set; }
     public string? NombreCurso { get; set; }
     public string? Marca { get; set; }
 

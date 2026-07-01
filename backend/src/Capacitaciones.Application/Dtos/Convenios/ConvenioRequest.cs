@@ -24,8 +24,6 @@ public class ConvenioRequest
     public string? JefeInmediato { get; set; }
     /// <summary>Relación laboral / tipo de contrato (manual).</summary>
     public string? RelacionLaboral { get; set; }
-    /// <summary>Fecha de ingreso del colaborador (yyyy-MM-dd). <b>Requerida</b>: ancla el devengo.</summary>
-    public string? FechaIngreso { get; set; }
     /// <summary>Fecha de firma del documento (yyyy-MM-dd).</summary>
     public string? FechaFirma { get; set; }
 
@@ -33,7 +31,6 @@ public class ConvenioRequest
     /// <summary>Tipo de evento (Curso o capacitación, Certificación, Examen de certificación,
     /// Diplomado, Programa especializado, Material de estudio).</summary>
     public string? Tipo { get; set; }
-    public string? TipoCurso { get; set; }
     public string? NombreCurso { get; set; }
     public string? Marca { get; set; }
     /// <summary>Id del convenio previo del que este es parte/continuación (opcional, auto-referencia).</summary>

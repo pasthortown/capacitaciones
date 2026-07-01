@@ -49,7 +49,6 @@ public static class ConvenioMapper
             FechaFirma = c.FechaFirma,
             Descripcion = c.Descripcion,
             Tipo = c.Tipo,
-            TipoCurso = c.TipoCurso,
             NombreCurso = c.NombreCurso,
             Marca = c.Marca,
             ConvenioReferenciaId = c.ConvenioReferenciaId,
@@ -284,7 +283,6 @@ public static class ConvenioMapper
 
         c.Descripcion = Clean(req.Descripcion);
         c.Tipo = Clean(req.Tipo);
-        c.TipoCurso = Clean(req.TipoCurso);
         c.NombreCurso = Clean(req.NombreCurso);
         c.Marca = Clean(req.Marca);
         // Referencia a un convenio previo (parte/continuación). Nunca referirse a sí mismo.
@@ -299,7 +297,8 @@ public static class ConvenioMapper
         c.CentroCostos = Clean(req.CentroCostos);
         c.JefeInmediato = Clean(req.JefeInmediato);
         c.RelacionLaboral = Clean(req.RelacionLaboral);
-        c.FechaIngreso = ParseDate(req.FechaIngreso, "La fecha de ingreso es obligatoria (yyyy-MM-dd).");
+        // FechaIngreso ya no se captura: se setea automáticamente = fecha de creación del convenio
+        // (ver CrearConvenioUseCase). En edición se conserva la existente. Es el ancla del devengo.
         c.FechaFirma = ParseOptionalDate(req.FechaFirma);
 
         // Detalle del evento.

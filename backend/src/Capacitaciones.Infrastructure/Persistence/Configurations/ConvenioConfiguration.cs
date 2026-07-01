@@ -29,7 +29,6 @@ public class ConvenioConfiguration : IEntityTypeConfiguration<Convenio>
         b.Property(c => c.AutorizadoPor).HasMaxLength(200);
         b.Property(c => c.Descripcion).HasMaxLength(2000);
         b.Property(c => c.Tipo).HasMaxLength(150);
-        b.Property(c => c.TipoCurso).HasMaxLength(150);
         b.Property(c => c.NombreCurso).HasMaxLength(250);
         b.Property(c => c.Marca).HasMaxLength(150);
         b.Property(c => c.FechaInicioCurso);

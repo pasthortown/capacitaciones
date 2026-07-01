@@ -73,6 +73,9 @@ public class CrearConvenioUseCase
             Activo = true,
             FechaCreacion = DateTime.UtcNow,
         };
+        // La fecha de ingreso ya no se captura: es automáticamente la fecha de creación del
+        // convenio en el sistema (ancla del cálculo de devengo).
+        entity.FechaIngreso = entity.FechaCreacion;
         ConvenioMapper.Apply(entity, req);
         await _repo.AddAsync(entity, ct);
         return ConvenioMapper.ToDto(entity);

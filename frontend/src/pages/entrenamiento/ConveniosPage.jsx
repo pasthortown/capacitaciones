@@ -158,8 +158,8 @@ function SiNoGroup({ label, value, onChange, name }) {
 const emptyForm = {
   cedula: '', nombreColaborador: '', origenColaborador: '', cargoColaborador: '', areaColaborador: '',
   empresaColaborador: '', centroCostos: '', jefeInmediato: '', relacionLaboral: '',
-  fechaIngreso: '', fechaFirma: '',
-  descripcion: '', tipo: '', tipoCurso: '', nombreCurso: '', marca: '',
+  fechaFirma: '',
+  descripcion: '', tipo: '', nombreCurso: '', marca: '',
   esContinuacion: false, convenioReferenciaId: null,
   fechaInicioCurso: '', fechaFinCurso: '', horas: '', resultado: '', convenioFirmado: false,
   solicitadoPor: '', autorizadoPor: '',
@@ -352,11 +352,9 @@ function ConveniosTab({ toast }) {
       centroCostos: row.centroCostos || '',
       jefeInmediato: row.jefeInmediato || '',
       relacionLaboral: row.relacionLaboral || '',
-      fechaIngreso: d(row.fechaIngreso),
       fechaFirma: d(row.fechaFirma),
       descripcion: row.descripcion || '',
       tipo: row.tipo || '',
-      tipoCurso: row.tipoCurso || '',
       nombreCurso: row.nombreCurso || '',
       marca: row.marca || '',
       esContinuacion: !!row.convenioReferenciaId,
@@ -427,7 +425,6 @@ function ConveniosTab({ toast }) {
     if (!form.cedula.trim() || !form.nombreColaborador) next.cedula = 'Busca y selecciona el colaborador (por nombre o cédula).';
     if (form.esContinuacion && !form.convenioReferenciaId) next.referencia = 'Selecciona el convenio previo del que este es parte/continuación.';
     if (!form.fecha) next.fecha = 'La fecha es obligatoria.';
-    if (!form.fechaIngreso) next.fechaIngreso = 'La fecha de ingreso es obligatoria (ancla del devengo).';
     for (const it of form.items) {
       if (!String(it.tipo).trim() || it.valor === '' || Number.isNaN(Number(it.valor))) {
         next.items = 'Cada ítem requiere tipo y valor numérico.';
@@ -446,11 +443,9 @@ function ConveniosTab({ toast }) {
     centroCostos: form.centroCostos.trim() || null,
     jefeInmediato: form.jefeInmediato.trim() || null,
     relacionLaboral: form.relacionLaboral.trim() || null,
-    fechaIngreso: form.fechaIngreso || null,
     fechaFirma: form.fechaFirma || null,
     descripcion: form.descripcion.trim() || null,
     tipo: form.tipo.trim() || null,
-    tipoCurso: form.tipoCurso.trim() || null,
     nombreCurso: form.nombreCurso.trim() || null,
     marca: form.marca.trim() || null,
     convenioReferenciaId: form.esContinuacion ? (form.convenioReferenciaId || null) : null,
@@ -519,8 +514,8 @@ function ConveniosTab({ toast }) {
         cedula: row.cedulaColaborador, descripcion: row.descripcion,
         cargoColaborador: row.cargoColaborador, areaColaborador: row.areaColaborador, empresaColaborador: row.empresaColaborador,
         centroCostos: row.centroCostos, jefeInmediato: row.jefeInmediato, relacionLaboral: row.relacionLaboral,
-        fechaIngreso: d(row.fechaIngreso), fechaFirma: d(row.fechaFirma),
-        tipo: row.tipo, tipoCurso: row.tipoCurso, nombreCurso: row.nombreCurso, marca: row.marca,
+        fechaFirma: d(row.fechaFirma),
+        tipo: row.tipo, nombreCurso: row.nombreCurso, marca: row.marca,
         convenioReferenciaId: row.convenioReferenciaId || null,
         fechaInicioCurso: d(row.fechaInicioCurso), fechaFinCurso: d(row.fechaFinCurso),
         horas: row.horas, resultado: row.resultado, convenioFirmado: !!row.convenioFirmado,
@@ -753,12 +748,6 @@ function ConveniosTab({ toast }) {
               onChange={(v) => setField('relacionLaboral', v)} />
 
             <div className="form-group" style={{ position: 'static' }}>
-              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-ingreso">Fecha de ingreso *</label>
-              <input id="cv-ingreso" type="date" className="form-input" value={form.fechaIngreso} onChange={(e) => setField('fechaIngreso', e.target.value)} />
-              {errors.fechaIngreso ? <div className="form-helper form-helper--error">{errors.fechaIngreso}</div>
-                : <div className="form-helper">Ancla del cálculo de devengación.</div>}
-            </div>
-            <div className="form-group" style={{ position: 'static' }}>
               <label className="form-label" style={{ position: 'static' }} htmlFor="cv-firma">Fecha de firma</label>
               <input id="cv-firma" type="date" className="form-input" value={form.fechaFirma} onChange={(e) => setField('fechaFirma', e.target.value)} />
             </div>
@@ -774,7 +763,6 @@ function ConveniosTab({ toast }) {
               </select>
             </div>
 
-            <TextField label="Tipo de curso" name="tipoCurso" value={form.tipoCurso} maxLength={150} onChange={(v) => setField('tipoCurso', v)} />
             <TextField label="Nombre de Curso / Certificación / Exámen" name="nombreCurso" value={form.nombreCurso} maxLength={250} onChange={(v) => setField('nombreCurso', v)} />
             <TextField label="Marca" name="marca" value={form.marca} maxLength={150} onChange={(v) => setField('marca', v)} />
 

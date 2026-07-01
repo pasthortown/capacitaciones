@@ -626,14 +626,11 @@ function buildConvenioColaboradorHtml(colaborador, convenio) {
     ['Cédula', valorOGuion(colaborador.cedula), false],
     ['Cargo', valorOGuion(colaborador.cargo), false],
     ['Área / departamento', valorOGuion(colaborador.area), false],
-    ['Centro de costos', valorOGuion(colaborador.centroCostos), false],
     ['Empresa', valorOGuion(colaborador.empresa), false],
     ['Jefe inmediato', valorOGuion(colaborador.jefeInmediato), false],
-    ['Relación laboral', valorOGuion(colaborador.relacionLaboral), false],
-    ['Fecha de ingreso', formatFechaEsOGuion(colaborador.fechaIngreso), false],
     ['Fecha de firma', formatFechaEsOGuion(convenio.fechaFirma), false]
   ];
-  return `<div class="pgrid2">${campos
+  return `<div class="pgrid3">${campos
     .map(([label, value, span]) => `<div class="pf${span ? ' pspan2' : ''}"><label>${escapeHtml(label)}</label><span>${value}</span></div>`)
     .join('')}</div>`;
 }
@@ -642,7 +639,6 @@ function buildConvenioEventoHtml(convenio) {
   const campos = [
     ['Nombre de Curso / Certificación / Exámen', valorOGuion(convenio.nombreCurso), true],
     ['Tipo de evento', valorOGuion(convenio.tipo), false],
-    ['Tipo de curso', valorOGuion(convenio.tipoCurso), false],
     ['Marca', valorOGuion(convenio.marca), false],
     ['Fecha de inicio', formatFechaEsOGuion(convenio.fechaInicioCurso), false],
     ['Fecha de fin / aprobación', formatFechaEsOGuion(convenio.fechaFinCurso), false],
@@ -654,7 +650,7 @@ function buildConvenioEventoHtml(convenio) {
   if (convenio.convenioReferencia && String(convenio.convenioReferencia).trim()) {
     campos.push(['Parte / continuación de', valorOGuion(convenio.convenioReferencia), true]);
   }
-  return `<div class="pgrid2">${campos
+  return `<div class="pgrid3">${campos
     .map(([label, value, span]) => `<div class="pf${span ? ' pspan2' : ''}"><label>${escapeHtml(label)}</label><span>${value}</span></div>`)
     .join('')}</div>`;
 }
@@ -695,7 +691,7 @@ function buildConvenioReintegroHtml(convenio) {
     ['Plazo de devengación', valorOGuion(convenio.plazoTexto)],
     ['Meses a devengar', valorOGuion(convenio.mesesADevengar)]
   ];
-  return `<div class="pgrid2">${campos
+  return `<div class="pgrid3">${campos
     .map(([label, value]) => `<div class="pf"><label>${escapeHtml(label)}</label><span>${value}</span></div>`)
     .join('')}</div>`;
 }
