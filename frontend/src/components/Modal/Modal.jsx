@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
 /**
@@ -28,6 +28,19 @@ import { X } from 'lucide-react';
  */
 export default function Modal({ isOpen, onClose, title, children, footer, className }) {
   const dialogRef = useRef(null);
+  const bodyRef = useRef(null);
+
+  // El `.modal__body` es un flex item con scroll (`flex: 1 1 auto; min-height: 0; overflow-y: auto`).
+  // Cuando el contenido cambia dinámicamente (p.ej. mostrar/ocultar una sección del formulario),
+  // Chromium a veces conserva el layout anterior y deja el body colapsado con un hueco blanco debajo.
+  // Forzamos un reflow del body en cada render para que recalcule su alto (y el del diálogo).
+  useLayoutEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    el.style.overflowY = 'hidden';
+    void el.offsetHeight; // lectura forzada → reflow síncrono (antes del paint)
+    el.style.overflowY = '';
+  });
 
   // ESC -> onClose. Sólo activo cuando isOpen.
   useEffect(() => {
@@ -80,7 +93,7 @@ export default function Modal({ isOpen, onClose, title, children, footer, classN
           </button>
         </header>
 
-        <div className="modal__body">{children}</div>
+        <div className="modal__body" ref={bodyRef}>{children}</div>
 
         {footer && <footer className="modal__footer">{footer}</footer>}
       </div>
