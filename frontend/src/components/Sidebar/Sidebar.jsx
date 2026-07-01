@@ -142,14 +142,6 @@ export default function Sidebar({ collapsed = false }) {
             </NavLink>
           </li>
 
-          {/* Usuarios permitidos */}
-          <li className="sidebar__nav-item">
-            <NavLink to="/usuarios" title="Usuarios" className={navLinkClass}>
-              <Users className="sidebar__nav-icon" />
-              <span>Usuarios</span>
-            </NavLink>
-          </li>
-
           {/* Grupo colapsable: Entrenamiento (Colaboradores, Convenios).
               Colapsada → el botón navega al primer ítem para no perder acceso. */}
           <li className="sidebar__nav-item">
@@ -304,6 +296,12 @@ export default function Sidebar({ collapsed = false }) {
                   <NavLink to="/configuracion/numeracion" title="Numeración" className={navLinkClass}>
                     <Hash className="sidebar__nav-icon" />
                     <span>Numeración</span>
+                  </NavLink>
+                </li>
+                <li className="sidebar__nav-item">
+                  <NavLink to="/configuracion/usuarios" title="Usuarios" className={navLinkClass}>
+                    <Users className="sidebar__nav-icon" />
+                    <span>Usuarios</span>
                   </NavLink>
                 </li>
               </ul>

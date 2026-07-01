@@ -119,9 +119,8 @@ export default function App() {
             element={<Navigate to="/configuracion/numeracion" replace />}
           />
           <Route path="/configuracion/numeracion" element={<NumeracionPage />} />
-
-          {/* Usuarios permitidos */}
-          <Route path="/usuarios" element={<UsuariosPage />} />
+          {/* Usuarios permitidos (dentro de Configuración) */}
+          <Route path="/configuracion/usuarios" element={<UsuariosPage />} />
 
           <Route
             path="*"
