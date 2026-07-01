@@ -19,6 +19,7 @@ import PreguntasEncuestaPage from './pages/catalogos/PreguntasEncuestaPage.jsx';
 import EncuestaPublicaPage from './pages/encuesta/EncuestaPublicaPage.jsx';
 import ResultadosEncuestaPage from './pages/encuesta/ResultadosEncuestaPage.jsx';
 import NumeracionPage from './pages/configuracion/NumeracionPage.jsx';
+import UsuariosPage from './pages/UsuariosPage.jsx';
 import ProtectedRoute from './auth/ProtectedRoute.jsx';
 
 /**
@@ -118,6 +119,9 @@ export default function App() {
             element={<Navigate to="/configuracion/numeracion" replace />}
           />
           <Route path="/configuracion/numeracion" element={<NumeracionPage />} />
+
+          {/* Usuarios permitidos */}
+          <Route path="/usuarios" element={<UsuariosPage />} />
 
           <Route
             path="*"

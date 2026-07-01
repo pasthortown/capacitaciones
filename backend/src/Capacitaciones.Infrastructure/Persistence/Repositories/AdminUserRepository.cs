@@ -20,10 +20,14 @@ public class AdminUserRepository : IAdminUserRepository
         // Collation CI por defecto: la igualdad ya es case-insensitive en SQL Server.
         _db.AdminUsers.FirstOrDefaultAsync(u => u.Email == email, ct);
 
+    public Task<AdminUser?> GetByUsuarioRedAsync(string usuarioRed, CancellationToken ct = default) =>
+        _db.AdminUsers.FirstOrDefaultAsync(u => u.UsuarioRed == usuarioRed, ct);
+
     public async Task<IReadOnlyList<AdminUser>> ListAsync(CancellationToken ct = default) =>
         await _db.AdminUsers
             .AsNoTracking()
-            .OrderBy(u => u.Email)
+            .Where(u => u.UsuarioRed != "")
+            .OrderBy(u => u.UsuarioRed)
             .ToListAsync(ct);
 
     public Task<bool> AnyActivoAsync(CancellationToken ct = default) =>

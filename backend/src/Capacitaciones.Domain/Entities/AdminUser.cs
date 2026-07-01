@@ -8,13 +8,17 @@ public class AdminUser
 {
     public Guid Id { get; set; }
 
-    /// <summary>Correo corporativo completo (usuario@dos.com.ec). Único.</summary>
+    /// <summary>Usuario de red (samAccountName) permitido para ingresar. <b>Llave de la lista de
+    /// permitidos</b> y del cruce con el dominio. Único (case-insensitive).</summary>
+    public string UsuarioRed { get; set; } = string.Empty;
+
+    /// <summary>Correo corporativo (usuario@dos.com.ec). Opcional: se completa desde el AD al ingresar.</summary>
     public string Email { get; set; } = string.Empty;
 
-    /// <summary>Hash BCrypt de la contraseña (nunca se almacena la contraseña en claro).</summary>
+    /// <summary>Hash BCrypt (legado). Con login por dominio ya no se usa; queda nullable en BD.</summary>
     public string PasswordHash { get; set; } = string.Empty;
 
-    /// <summary>Nombre descriptivo del administrador. Se usa como claim <c>name</c> en el JWT.</summary>
+    /// <summary>Nombre descriptivo. Se completa desde el AD al ingresar; se usa como claim <c>name</c>.</summary>
     public string Nombres { get; set; } = string.Empty;
 
     /// <summary>Eliminación lógica.</summary>

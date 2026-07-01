@@ -3,7 +3,6 @@ namespace Capacitaciones.Application.Dtos.Admin;
 /// <summary>Payload de <c>POST /api/admin/users</c>.</summary>
 public class CreateAdminUserDto
 {
-    public string Email { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-    public string Nombres { get; set; } = string.Empty;
+    /// <summary>Usuario de red (samAccountName) que podrá ingresar al sistema.</summary>
+    public string UsuarioRed { get; set; } = string.Empty;
 }

@@ -116,8 +116,8 @@ export function AuthProvider({ children }) {
   }, [clearSession]);
 
   const login = useCallback(
-    async (email, password) => {
-      const response = await http.post('/auth/login', { email, password });
+    async (usuario, password) => {
+      const response = await http.post('/auth/login', { usuario, password });
       const nextToken = response?.token;
       if (!nextToken) {
         throw new HttpError('Respuesta de login inválida.', { status: 500 });

@@ -11,17 +11,22 @@ public class AdminUserConfiguration : IEntityTypeConfiguration<AdminUser>
         builder.ToTable("AdminUser", "dbo");
         builder.HasKey(u => u.Id);
 
+        builder.Property(u => u.UsuarioRed)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        // Con login por dominio, estos ya no son obligatorios (se completan del AD al ingresar).
         builder.Property(u => u.Email)
             .HasMaxLength(255)
-            .IsRequired();
+            .IsRequired(false);
 
         builder.Property(u => u.PasswordHash)
             .HasMaxLength(255)
-            .IsRequired();
+            .IsRequired(false);
 
         builder.Property(u => u.Nombres)
             .HasMaxLength(255)
-            .IsRequired();
+            .IsRequired(false);
 
         builder.Property(u => u.Activo)
             .IsRequired()
@@ -34,9 +39,9 @@ public class AdminUserConfiguration : IEntityTypeConfiguration<AdminUser>
         builder.Property(u => u.FechaActualizacion);
         builder.Property(u => u.UltimoLogin);
 
-        // Unicidad case-insensitive (collation CI por defecto en SQL Server).
-        builder.HasIndex(u => u.Email)
+        // Unicidad del usuario de red (case-insensitive por la collation CI de SQL Server).
+        builder.HasIndex(u => u.UsuarioRed)
             .IsUnique()
-            .HasDatabaseName("UX_AdminUser_Email");
+            .HasDatabaseName("UX_AdminUser_UsuarioRed");
     }
 }

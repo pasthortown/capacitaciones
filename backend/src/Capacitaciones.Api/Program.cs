@@ -185,6 +185,15 @@ builder.Services.AddScoped<ICatalogoRepository<Area>>(sp => sp.GetRequiredServic
 builder.Services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
 builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 
+// Autenticación con dominio (AD vía SOAP del portal de servicios). Config por entorno:
+// AD_AUTH_URL (.../CMDBWS/Authentication.asmx) + AD_DOMAIN (ej. COMPUEQUIP). Sin AD_AUTH_URL, deshabilitado.
+builder.Services.AddSingleton(new Capacitaciones.Infrastructure.Security.AdOptions
+{
+    AuthUrl = Environment.GetEnvironmentVariable("AD_AUTH_URL"),
+    Domain = Environment.GetEnvironmentVariable("AD_DOMAIN"),
+});
+builder.Services.AddHttpClient<IAdAuthenticator, Capacitaciones.Infrastructure.Security.SoapAdAuthenticator>();
+
 // Casos de uso.
 builder.Services.AddScoped<CatalogoService<Modalidad>>();
 builder.Services.AddScoped<CatalogoService<TipoActividad>>();
@@ -589,43 +598,27 @@ static string FirstNonEmpty(params string?[] values)
 
 static async Task SeedInitialAdminAsync(IServiceProvider services, ILogger logger)
 {
+    // Lista inicial de usuarios de red permitidos (login por dominio + lista de permitidos).
+    // Se agregan los que falten sin duplicar (idempotente). Editable luego en la ventana Usuarios.
     var repo = services.GetRequiredService<IAdminUserRepository>();
+    string[] usuariosRed = { "dos", "gcomina", "lasalazar" };
 
-    if (await repo.AnyActivoAsync())
+    foreach (var u in usuariosRed)
     {
-        return;
+        var usuario = u.Trim();
+        if (await repo.GetByUsuarioRedAsync(usuario) is not null) continue;
+        await repo.AddAsync(new AdminUser
+        {
+            Id = Guid.NewGuid(),
+            UsuarioRed = usuario,
+            Email = string.Empty,
+            PasswordHash = string.Empty,
+            Nombres = string.Empty,
+            Activo = true,
+            FechaCreacion = DateTime.UtcNow,
+        });
+        logger.LogInformation("Usuario de red permitido sembrado: '{Usuario}'.", usuario);
     }
-
-    var email = Environment.GetEnvironmentVariable("ADMIN_EMAIL");
-    var password = Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
-
-    if (string.IsNullOrWhiteSpace(email))
-    {
-        email = "admin@dos.com.ec";
-    }
-
-    if (string.IsNullOrWhiteSpace(password))
-    {
-        logger.LogWarning(
-            "No se sembró el admin inicial: falta la variable de entorno ADMIN_PASSWORD. " +
-            "Defínela (y opcionalmente ADMIN_EMAIL) para habilitar el seed.");
-        return;
-    }
-
-    var hasher = services.GetRequiredService<IPasswordHasher>();
-    var entity = new AdminUser
-    {
-        Id = Guid.NewGuid(),
-        Email = email.Trim(),
-        PasswordHash = hasher.Hash(password),
-        Nombres = "Administrador",
-        Activo = true,
-        FechaCreacion = DateTime.UtcNow,
-        FechaActualizacion = null,
-        UltimoLogin = null
-    };
-    await repo.AddAsync(entity);
-    logger.LogInformation("Admin inicial sembrado con email '{Email}'.", entity.Email);
 }
 
 // Expuesto para Microsoft.AspNetCore.Mvc.Testing (WebApplicationFactory<Program>).

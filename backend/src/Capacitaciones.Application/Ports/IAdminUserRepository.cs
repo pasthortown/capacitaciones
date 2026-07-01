@@ -10,6 +10,8 @@ public interface IAdminUserRepository
 {
     Task<AdminUser?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<AdminUser?> GetByEmailAsync(string email, CancellationToken ct = default);
+    /// <summary>Busca un permitido por su usuario de red (case-insensitive).</summary>
+    Task<AdminUser?> GetByUsuarioRedAsync(string usuarioRed, CancellationToken ct = default);
     Task<IReadOnlyList<AdminUser>> ListAsync(CancellationToken ct = default);
     Task<bool> AnyActivoAsync(CancellationToken ct = default);
     Task AddAsync(AdminUser user, CancellationToken ct = default);

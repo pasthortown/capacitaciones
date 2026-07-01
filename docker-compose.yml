@@ -78,6 +78,9 @@ services:
       CONTROLTAREAS_API_URL: ${CONTROLTAREAS_API_URL:-}
       CONTROLTAREAS_API_USER: ${CONTROLTAREAS_API_USER:-}
       CONTROLTAREAS_API_PASSWORD: ${CONTROLTAREAS_API_PASSWORD:-}
+      # Login por dominio (AD vía SOAP del portal). Sin AD_AUTH_URL queda deshabilitado.
+      AD_AUTH_URL: ${AD_AUTH_URL:-}
+      AD_DOMAIN: ${AD_DOMAIN:-}
     volumes:
       - ./output:/output
       - ./repository:/repository

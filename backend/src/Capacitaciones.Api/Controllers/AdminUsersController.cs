@@ -79,6 +79,7 @@ public class AdminUsersController : ControllerBase
         var status = ex.Codigo switch
         {
             "DUPLICATE_EMAIL" => StatusCodes.Status409Conflict,
+            "DUPLICATE_USUARIO" => StatusCodes.Status409Conflict,
             "NOT_FOUND" => StatusCodes.Status404NotFound,
             "SELF_DELETE_FORBIDDEN" => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status400BadRequest
