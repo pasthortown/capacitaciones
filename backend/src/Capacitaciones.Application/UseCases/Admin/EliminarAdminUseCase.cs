@@ -3,9 +3,8 @@ using Capacitaciones.Application.Ports;
 namespace Capacitaciones.Application.UseCases.Admin;
 
 /// <summary>
-/// Caso de uso: eliminación lógica de un administrador (<c>Activo = false</c>).
-/// Rechaza la auto-eliminación comparando el id solicitado con el id del usuario
-/// actualmente autenticado (provisto por el controlador).
+/// Caso de uso: quitar un usuario de red de la lista de permitidos (borrado físico).
+/// Rechaza la auto-eliminación comparando el id solicitado con el del usuario autenticado.
 /// </summary>
 public class EliminarAdminUseCase
 {
@@ -22,20 +21,12 @@ public class EliminarAdminUseCase
         {
             throw new AuthServiceException(
                 "SELF_DELETE_FORBIDDEN",
-                "No se permite que un administrador se elimine a sí mismo.");
+                "No puedes quitarte a ti mismo de la lista de permitidos.");
         }
 
-        var user = await _repo.GetByIdAsync(targetId, ct)
-            ?? throw new AuthServiceException("NOT_FOUND", $"Administrador {targetId} no encontrado.");
+        var user = await _repo.GetByIdAsync(targetId, ct);
+        if (user is null) return; // idempotente: ya no existe
 
-        if (!user.Activo)
-        {
-            // Ya está desactivado: operación idempotente.
-            return;
-        }
-
-        user.Activo = false;
-        user.FechaActualizacion = DateTime.UtcNow;
-        await _repo.UpdateAsync(user, ct);
+        await _repo.DeleteAsync(targetId, ct);
     }
 }

@@ -16,4 +16,6 @@ public interface IAdminUserRepository
     Task<bool> AnyActivoAsync(CancellationToken ct = default);
     Task AddAsync(AdminUser user, CancellationToken ct = default);
     Task UpdateAsync(AdminUser user, CancellationToken ct = default);
+    /// <summary>Borra físicamente el permitido (la allowlist no necesita baja lógica).</summary>
+    Task DeleteAsync(Guid id, CancellationToken ct = default);
 }

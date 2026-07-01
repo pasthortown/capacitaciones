@@ -30,7 +30,15 @@ public class CrearAdminUseCase
 
         var existente = await _repo.GetByUsuarioRedAsync(usuario, ct);
         if (existente is not null)
-            throw new AuthServiceException("DUPLICATE_USUARIO", $"El usuario de red '{usuario}' ya está en la lista.");
+        {
+            if (existente.Activo)
+                throw new AuthServiceException("DUPLICATE_USUARIO", $"El usuario de red '{usuario}' ya está en la lista.");
+            // Fila inactiva de un borrado lógico previo: la reactivamos (idempotente).
+            existente.Activo = true;
+            existente.FechaActualizacion = DateTime.UtcNow;
+            await _repo.UpdateAsync(existente, ct);
+            return ToDto(existente);
+        }
 
         var entity = new AdminUser
         {

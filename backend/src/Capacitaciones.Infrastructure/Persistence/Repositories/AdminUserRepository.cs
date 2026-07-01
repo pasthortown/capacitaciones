@@ -26,7 +26,7 @@ public class AdminUserRepository : IAdminUserRepository
     public async Task<IReadOnlyList<AdminUser>> ListAsync(CancellationToken ct = default) =>
         await _db.AdminUsers
             .AsNoTracking()
-            .Where(u => u.UsuarioRed != "")
+            .Where(u => u.UsuarioRed != "" && u.Activo)
             .OrderBy(u => u.UsuarioRed)
             .ToListAsync(ct);
 
@@ -42,6 +42,14 @@ public class AdminUserRepository : IAdminUserRepository
     public async Task UpdateAsync(AdminUser user, CancellationToken ct = default)
     {
         _db.AdminUsers.Update(user);
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var user = await _db.AdminUsers.FirstOrDefaultAsync(u => u.Id == id, ct);
+        if (user is null) return;
+        _db.AdminUsers.Remove(user);
         await _db.SaveChangesAsync(ct);
     }
 }
