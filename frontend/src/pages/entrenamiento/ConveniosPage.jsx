@@ -1423,7 +1423,8 @@ function DesvinculacionTab({ toast }) {
     <>
       <div className="toolbar">
         <div className={`toolbar__filters ${styles.filtersRow}`} style={{ alignItems: 'flex-start' }}>
-          <div>
+          <div className="form-group" style={{ position: 'static' }}>
+            <label className="form-label" style={{ position: 'static' }}>Buscar</label>
             <ColaboradorCombo colaboradores={colaboradores} loading={colabLoading}
               onSelect={(c) => { setCedula(c.cedula); setNombreSel(c.name); }} minWidth={280} />
             {cedula && <div className="text-secondary" style={{ fontSize: 12, marginTop: 4 }}>Seleccionado: {nombreSel || cedula} ({cedula})</div>}
