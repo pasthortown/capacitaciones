@@ -326,6 +326,7 @@ public class LiquidacionColaboradorUseCase
             {
                 Id = c.Id,
                 CodigoRegistro = c.NumeroRegistro is int n ? IConvenioNumeracionService.Format(n) : string.Empty,
+                ConvenioReferenciaId = c.ConvenioReferenciaId,
                 NombreCurso = c.NombreCurso,
                 Marca = c.Marca,
                 Clasificacion = clasif,

@@ -65,6 +65,8 @@ public class LiquidacionConvenioDto
 {
     public Guid Id { get; set; }
     public string CodigoRegistro { get; set; } = string.Empty;
+    /// <summary>Convenio previo del que este es parte/continuación (para agrupar por cadena).</summary>
+    public Guid? ConvenioReferenciaId { get; set; }
     public string? NombreCurso { get; set; }
     public string? Marca { get; set; }
     public string Clasificacion { get; set; } = string.Empty;

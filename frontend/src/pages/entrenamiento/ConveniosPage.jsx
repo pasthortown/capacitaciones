@@ -70,6 +70,68 @@ function plazoSugerido(clasif, valor) {
   return { meses: 0, texto: 'Revisar' };
 }
 
+// Agrupa convenios por cadena de referencia: cada convenio se asocia a la raíz de su cadena,
+// siguiendo `convenioReferenciaId` mientras el padre esté presente en el conjunto. Devuelve
+// grupos { rootId, root (titular), items[] }.
+function agruparPorCadena(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const byId = new Map(list.map((r) => [r.id, r]));
+  const rootOf = (r) => {
+    let cur = r;
+    let guard = 0;
+    while (cur.convenioReferenciaId && byId.has(cur.convenioReferenciaId) && guard < 50) {
+      cur = byId.get(cur.convenioReferenciaId);
+      guard += 1;
+    }
+    return cur.id;
+  };
+  const groups = new Map();
+  for (const r of list) {
+    const root = rootOf(r);
+    if (!groups.has(root)) groups.set(root, []);
+    groups.get(root).push(r);
+  }
+  return [...groups.entries()].map(([rootId, items]) => ({ rootId, root: byId.get(rootId) || items[0], items }));
+}
+
+/**
+ * Renderiza convenios agrupados por cadena de referencia. Las cadenas (2+ convenios enlazados)
+ * se muestran como bloques con encabezado (código/nombre del convenio raíz) y subtotal de costos;
+ * los convenios sueltos van en una sola tabla. Si no hay cadenas, se comporta como una tabla simple.
+ */
+function GruposConvenios({ rows, columns, loading, montoKey, subtotalLabel, emptyMessage }) {
+  const grupos = useMemo(() => agruparPorCadena(rows), [rows]);
+  const cadenas = grupos.filter((g) => g.items.length > 1);
+  const sueltos = grupos.filter((g) => g.items.length === 1).flatMap((g) => g.items);
+  const sum = (arr) => arr.reduce((s, x) => s + (Number(x[montoKey]) || 0), 0);
+
+  if (cadenas.length === 0) {
+    return <DataTable columns={columns} rows={sueltos} loading={loading} emptyMessage={emptyMessage} />;
+  }
+  return (
+    <div style={{ padding: 'var(--spacing-3)' }}>
+      {cadenas.map((g) => (
+        <div key={g.rootId} style={{ marginBottom: 'var(--spacing-4)', border: '1px solid var(--color-border, #e5e7eb)', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '8px 12px', background: 'var(--color-surface-alt, #f8fafc)' }}>
+            <strong>
+              Cadena: {g.root.codigoRegistro || '—'} — {g.root.nombreCurso || 'Sin curso'}{' '}
+              <span className="text-secondary" style={{ fontWeight: 400, fontSize: 12 }}>({g.items.length} convenios)</span>
+            </strong>
+            <span className="badge badge--inactive">{subtotalLabel}: {money(sum(g.items))}</span>
+          </div>
+          <DataTable columns={columns} rows={g.items} loading={loading} emptyMessage={emptyMessage} />
+        </div>
+      ))}
+      {sueltos.length > 0 && (
+        <div>
+          <div className="text-secondary" style={{ padding: '4px 2px', fontSize: 13 }}>Convenios individuales</div>
+          <DataTable columns={columns} rows={sueltos} loading={loading} emptyMessage={emptyMessage} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 const emptyForm = {
   cedula: '', nombreColaborador: '', origenColaborador: '', cargoColaborador: '', areaColaborador: '',
   empresaColaborador: '', centroCostos: '', jefeInmediato: '', relacionLaboral: '',
@@ -1006,7 +1068,8 @@ function HistorialTab({ toast }) {
               <span className="badge badge--inactive">Total por devengar: {money(totalPendiente)}</span>
             </div>
             <div className="card__body" style={{ padding: 0 }}>
-              <DataTable columns={columns} rows={rows} loading={loading}
+              <GruposConvenios rows={rows} columns={columns} loading={loading}
+                montoKey="montoPendiente" subtotalLabel="Subtotal por devengar"
                 emptyMessage="Este colaborador no tiene convenios con saldo por devengar." />
             </div>
           </div>
@@ -1279,7 +1342,8 @@ function DesvinculacionTab({ toast }) {
             </div>
           </div>
           <div className="card__body" style={{ padding: 0 }}>
-            <DataTable columns={columns} rows={data.convenios} loading={loading}
+            <GruposConvenios rows={data.convenios} columns={columns} loading={loading}
+              montoKey="montoReintegro" subtotalLabel="Subtotal a reintegrar"
               emptyMessage="Sin convenios con reintegro a la fecha indicada." />
           </div>
         </div>

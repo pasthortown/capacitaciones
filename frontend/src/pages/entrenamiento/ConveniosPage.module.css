@@ -9,6 +9,11 @@
 :global(.modal).wideModal {
   transition: opacity var(--transition-normal, 0.2s) ease,
               transform var(--transition-normal, 0.2s) ease !important;
+  /* Alto DEFINIDO (no solo max-height con height:auto). Con `height:auto`+`max-height`, cuando el
+     alto usado cambiaba/re-fluía tras marcar un switch, el `.modal__body` (flex item con scroll) no
+     se re-resolvía y colapsaba, dejando un hueco blanco. Un alto definido hace que el body flex
+     llene de forma estable en cada render. El formulario de convenios siempre supera este alto. */
+  height: 90vh !important;
 }
 
 .grid2 {
