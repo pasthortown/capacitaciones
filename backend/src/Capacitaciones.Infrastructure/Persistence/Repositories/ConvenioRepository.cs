@@ -16,13 +16,13 @@ public class ConvenioRepository : IConvenioRepository
 
     public async Task<IReadOnlyList<Convenio>> ListAsync(string? search, bool includeInactive, CancellationToken ct = default)
     {
-        IQueryable<Convenio> q = _db.Convenios.AsNoTracking().Include(c => c.Items).Include(c => c.Anexos);
+        IQueryable<Convenio> q = _db.Convenios.AsNoTracking()
+            .Include(c => c.Items).Include(c => c.Anexos).Include(c => c.ConvenioReferencia);
         if (!includeInactive) q = q.Where(c => c.Activo);
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim();
             q = q.Where(c =>
-                c.Titulo.Contains(s) ||
                 c.CedulaColaborador.Contains(s) ||
                 c.NombreColaborador.Contains(s) ||
                 (c.Tipo != null && c.Tipo.Contains(s)) ||
@@ -33,12 +33,14 @@ public class ConvenioRepository : IConvenioRepository
     }
 
     public Task<Convenio?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => _db.Convenios.Include(c => c.Items).Include(c => c.Anexos).FirstOrDefaultAsync(c => c.Id == id, ct);
+        => _db.Convenios.Include(c => c.Items).Include(c => c.Anexos).Include(c => c.ConvenioReferencia)
+            .FirstOrDefaultAsync(c => c.Id == id, ct);
 
     public async Task<IReadOnlyList<Convenio>> ListByCedulaAsync(string cedula, bool includeInactive, CancellationToken ct = default)
     {
         var c = (cedula ?? string.Empty).Trim();
-        IQueryable<Convenio> q = _db.Convenios.AsNoTracking().Include(x => x.Items).Include(x => x.Anexos)
+        IQueryable<Convenio> q = _db.Convenios.AsNoTracking()
+            .Include(x => x.Items).Include(x => x.Anexos).Include(x => x.ConvenioReferencia)
             .Where(x => x.CedulaColaborador == c);
         if (!includeInactive) q = q.Where(x => x.Activo);
         return await q.OrderByDescending(x => x.Fecha).ToListAsync(ct);

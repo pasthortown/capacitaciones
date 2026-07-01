@@ -62,7 +62,10 @@ public class ImprimirConvenioUseCase
             Convenio = new ConvenioImprimirConvenioDto
             {
                 CodigoRegistro = string.IsNullOrWhiteSpace(dto.CodigoRegistro) ? "—" : dto.CodigoRegistro,
-                Titulo = c.Titulo,
+                ConvenioReferencia = dto.ConvenioReferenciaId is null
+                    ? null
+                    : string.Join(" - ", new[] { dto.ConvenioReferenciaCodigo, dto.ConvenioReferenciaNombre }
+                        .Where(s => !string.IsNullOrWhiteSpace(s))),
                 Tipo = c.Tipo,
                 TipoCurso = c.TipoCurso,
                 NombreCurso = c.NombreCurso,
@@ -149,7 +152,6 @@ public class DescargarReporteConveniosUseCase
             Convenios = dtos.Select(d => new ReporteConvenioDto
             {
                 CodigoRegistro = d.CodigoRegistro,
-                Titulo = d.Titulo,
                 NombreCurso = d.NombreCurso,
                 Marca = d.Marca,
                 Fecha = ConvenioPdfHelpers.Fmt(d.Fecha),
@@ -286,7 +288,7 @@ public class DashboardConveniosUseCase
 
     private static DashboardCursoDto MapCurso(ConvenioDto d) => new()
     {
-        NombreCurso = string.IsNullOrWhiteSpace(d.NombreCurso) ? d.Titulo : d.NombreCurso,
+        NombreCurso = d.NombreCurso,
         CodigoRegistro = d.CodigoRegistro,
         Colaborador = d.NombreColaborador,
         CostoTotal = d.MontoTotal,
@@ -324,7 +326,6 @@ public class LiquidacionColaboradorUseCase
             {
                 Id = c.Id,
                 CodigoRegistro = c.NumeroRegistro is int n ? IConvenioNumeracionService.Format(n) : string.Empty,
-                Titulo = c.Titulo,
                 NombreCurso = c.NombreCurso,
                 Marca = c.Marca,
                 Clasificacion = clasif,
@@ -385,7 +386,6 @@ public class DescargarReporteLiquidacionUseCase
             Convenios = d.Convenios.Select(c => new LiquidacionReporteConvenioDto
             {
                 CodigoRegistro = c.CodigoRegistro,
-                Titulo = c.Titulo,
                 NombreCurso = c.NombreCurso,
                 Marca = c.Marca,
                 Clasificacion = c.Clasificacion,

@@ -27,7 +27,6 @@ public class ConvenioConfiguration : IEntityTypeConfiguration<Convenio>
         b.Property(c => c.FechaFirma);
         b.Property(c => c.SolicitadoPor).HasMaxLength(200);
         b.Property(c => c.AutorizadoPor).HasMaxLength(200);
-        b.Property(c => c.Titulo).HasMaxLength(250).IsRequired();
         b.Property(c => c.Descripcion).HasMaxLength(2000);
         b.Property(c => c.Tipo).HasMaxLength(150);
         b.Property(c => c.TipoCurso).HasMaxLength(150);
@@ -50,6 +49,14 @@ public class ConvenioConfiguration : IEntityTypeConfiguration<Convenio>
         b.Property(c => c.FechaActualizacion);
 
         b.HasIndex(c => c.CedulaColaborador).HasDatabaseName("IX_Convenio_Cedula");
+
+        // Auto-referencia opcional: un convenio puede ser parte/continuación de otro previo.
+        // Sin cascade (NoAction) para no borrar en cadena ni crear ciclos en SQL Server.
+        b.HasOne(c => c.ConvenioReferencia)
+            .WithMany()
+            .HasForeignKey(c => c.ConvenioReferenciaId)
+            .OnDelete(DeleteBehavior.NoAction);
+        b.HasIndex(c => c.ConvenioReferenciaId).HasDatabaseName("IX_Convenio_Referencia");
 
         b.HasMany(c => c.Items)
             .WithOne()

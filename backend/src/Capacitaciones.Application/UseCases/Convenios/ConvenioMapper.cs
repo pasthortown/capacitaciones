@@ -47,12 +47,15 @@ public static class ConvenioMapper
             RelacionLaboral = c.RelacionLaboral,
             FechaIngreso = c.FechaIngreso,
             FechaFirma = c.FechaFirma,
-            Titulo = c.Titulo,
             Descripcion = c.Descripcion,
             Tipo = c.Tipo,
             TipoCurso = c.TipoCurso,
             NombreCurso = c.NombreCurso,
             Marca = c.Marca,
+            ConvenioReferenciaId = c.ConvenioReferenciaId,
+            ConvenioReferenciaCodigo = c.ConvenioReferencia?.NumeroRegistro is int rn
+                ? IConvenioNumeracionService.Format(rn) : null,
+            ConvenioReferenciaNombre = c.ConvenioReferencia?.NombreCurso,
             FechaInicioCurso = c.FechaInicioCurso,
             FechaFinCurso = c.FechaFinCurso,
             Horas = c.Horas,
@@ -274,20 +277,18 @@ public static class ConvenioMapper
     /// <summary>Copia el request a la entidad y gestiona la congelación al pasar a Cobrado/Anulado.</summary>
     public static void Apply(Convenio c, ConvenioRequest req)
     {
-        var titulo = (req.Titulo ?? string.Empty).Trim();
-        if (string.IsNullOrWhiteSpace(titulo))
-            throw new ConvenioValidacionException("El título del convenio es obligatorio.");
         if (!MesesPermitidos.Contains(req.MesesADevengar))
             throw new ConvenioValidacionException("Meses a devengar inválido (use 0, 12, 24 o 36).");
         if (req.ValorAsumidoEmpresa < 0m)
             throw new ConvenioValidacionException("El valor asumido por la empresa no puede ser negativo.");
 
-        c.Titulo = titulo;
         c.Descripcion = Clean(req.Descripcion);
         c.Tipo = Clean(req.Tipo);
         c.TipoCurso = Clean(req.TipoCurso);
         c.NombreCurso = Clean(req.NombreCurso);
         c.Marca = Clean(req.Marca);
+        // Referencia a un convenio previo (parte/continuación). Nunca referirse a sí mismo.
+        c.ConvenioReferenciaId = req.ConvenioReferenciaId == c.Id ? null : req.ConvenioReferenciaId;
         c.SolicitadoPor = Clean(req.SolicitadoPor);
         c.AutorizadoPor = Clean(req.AutorizadoPor);
         c.Fecha = ParseDate(req.Fecha, "La fecha del convenio es obligatoria (yyyy-MM-dd).");

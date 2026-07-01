@@ -65,7 +65,6 @@ public class LiquidacionConvenioDto
 {
     public Guid Id { get; set; }
     public string CodigoRegistro { get; set; } = string.Empty;
-    public string Titulo { get; set; } = string.Empty;
     public string? NombreCurso { get; set; }
     public string? Marca { get; set; }
     public string Clasificacion { get; set; } = string.Empty;

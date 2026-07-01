@@ -584,7 +584,7 @@ function buildPdfReporteFilename(codigo) {
 /**
  * Valida el payload del convenio. Estructura esperada:
  *   {
- *     convenio:    { codigoRegistro, codigoFormato, version, titulo, tipo, tipoCurso,
+ *     convenio:    { codigoRegistro, codigoFormato, version, convenioReferencia, tipo, tipoCurso,
  *                    nombreCurso, marca, fechaConvenio, fechaFirma, fechaCreacion,
  *                    fechaInicioCurso, fechaFinCurso, horas, resultado, clasificacion,
  *                    modalidadReintegro, plazoTexto, mesesADevengar, montoTotal,
@@ -640,8 +640,7 @@ function buildConvenioColaboradorHtml(colaborador, convenio) {
 
 function buildConvenioEventoHtml(convenio) {
   const campos = [
-    ['Título', valorOGuion(convenio.titulo), true],
-    ['Nombre del curso', valorOGuion(convenio.nombreCurso), true],
+    ['Nombre de Curso / Certificación / Exámen', valorOGuion(convenio.nombreCurso), true],
     ['Tipo de evento', valorOGuion(convenio.tipo), false],
     ['Tipo de curso', valorOGuion(convenio.tipoCurso), false],
     ['Marca', valorOGuion(convenio.marca), false],
@@ -651,6 +650,10 @@ function buildConvenioEventoHtml(convenio) {
     ['Resultado', valorOGuion(convenio.resultado), false],
     ['Convenio firmado', boolSiNo(convenio.convenioFirmado), false]
   ];
+  // Referencia a un convenio previo (solo si este es parte/continuación de otro).
+  if (convenio.convenioReferencia && String(convenio.convenioReferencia).trim()) {
+    campos.push(['Parte / continuación de', valorOGuion(convenio.convenioReferencia), true]);
+  }
   return `<div class="pgrid2">${campos
     .map(([label, value, span]) => `<div class="pf${span ? ' pspan2' : ''}"><label>${escapeHtml(label)}</label><span>${value}</span></div>`)
     .join('')}</div>`;
@@ -740,7 +743,7 @@ function buildConvenioFilename(codigoRegistro) {
  *   {
  *     colaborador: { nombre, cedula, cargo, area, empresa },
  *     fechaCorte, totalPorDevengar,
- *     convenios: [ { codigoRegistro, titulo, nombreCurso, marca, fecha, fechaIngreso,
+ *     convenios: [ { codigoRegistro, nombreCurso, marca, fecha, fechaIngreso,
  *                    estado, montoTotal, valorAsumidoEmpresa, montoDevengado,
  *                    montoPendiente, mesesADevengar, mesesTranscurridos, mesesPendientes,
  *                    porcentajePendiente, solicitadoPor, autorizadoPor, items } ]
@@ -783,15 +786,7 @@ function estadoTagClass(estado) {
 function buildReporteConveniosTablaHtml(convenios) {
   const filas = (Array.isArray(convenios) ? convenios : [])
     .map((c) => {
-      // Título principal + curso como subtítulo (si difieren). Si solo hay uno, se muestra ese.
-      const tituloTxt = String(c.titulo || '').trim();
-      const cursoTxt = String(c.nombreCurso || '').trim();
-      let tituloHtml = '—';
-      if (tituloTxt && cursoTxt && tituloTxt !== cursoTxt) {
-        tituloHtml = `${escapeHtml(tituloTxt)}<span style="color:#77787B;font-size:7.5pt;display:block;">${escapeHtml(cursoTxt)}</span>`;
-      } else {
-        tituloHtml = valorOGuion(tituloTxt || cursoTxt);
-      }
+      const tituloHtml = valorOGuion(String(c.nombreCurso || '').trim());
       const estadoCls = estadoTagClass(c.estado);
       const resp = `Sol.: ${valorOGuion(c.solicitadoPor)}<br/>Aut.: ${valorOGuion(c.autorizadoPor)}`;
       return `<tr>
@@ -814,7 +809,7 @@ function buildReporteConveniosTablaHtml(convenios) {
     <thead>
       <tr>
         <th class="col-cod">Código</th>
-        <th class="col-titulo">Título / Curso</th>
+        <th class="col-titulo">Curso / Certificación / Exámen</th>
         <th class="col-est">Estado</th>
         <th class="col-mon">Valor asumido</th>
         <th class="col-mon">Devengado</th>
@@ -991,7 +986,7 @@ function buildDashboardConveniosFilename() {
  *   {
  *     colaborador: { nombre, cedula, cargo, area, empresa },
  *     fechaSalida,
- *     convenios: [ { codigoRegistro, titulo, nombreCurso, marca, clasificacion,
+ *     convenios: [ { codigoRegistro, nombreCurso, marca, clasificacion,
  *                    modalidadReintegro, estado, fechaIngreso, valorAsumidoEmpresa,
  *                    mesesADevengar, mesesTranscurridosASalida, montoReintegro } ],
  *     totalReintegro
@@ -1029,15 +1024,7 @@ function buildLiquidacionColaboradorHtml(colaborador) {
 function buildLiquidacionTablaHtml(convenios, totalReintegro) {
   const filas = (Array.isArray(convenios) ? convenios : [])
     .map((c) => {
-      // Título principal + curso como subtítulo (si difieren). Si solo hay uno, se muestra ese.
-      const tituloTxt = String(c.titulo || '').trim();
-      const cursoTxt = String(c.nombreCurso || '').trim();
-      let tituloHtml = '—';
-      if (tituloTxt && cursoTxt && tituloTxt !== cursoTxt) {
-        tituloHtml = `${escapeHtml(tituloTxt)}<span style="color:#77787B;font-size:7.5pt;display:block;">${escapeHtml(cursoTxt)}</span>`;
-      } else {
-        tituloHtml = valorOGuion(tituloTxt || cursoTxt);
-      }
+      const tituloHtml = valorOGuion(String(c.nombreCurso || '').trim());
       return `<tr>
         <td class="col-cod center">${valorOGuion(c.codigoRegistro)}</td>
         <td class="col-titulo">${tituloHtml}</td>
@@ -1059,7 +1046,7 @@ function buildLiquidacionTablaHtml(convenios, totalReintegro) {
     <thead>
       <tr>
         <th class="col-cod">Código</th>
-        <th class="col-titulo">Convenio</th>
+        <th class="col-titulo">Curso / Certificación / Exámen</th>
         <th class="col-marca">Marca</th>
         <th class="col-clas">Clasificación</th>
         <th class="col-mod">Modalidad de reintegro</th>

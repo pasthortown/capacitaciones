@@ -10,6 +10,11 @@ public readonly record struct ColaboradorResuelto(string Nombre, string Origen, 
 
 public static class ColaboradorResolver
 {
+    /// <summary>Prefiere el valor capturado manualmente en el formulario (editable) y, si viene
+    /// vacío, usa el de la fuente. Permite complementar datos que la fuente no tiene.</summary>
+    public static string? PreferirManual(string? manual, string? fuente)
+        => string.IsNullOrWhiteSpace(manual) ? fuente : manual.Trim();
+
     public static async Task<ColaboradorResuelto?> ResolveAsync(
         IColaboradorRepository externos,
         IControlTareasColaboradoresClient controlTareas,
@@ -60,9 +65,10 @@ public class CrearConvenioUseCase
             CedulaColaborador = cedula,
             NombreColaborador = resuelto.Nombre,
             OrigenColaborador = resuelto.Origen,
-            CargoColaborador = resuelto.Cargo,
-            AreaColaborador = resuelto.Area,
-            EmpresaColaborador = resuelto.Empresa,
+            // Cargo/Área/Empresa son editables: el valor del formulario manda; si viene vacío, la fuente.
+            CargoColaborador = ColaboradorResolver.PreferirManual(req.CargoColaborador, resuelto.Cargo),
+            AreaColaborador = ColaboradorResolver.PreferirManual(req.AreaColaborador, resuelto.Area),
+            EmpresaColaborador = ColaboradorResolver.PreferirManual(req.EmpresaColaborador, resuelto.Empresa),
             GeneroColaborador = resuelto.Genero,
             Activo = true,
             FechaCreacion = DateTime.UtcNow,
@@ -100,11 +106,13 @@ public class EditarConvenioUseCase
         {
             entity.NombreColaborador = resuelto.Value.Nombre;
             entity.OrigenColaborador = resuelto.Value.Origen;
-            entity.CargoColaborador = resuelto.Value.Cargo;
-            entity.AreaColaborador = resuelto.Value.Area;
-            entity.EmpresaColaborador = resuelto.Value.Empresa;
             entity.GeneroColaborador = resuelto.Value.Genero;
         }
+        // Cargo/Área/Empresa son editables: el valor del formulario manda; si viene vacío, se usa
+        // el de la fuente (o el snapshot existente si la fuente no está disponible). No se sobrescriben.
+        entity.CargoColaborador = ColaboradorResolver.PreferirManual(req.CargoColaborador, resuelto?.Cargo ?? entity.CargoColaborador);
+        entity.AreaColaborador = ColaboradorResolver.PreferirManual(req.AreaColaborador, resuelto?.Area ?? entity.AreaColaborador);
+        entity.EmpresaColaborador = ColaboradorResolver.PreferirManual(req.EmpresaColaborador, resuelto?.Empresa ?? entity.EmpresaColaborador);
 
         if (req.Activo == true) entity.Activo = true;
         entity.FechaActualizacion = DateTime.UtcNow;

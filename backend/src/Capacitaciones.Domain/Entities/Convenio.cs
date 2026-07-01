@@ -62,7 +62,6 @@ public class Convenio
     /// <summary>Fecha en que se firma el documento del anexo.</summary>
     public DateTime? FechaFirma { get; set; }
 
-    public string Titulo { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
     /// <summary>Tipo de evento formativo (Curso o capacitación, Certificación, Examen de
     /// certificación, Diplomado, Programa especializado, Material de estudio). Determina la
@@ -71,6 +70,12 @@ public class Convenio
     public string? TipoCurso { get; set; }
     public string? NombreCurso { get; set; }
     public string? Marca { get; set; }
+
+    /// <summary>Convenio previo del que este es parte o continuación (auto-referencia, opcional).
+    /// Permite encadenar rutas de capacitación/certificación.</summary>
+    public Guid? ConvenioReferenciaId { get; set; }
+    /// <summary>Navegación al convenio referenciado (para exponer su código y nombre en el DTO).</summary>
+    public Convenio? ConvenioReferencia { get; set; }
 
     public DateTime? FechaInicioCurso { get; set; }
     /// <summary>Fecha de fin / aprobación del curso.</summary>

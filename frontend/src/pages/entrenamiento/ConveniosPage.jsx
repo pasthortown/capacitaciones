@@ -12,6 +12,7 @@ import { useToast } from '../../components/Toast/useToast.js';
 import { HttpError } from '../../services/http.js';
 import { confirm as swalConfirm } from '../../utils/swal.js';
 import conveniosService from '../../services/convenios.js';
+import colaboradoresService from '../../services/colaboradores.js';
 import styles from './ConveniosPage.module.css';
 
 /**
@@ -73,7 +74,8 @@ const emptyForm = {
   cedula: '', nombreColaborador: '', origenColaborador: '', cargoColaborador: '', areaColaborador: '',
   empresaColaborador: '', centroCostos: '', jefeInmediato: '', relacionLaboral: '',
   fechaIngreso: '', fechaFirma: '',
-  titulo: '', descripcion: '', tipo: '', tipoCurso: '', nombreCurso: '', marca: '',
+  descripcion: '', tipo: '', tipoCurso: '', nombreCurso: '', marca: '',
+  esContinuacion: false, convenioReferenciaId: null,
   fechaInicioCurso: '', fechaFinCurso: '', horas: '', resultado: '', convenioFirmado: false,
   solicitadoPor: '', autorizadoPor: '',
   fecha: '', valorAsumidoEmpresa: '', mesesADevengar: 0, estado: 'Vigente',
@@ -139,6 +141,11 @@ function ConveniosTab({ toast }) {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [buscandoColab, setBuscandoColab] = useState(false);
+  // Cache en memoria de colaboradores (DOS + Externos) para filtrar en el cliente sin ir al backend.
+  const [allColaboradores, setAllColaboradores] = useState([]);
+  const [colabDosDisponible, setColabDosDisponible] = useState(true);
+  const [colabQuery, setColabQuery] = useState('');   // filtro del picker de colaborador
+  const [refQuery, setRefQuery] = useState('');        // filtro del picker de convenio de referencia
   const [anexoBusy, setAnexoBusy] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const [uploadName, setUploadName] = useState('');
@@ -165,13 +172,72 @@ function ConveniosTab({ toast }) {
 
   useEffect(() => { fetchList(); }, [fetchList]);
 
+  // Carga (una sola vez) todos los colaboradores DOS + Externos y los cachea en memoria para
+  // filtrar el picker en el cliente, sin consultar el backend en cada búsqueda.
+  const cargarColaboradores = useCallback(async () => {
+    setBuscandoColab(true);
+    try {
+      const [dosRes, extRes] = await Promise.all([
+        colaboradoresService.listDos({}).catch(() => ({ integracionDisponible: false, items: [] })),
+        colaboradoresService.listExternos({}).catch(() => []),
+      ]);
+      if (!mountedRef.current) return;
+      const norm = (e, origen) => ({
+        cedula: String(e.cedula || '').trim(),
+        name: e.name || '',
+        cargo: e.jobPosition || '',
+        area: e.workArea || '',
+        empresa: e.society || '',
+        origen,
+      });
+      const dos = (dosRes?.items || []).map((e) => norm(e, 'DOS'));
+      const ext = (Array.isArray(extRes) ? extRes : []).map((e) => norm(e, 'Externo'));
+      setColabDosDisponible(dosRes?.integracionDisponible !== false);
+      // Dedup por cédula (un externo con misma cédula no debería existir, pero por si acaso).
+      const map = new Map();
+      [...dos, ...ext].forEach((c) => { if (c.cedula && !map.has(c.cedula)) map.set(c.cedula, c); });
+      setAllColaboradores([...map.values()]);
+    } finally {
+      if (mountedRef.current) setBuscandoColab(false);
+    }
+  }, []);
+
+  useEffect(() => { cargarColaboradores(); }, [cargarColaboradores]);
+
   const filtered = useMemo(() => {
     const q = buscar.trim().toLowerCase();
     if (q.length < 2) return items;
     return items.filter((r) =>
-      [r.nombreColaborador, r.cedulaColaborador, r.titulo, r.tipo, r.nombreCurso, r.marca]
+      [r.nombreColaborador, r.cedulaColaborador, r.tipo, r.nombreCurso, r.marca]
         .some((v) => String(v ?? '').toLowerCase().includes(q)));
   }, [items, buscar]);
+
+  // Coincidencias del picker de colaborador (filtro en memoria por nombre o cédula).
+  const colabMatches = useMemo(() => {
+    const q = colabQuery.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return allColaboradores
+      .filter((c) => c.name.toLowerCase().includes(q) || c.cedula.toLowerCase().includes(q))
+      .slice(0, 25);
+  }, [allColaboradores, colabQuery]);
+
+  // Coincidencias del picker de convenio de referencia (filtro por código o nombre del curso),
+  // excluyendo el propio convenio en edición.
+  const refMatches = useMemo(() => {
+    const q = refQuery.trim().toLowerCase();
+    return items
+      .filter((r) => r.id !== editing?.id)
+      .filter((r) => {
+        if (q.length < 1) return false;
+        return String(r.codigoRegistro || '').toLowerCase().includes(q)
+          || String(r.nombreCurso || '').toLowerCase().includes(q);
+      })
+      .slice(0, 25);
+  }, [items, refQuery, editing]);
+
+  const refSeleccionado = useMemo(
+    () => (form.convenioReferenciaId ? items.find((r) => r.id === form.convenioReferenciaId) : null),
+    [items, form.convenioReferenciaId]);
 
   const setField = (k, v) => {
     setForm((f) => ({ ...f, [k]: v }));
@@ -203,12 +269,13 @@ function ConveniosTab({ toast }) {
       relacionLaboral: row.relacionLaboral || '',
       fechaIngreso: d(row.fechaIngreso),
       fechaFirma: d(row.fechaFirma),
-      titulo: row.titulo || '',
       descripcion: row.descripcion || '',
       tipo: row.tipo || '',
       tipoCurso: row.tipoCurso || '',
       nombreCurso: row.nombreCurso || '',
       marca: row.marca || '',
+      esContinuacion: !!row.convenioReferenciaId,
+      convenioReferenciaId: row.convenioReferenciaId || null,
       fechaInicioCurso: d(row.fechaInicioCurso),
       fechaFinCurso: d(row.fechaFinCurso),
       horas: row.horas != null ? String(row.horas) : '',
@@ -229,25 +296,28 @@ function ConveniosTab({ toast }) {
 
   const closeForm = () => { if (!submitting && !anexoBusy) setFormOpen(false); };
 
-  const buscarColaborador = async () => {
-    const ced = form.cedula.trim();
-    if (!ced) { setErrors((e) => ({ ...e, cedula: 'Ingresa la cédula.' })); return; }
-    setBuscandoColab(true);
-    try {
-      const r = await conveniosService.buscarColaborador(ced);
-      if (!mountedRef.current) return;
-      if (!r) {
-        setForm((f) => ({ ...f, nombreColaborador: '', origenColaborador: '' }));
-        setErrors((e) => ({ ...e, cedula: 'No existe un colaborador (DOS ni externo) con esa cédula.' }));
-      } else {
-        setForm((f) => ({ ...f, nombreColaborador: r.name, origenColaborador: r.origen }));
-        setErrors((e) => ({ ...e, cedula: undefined }));
-      }
-    } catch (err) {
-      toast.error(err?.message || 'No se pudo buscar el colaborador.');
-    } finally {
-      if (mountedRef.current) setBuscandoColab(false);
-    }
+  // Selecciona un colaborador del cache: fija cédula/nombre/origen y pre-llena cargo/área/empresa
+  // (editables). El usuario puede complementar los que la fuente no tenga.
+  const selectColaborador = (c) => {
+    setForm((f) => ({
+      ...f,
+      cedula: c.cedula,
+      nombreColaborador: c.name,
+      origenColaborador: c.origen,
+      cargoColaborador: c.cargo || '',
+      areaColaborador: c.area || '',
+      empresaColaborador: c.empresa || '',
+    }));
+    setColabQuery('');
+    setErrors((e) => ({ ...e, cedula: undefined }));
+  };
+
+  const limpiarColaborador = () => {
+    setForm((f) => ({
+      ...f, cedula: '', nombreColaborador: '', origenColaborador: '',
+      cargoColaborador: '', areaColaborador: '', empresaColaborador: '',
+    }));
+    setColabQuery('');
   };
 
   // ----- Ítems de costo -----
@@ -269,9 +339,8 @@ function ConveniosTab({ toast }) {
 
   const validate = () => {
     const next = {};
-    if (!form.cedula.trim()) next.cedula = 'La cédula es obligatoria.';
-    else if (!form.nombreColaborador) next.cedula = 'Busca y valida el colaborador.';
-    if (!form.titulo.trim()) next.titulo = 'El título es obligatorio.';
+    if (!form.cedula.trim() || !form.nombreColaborador) next.cedula = 'Busca y selecciona el colaborador (por nombre o cédula).';
+    if (form.esContinuacion && !form.convenioReferenciaId) next.referencia = 'Selecciona el convenio previo del que este es parte/continuación.';
     if (!form.fecha) next.fecha = 'La fecha es obligatoria.';
     if (!form.fechaIngreso) next.fechaIngreso = 'La fecha de ingreso es obligatoria (ancla del devengo).';
     for (const it of form.items) {
@@ -286,17 +355,20 @@ function ConveniosTab({ toast }) {
 
   const buildPayload = () => ({
     cedula: form.cedula.trim(),
+    cargoColaborador: form.cargoColaborador.trim() || null,
+    areaColaborador: form.areaColaborador.trim() || null,
+    empresaColaborador: form.empresaColaborador.trim() || null,
     centroCostos: form.centroCostos.trim() || null,
     jefeInmediato: form.jefeInmediato.trim() || null,
     relacionLaboral: form.relacionLaboral.trim() || null,
     fechaIngreso: form.fechaIngreso || null,
     fechaFirma: form.fechaFirma || null,
-    titulo: form.titulo.trim(),
     descripcion: form.descripcion.trim() || null,
     tipo: form.tipo.trim() || null,
     tipoCurso: form.tipoCurso.trim() || null,
     nombreCurso: form.nombreCurso.trim() || null,
     marca: form.marca.trim() || null,
+    convenioReferenciaId: form.esContinuacion ? (form.convenioReferenciaId || null) : null,
     fechaInicioCurso: form.fechaInicioCurso || null,
     fechaFinCurso: form.fechaFinCurso || null,
     horas: form.horas === '' ? null : Number(form.horas),
@@ -347,7 +419,7 @@ function ConveniosTab({ toast }) {
   const handleDelete = async (row) => {
     const ok = await swalConfirm({
       title: 'Eliminar convenio',
-      text: `El convenio "${row.titulo}" se marcará como inactivo.`,
+      text: `El convenio ${row.codigoRegistro || ''} (${row.nombreCurso || 'sin curso'}) se marcará como inactivo.`,
       icon: 'warning', confirmText: 'Sí, eliminar', cancelText: 'Cancelar', danger: true,
     });
     if (!ok) return;
@@ -359,10 +431,12 @@ function ConveniosTab({ toast }) {
     try {
       const d = (s) => (fechaCorta(s) === '—' ? null : fechaCorta(s));
       await conveniosService.update(row.id, {
-        cedula: row.cedulaColaborador, titulo: row.titulo, descripcion: row.descripcion,
+        cedula: row.cedulaColaborador, descripcion: row.descripcion,
+        cargoColaborador: row.cargoColaborador, areaColaborador: row.areaColaborador, empresaColaborador: row.empresaColaborador,
         centroCostos: row.centroCostos, jefeInmediato: row.jefeInmediato, relacionLaboral: row.relacionLaboral,
         fechaIngreso: d(row.fechaIngreso), fechaFirma: d(row.fechaFirma),
         tipo: row.tipo, tipoCurso: row.tipoCurso, nombreCurso: row.nombreCurso, marca: row.marca,
+        convenioReferenciaId: row.convenioReferenciaId || null,
         fechaInicioCurso: d(row.fechaInicioCurso), fechaFinCurso: d(row.fechaFinCurso),
         horas: row.horas, resultado: row.resultado, convenioFirmado: !!row.convenioFirmado,
         solicitadoPor: row.solicitadoPor, autorizadoPor: row.autorizadoPor,
@@ -442,8 +516,7 @@ function ConveniosTab({ toast }) {
         </div>
       ),
     },
-    { key: 'titulo', header: 'Título', accessor: (r) => r.titulo || '—' },
-    { key: 'nombreCurso', header: 'Curso', accessor: (r) => r.nombreCurso || '—' },
+    { key: 'nombreCurso', header: 'Curso / Certificación / Exámen', accessor: (r) => r.nombreCurso || '—' },
     { key: 'fecha', header: 'Fecha', accessor: (r) => fechaCorta(r.fecha) },
     { key: 'mesesADevengar', header: 'Meses', align: 'center', accessor: (r) => (r.mesesADevengar ? r.mesesADevengar : 'N/A') },
     { key: 'montoTotal', header: 'Monto total', accessor: (r) => money(r.montoTotal) },
@@ -533,24 +606,60 @@ function ConveniosTab({ toast }) {
           {/* Colaborador */}
           <div className={styles.grid2}>
             <div className={styles.fullSpan}><h4 style={{ margin: 0 }}>Colaborador</h4></div>
-            <div style={{ display: 'flex', gap: 'var(--spacing-2)', alignItems: 'flex-end' }}>
-              <div style={{ flex: 1 }}>
-                <TextField label="Cédula del colaborador" name="cedula" value={form.cedula} required maxLength={20}
-                  onChange={(v) => setField('cedula', v)} error={errors.cedula} />
-              </div>
-              <button type="button" className="btn btn--secondary" onClick={buscarColaborador} disabled={buscandoColab} style={{ marginBottom: 2 }}>
-                <Search width={16} height={16} /><span>{buscandoColab ? '...' : 'Buscar'}</span>
-              </button>
-            </div>
-            <TextField label="Colaborador" name="nombreColaborador" value={form.nombreColaborador} disabled
-              helper={form.origenColaborador ? `Origen: ${form.origenColaborador}` : 'Busca por cédula para validar'} onChange={() => {}} />
 
-            <TextField label="Cargo" name="cargoColaborador" value={form.cargoColaborador} disabled
-              helper="Se completa desde la fuente al guardar" onChange={() => {}} />
-            <TextField label="Área / Departamento" name="areaColaborador" value={form.areaColaborador} disabled
-              helper="Se completa desde la fuente al guardar" onChange={() => {}} />
-            <TextField label="Empresa" name="empresaColaborador" value={form.empresaColaborador} disabled
-              helper="Se completa desde la fuente al guardar" onChange={() => {}} />
+            {/* Buscador con filtrado en memoria (nombre o cédula) — sin ir al backend por búsqueda. */}
+            <div className={`${styles.fullSpan} ${styles.combo}`}>
+              <label className="form-label form-label--required" style={{ position: 'static' }} htmlFor="cv-colab-q">
+                Colaborador (busca por nombre o cédula)
+              </label>
+              {form.nombreColaborador ? (
+                <div className={styles.comboSelected}>
+                  <div>
+                    <strong>{form.nombreColaborador}</strong>
+                    <span className="text-secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+                      {form.cedula} · {form.origenColaborador || '—'}
+                    </span>
+                  </div>
+                  <button type="button" className="btn btn--ghost btn--sm" onClick={limpiarColaborador}>Cambiar</button>
+                </div>
+              ) : (
+                <>
+                  <div className={styles.comboInputWrap}>
+                    <Search width={16} height={16} className={styles.comboIcon} />
+                    <input id="cv-colab-q" className={`form-input${errors.cedula ? ' form-input--error' : ''}`}
+                      style={{ paddingLeft: 34 }} autoComplete="off"
+                      placeholder={buscandoColab ? 'Cargando colaboradores…' : 'Escribe al menos 2 caracteres…'}
+                      value={colabQuery} onChange={(e) => setColabQuery(e.target.value)} />
+                  </div>
+                  {colabQuery.trim().length >= 2 && (
+                    <div className={styles.comboMenu}>
+                      {colabMatches.length === 0 ? (
+                        <div className={styles.comboEmpty}>
+                          Sin coincidencias{colabDosDisponible ? '' : ' (integración DOS no disponible)'}.
+                        </div>
+                      ) : colabMatches.map((c) => (
+                        <button type="button" key={`${c.origen}-${c.cedula}`} className={styles.comboItem}
+                          onClick={() => selectColaborador(c)}>
+                          <span>{c.name}</span>
+                          <span className="text-secondary" style={{ fontSize: 12 }}>
+                            {c.cedula} · {c.origen}{c.cargo ? ` · ${c.cargo}` : ''}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+              {errors.cedula && <div className="form-helper form-helper--error">{errors.cedula}</div>}
+            </div>
+
+            {/* Cargo/Área/Empresa: editables (pre-llenados desde la fuente, complementables). */}
+            <TextField label="Cargo" name="cargoColaborador" value={form.cargoColaborador} maxLength={150}
+              onChange={(v) => setField('cargoColaborador', v)} helper="Editable: pre-llenado desde la fuente." />
+            <TextField label="Área / Departamento" name="areaColaborador" value={form.areaColaborador} maxLength={150}
+              onChange={(v) => setField('areaColaborador', v)} helper="Editable." />
+            <TextField label="Empresa" name="empresaColaborador" value={form.empresaColaborador} maxLength={200}
+              onChange={(v) => setField('empresaColaborador', v)} helper="Editable." />
             <TextField label="Centro de costos" name="centroCostos" value={form.centroCostos} maxLength={150}
               onChange={(v) => setField('centroCostos', v)} />
             <TextField label="Jefe inmediato" name="jefeInmediato" value={form.jefeInmediato} maxLength={200}
@@ -571,8 +680,6 @@ function ConveniosTab({ toast }) {
 
             {/* Evento formativo */}
             <div className={styles.fullSpan} style={{ marginTop: 'var(--spacing-2)' }}><h4 style={{ margin: 0 }}>Evento formativo</h4></div>
-            <TextField label="Título del convenio" name="titulo" value={form.titulo} required maxLength={250}
-              onChange={(v) => setField('titulo', v)} error={errors.titulo} />
             <div className="form-group" style={{ position: 'static' }}>
               <label className="form-label" style={{ position: 'static' }} htmlFor="cv-tipo">Tipo de evento</label>
               <select id="cv-tipo" className="form-input" value={form.tipo} onChange={(e) => setField('tipo', e.target.value)}>
@@ -583,8 +690,58 @@ function ConveniosTab({ toast }) {
             </div>
 
             <TextField label="Tipo de curso" name="tipoCurso" value={form.tipoCurso} maxLength={150} onChange={(v) => setField('tipoCurso', v)} />
-            <TextField label="Nombre del curso" name="nombreCurso" value={form.nombreCurso} maxLength={250} onChange={(v) => setField('nombreCurso', v)} />
+            <TextField label="Nombre de Curso / Certificación / Exámen" name="nombreCurso" value={form.nombreCurso} maxLength={250} onChange={(v) => setField('nombreCurso', v)} />
             <TextField label="Marca" name="marca" value={form.marca} maxLength={150} onChange={(v) => setField('marca', v)} />
+
+            {/* Referencia a un convenio previo (parte / continuación). */}
+            <div className={`form-group ${styles.fullSpan}`} style={{ position: 'static' }}>
+              <Toggle label="¿Es parte o continuación de un convenio previo?" name="esContinuacion"
+                checked={form.esContinuacion}
+                onChange={(v) => setForm((f) => ({ ...f, esContinuacion: v, convenioReferenciaId: v ? f.convenioReferenciaId : null }))} />
+            </div>
+            {form.esContinuacion && (
+              <div className={`${styles.fullSpan} ${styles.combo}`}>
+                <label className="form-label" style={{ position: 'static' }} htmlFor="cv-ref-q">
+                  Convenio previo (busca por código o nombre)
+                </label>
+                {refSeleccionado ? (
+                  <div className={styles.comboSelected}>
+                    <div>
+                      <strong>{refSeleccionado.codigoRegistro || '—'}</strong>
+                      <span className="text-secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+                        {refSeleccionado.nombreCurso || 'Sin curso'}
+                      </span>
+                    </div>
+                    <button type="button" className="btn btn--ghost btn--sm"
+                      onClick={() => { setForm((f) => ({ ...f, convenioReferenciaId: null })); setRefQuery(''); }}>Cambiar</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className={styles.comboInputWrap}>
+                      <Search width={16} height={16} className={styles.comboIcon} />
+                      <input id="cv-ref-q" className={`form-input${errors.referencia ? ' form-input--error' : ''}`}
+                        style={{ paddingLeft: 34 }} autoComplete="off"
+                        placeholder="Escribe código o nombre del curso…"
+                        value={refQuery} onChange={(e) => setRefQuery(e.target.value)} />
+                    </div>
+                    {refQuery.trim().length >= 1 && (
+                      <div className={styles.comboMenu}>
+                        {refMatches.length === 0 ? (
+                          <div className={styles.comboEmpty}>Sin coincidencias.</div>
+                        ) : refMatches.map((r) => (
+                          <button type="button" key={r.id} className={styles.comboItem}
+                            onClick={() => { setForm((f) => ({ ...f, convenioReferenciaId: r.id })); setRefQuery(''); setErrors((e) => ({ ...e, referencia: undefined })); }}>
+                            <span>{(r.codigoRegistro || '—')} - {r.nombreCurso || 'Sin curso'}</span>
+                            <span className="text-secondary" style={{ fontSize: 12 }}>{r.nombreColaborador} · {r.cedulaColaborador}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+                {errors.referencia && <div className="form-helper form-helper--error">{errors.referencia}</div>}
+              </div>
+            )}
 
             <div className="form-group" style={{ position: 'static' }}>
               <label className="form-label" style={{ position: 'static' }} htmlFor="cv-ini">Fecha inicio del curso</label>
@@ -804,7 +961,7 @@ function HistorialTab({ toast }) {
       : null);
 
   const columns = useMemo(() => [
-    { key: 'titulo', header: 'Convenio', accessor: (r) => r.titulo || '—' },
+    { key: 'nombreCurso', header: 'Curso / Certificación / Exámen', accessor: (r) => r.nombreCurso || '—' },
     { key: 'solicitadoPor', header: 'Solicitado por', accessor: (r) => r.solicitadoPor || '—' },
     { key: 'autorizadoPor', header: 'Aprobado por', accessor: (r) => r.autorizadoPor || '—' },
     { key: 'fecha', header: 'Fecha', accessor: (r) => fechaCorta(r.fecha) },
@@ -861,7 +1018,7 @@ function HistorialTab({ toast }) {
                 {rows.map((cv) => (
                   <div key={cv.id} style={{ marginBottom: 'var(--spacing-4)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                      <strong>{cv.titulo}</strong>
+                      <strong>{cv.nombreCurso || cv.codigoRegistro || '—'}</strong>
                       <span>
                         {cv.aplicaDevengo
                           ? `${cv.mesesPendientes} de ${cv.mesesADevengar} meses pendientes (${cv.porcentajePendiente}%)`
@@ -1078,7 +1235,7 @@ function DesvinculacionTab({ toast }) {
 
   const columns = useMemo(() => [
     { key: 'codigoRegistro', header: 'Código', accessor: (r) => r.codigoRegistro || '—' },
-    { key: 'titulo', header: 'Convenio', accessor: (r) => r.titulo || '—' },
+    { key: 'nombreCurso', header: 'Curso / Certificación / Exámen', accessor: (r) => r.nombreCurso || '—' },
     { key: 'clasificacion', header: 'Clasificación', accessor: (r) => r.clasificacion },
     { key: 'modalidad', header: 'Modalidad', accessor: (r) => r.modalidadReintegro },
     { key: 'meses', header: 'Meses a la salida', align: 'center', accessor: (r) => r.mesesTranscurridosASalida },

@@ -9,6 +9,14 @@ public class ConvenioRequest
 {
     public string? Cedula { get; set; }
 
+    // --- Snapshot editable del colaborador (pre-llenado desde la fuente, complementable a mano) ---
+    /// <summary>Cargo del colaborador. Editable: si viene vacío se toma de la fuente.</summary>
+    public string? CargoColaborador { get; set; }
+    /// <summary>Área / departamento del colaborador. Editable: si viene vacío se toma de la fuente.</summary>
+    public string? AreaColaborador { get; set; }
+    /// <summary>Empresa del colaborador. Editable: si viene vacío se toma de la fuente.</summary>
+    public string? EmpresaColaborador { get; set; }
+
     // --- Snapshot extendido del colaborador (capturado en el anexo) ---
     /// <summary>Centro de costos (manual; no existe en las fuentes).</summary>
     public string? CentroCostos { get; set; }
@@ -21,7 +29,6 @@ public class ConvenioRequest
     /// <summary>Fecha de firma del documento (yyyy-MM-dd).</summary>
     public string? FechaFirma { get; set; }
 
-    public string? Titulo { get; set; }
     public string? Descripcion { get; set; }
     /// <summary>Tipo de evento (Curso o capacitación, Certificación, Examen de certificación,
     /// Diplomado, Programa especializado, Material de estudio).</summary>
@@ -29,6 +36,8 @@ public class ConvenioRequest
     public string? TipoCurso { get; set; }
     public string? NombreCurso { get; set; }
     public string? Marca { get; set; }
+    /// <summary>Id del convenio previo del que este es parte/continuación (opcional, auto-referencia).</summary>
+    public Guid? ConvenioReferenciaId { get; set; }
 
     // --- Detalle del evento ---
     public string? FechaInicioCurso { get; set; }

@@ -26,12 +26,19 @@ public class ConvenioDto
     public DateTime? FechaIngreso { get; set; }
     public DateTime? FechaFirma { get; set; }
 
-    public string Titulo { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
     public string? Tipo { get; set; }
     public string? TipoCurso { get; set; }
     public string? NombreCurso { get; set; }
     public string? Marca { get; set; }
+
+    // --- Referencia a un convenio previo (parte/continuación) ---
+    /// <summary>Id del convenio previo del que este es parte/continuación (null si no aplica).</summary>
+    public Guid? ConvenioReferenciaId { get; set; }
+    /// <summary>Código del convenio referenciado (GIC-EC-REG-###) para mostrar.</summary>
+    public string? ConvenioReferenciaCodigo { get; set; }
+    /// <summary>Nombre del curso/certificación/examen del convenio referenciado, para mostrar.</summary>
+    public string? ConvenioReferenciaNombre { get; set; }
 
     public DateTime? FechaInicioCurso { get; set; }
     public DateTime? FechaFinCurso { get; set; }
