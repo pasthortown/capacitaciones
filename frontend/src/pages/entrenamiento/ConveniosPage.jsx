@@ -693,8 +693,39 @@ function ConveniosTab({ toast }) {
             <TextField label="Nombre de Curso / Certificación / Exámen" name="nombreCurso" value={form.nombreCurso} maxLength={250} onChange={(v) => setField('nombreCurso', v)} />
             <TextField label="Marca" name="marca" value={form.marca} maxLength={150} onChange={(v) => setField('marca', v)} />
 
-            {/* Referencia a un convenio previo (parte / continuación). */}
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-ini">Fecha inicio del curso</label>
+              <input id="cv-ini" type="date" className="form-input" value={form.fechaInicioCurso} onChange={(e) => setField('fechaInicioCurso', e.target.value)} />
+            </div>
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-fin">Fecha fin / aprobación</label>
+              <input id="cv-fin" type="date" className="form-input" value={form.fechaFinCurso} onChange={(e) => setField('fechaFinCurso', e.target.value)} />
+            </div>
+            <TextField label="Horas" name="horas" type="number" value={form.horas} onChange={(v) => setField('horas', v)} />
+            <div className="form-group" style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-resultado">Resultado</label>
+              <select id="cv-resultado" className="form-input" value={form.resultado} onChange={(e) => setField('resultado', e.target.value)}>
+                <option value="">— Selecciona —</option>
+                {RESULTADOS.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+
+            <TextField label="Solicitado por" name="solicitadoPor" value={form.solicitadoPor} maxLength={200} onChange={(v) => setField('solicitadoPor', v)} />
+            <TextField label="Autorizado por" name="autorizadoPor" value={form.autorizadoPor} maxLength={200} onChange={(v) => setField('autorizadoPor', v)} />
+
             <div className={`form-group ${styles.fullSpan}`} style={{ position: 'static' }}>
+              <Toggle label="Convenio firmado (marcar al cargar el documento firmado)" name="convenioFirmado"
+                checked={form.convenioFirmado} onChange={(v) => setField('convenioFirmado', v)} />
+            </div>
+
+            <div className={`form-group ${styles.fullSpan}`} style={{ position: 'static' }}>
+              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-desc">Descripción</label>
+              <textarea id="cv-desc" className="form-input" rows={2} value={form.descripcion} onChange={(e) => setField('descripcion', e.target.value)} />
+            </div>
+
+            {/* Referencia a un convenio previo (parte / continuación). Full-span al final para no
+                partir la grilla de 2 columnas. */}
+            <div className={`form-group ${styles.fullSpan}`} style={{ position: 'static', marginBottom: 0 }}>
               <Toggle label="¿Es parte o continuación de un convenio previo?" name="esContinuacion"
                 checked={form.esContinuacion}
                 onChange={(v) => setForm((f) => ({ ...f, esContinuacion: v, convenioReferenciaId: v ? f.convenioReferenciaId : null }))} />
@@ -742,36 +773,6 @@ function ConveniosTab({ toast }) {
                 {errors.referencia && <div className="form-helper form-helper--error">{errors.referencia}</div>}
               </div>
             )}
-
-            <div className="form-group" style={{ position: 'static' }}>
-              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-ini">Fecha inicio del curso</label>
-              <input id="cv-ini" type="date" className="form-input" value={form.fechaInicioCurso} onChange={(e) => setField('fechaInicioCurso', e.target.value)} />
-            </div>
-            <div className="form-group" style={{ position: 'static' }}>
-              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-fin">Fecha fin / aprobación</label>
-              <input id="cv-fin" type="date" className="form-input" value={form.fechaFinCurso} onChange={(e) => setField('fechaFinCurso', e.target.value)} />
-            </div>
-            <TextField label="Horas" name="horas" type="number" value={form.horas} onChange={(v) => setField('horas', v)} />
-            <div className="form-group" style={{ position: 'static' }}>
-              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-resultado">Resultado</label>
-              <select id="cv-resultado" className="form-input" value={form.resultado} onChange={(e) => setField('resultado', e.target.value)}>
-                <option value="">— Selecciona —</option>
-                {RESULTADOS.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
-
-            <TextField label="Solicitado por" name="solicitadoPor" value={form.solicitadoPor} maxLength={200} onChange={(v) => setField('solicitadoPor', v)} />
-            <TextField label="Autorizado por" name="autorizadoPor" value={form.autorizadoPor} maxLength={200} onChange={(v) => setField('autorizadoPor', v)} />
-
-            <div className={`form-group ${styles.fullSpan}`} style={{ position: 'static' }}>
-              <Toggle label="Convenio firmado (marcar al cargar el documento firmado)" name="convenioFirmado"
-                checked={form.convenioFirmado} onChange={(v) => setField('convenioFirmado', v)} />
-            </div>
-
-            <div className={`form-group ${styles.fullSpan}`} style={{ position: 'static' }}>
-              <label className="form-label" style={{ position: 'static' }} htmlFor="cv-desc">Descripción</label>
-              <textarea id="cv-desc" className="form-input" rows={2} value={form.descripcion} onChange={(e) => setField('descripcion', e.target.value)} />
-            </div>
           </div>
 
           {/* Ítems de costo */}
