@@ -3,6 +3,14 @@
   max-width: 96vw !important;
 }
 
+/* El design system aplica `transition: all` a `.modal`, lo que hace que al cambiar el
+   contenido dinámicamente (p.ej. mostrar/ocultar el bloque "es continuación") se animen
+   propiedades de layout y quede un salto/hueco. Acotamos la transición a opacidad+escala. */
+:global(.modal).wideModal {
+  transition: opacity var(--transition-normal, 0.2s) ease,
+              transform var(--transition-normal, 0.2s) ease !important;
+}
+
 .grid2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
