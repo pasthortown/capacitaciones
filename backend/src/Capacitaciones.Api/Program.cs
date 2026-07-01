@@ -28,6 +28,8 @@ using Capacitaciones.Infrastructure.Persistence.Services;
 using Capacitaciones.Infrastructure.Security;
 using Capacitaciones.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -140,6 +142,33 @@ builder.Services
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret)),
             ClockSkew = TimeSpan.FromSeconds(30)
+        };
+
+        // Revocación efectiva: en cada request con token de admin se verifica que el usuario siga
+        // en la lista de permitidos y activo. Si se lo quitó, su token deja de ser válido de
+        // inmediato (401), sin esperar a que expire. Los tokens de enlaces públicos no se afectan.
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var principal = context.Principal;
+                if (principal?.IsInRole("Admin") != true) return; // solo tokens de admin
+
+                var sub = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                          ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!Guid.TryParse(sub, out var userId))
+                {
+                    context.Fail("Token de admin inválido.");
+                    return;
+                }
+
+                var repo = context.HttpContext.RequestServices.GetRequiredService<IAdminUserRepository>();
+                var user = await repo.GetByIdAsync(userId, context.HttpContext.RequestAborted);
+                if (user is null || !user.Activo)
+                {
+                    context.Fail("El usuario ya no está autorizado.");
+                }
+            }
         };
     });
 
