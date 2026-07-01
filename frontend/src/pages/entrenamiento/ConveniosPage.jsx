@@ -132,6 +132,29 @@ function GruposConvenios({ rows, columns, loading, montoKey, subtotalLabel, empt
   );
 }
 
+/**
+ * Selector Sí/No como grupo de botones (radio), en lugar de un switch con checkbox oculto.
+ * Evita el mecanismo del checkbox `position:absolute` que, al recibir foco dentro del modal con
+ * scroll, disparaba un reajuste de layout que colapsaba el cuerpo del modal en Chromium.
+ */
+function SiNoGroup({ label, value, onChange, name }) {
+  const base = { padding: '6px 18px', border: '1px solid var(--color-border, #d1d5db)', cursor: 'pointer', background: '#fff', fontWeight: 600 };
+  const on = { background: 'var(--color-primary, #e4003a)', color: '#fff', borderColor: 'var(--color-primary, #e4003a)' };
+  return (
+    <div className="form-group" style={{ position: 'static' }}>
+      <label className="form-label" style={{ position: 'static', display: 'block', marginBottom: 6 }}>{label}</label>
+      <div role="radiogroup" aria-label={label} style={{ display: 'inline-flex' }}>
+        <button type="button" role="radio" aria-checked={value === true} name={name}
+          onClick={() => onChange(true)}
+          style={{ ...base, ...(value === true ? on : {}), borderRadius: '8px 0 0 8px' }}>Sí</button>
+        <button type="button" role="radio" aria-checked={value === false}
+          onClick={() => onChange(false)}
+          style={{ ...base, ...(value === false ? on : {}), borderLeft: 'none', borderRadius: '0 8px 8px 0' }}>No</button>
+      </div>
+    </div>
+  );
+}
+
 const emptyForm = {
   cedula: '', nombreColaborador: '', origenColaborador: '', cargoColaborador: '', areaColaborador: '',
   empresaColaborador: '', centroCostos: '', jefeInmediato: '', relacionLaboral: '',
@@ -776,8 +799,8 @@ function ConveniosTab({ toast }) {
             <TextField label="Autorizado por" name="autorizadoPor" value={form.autorizadoPor} maxLength={200} onChange={(v) => setField('autorizadoPor', v)} />
 
             <div className={`form-group ${styles.fullSpan}`} style={{ position: 'static' }}>
-              <Toggle label="Convenio firmado (marcar al cargar el documento firmado)" name="convenioFirmado"
-                checked={form.convenioFirmado} onChange={(v) => setField('convenioFirmado', v)} />
+              <SiNoGroup label="Convenio firmado (marcar al cargar el documento firmado)" name="convenioFirmado"
+                value={!!form.convenioFirmado} onChange={(v) => setField('convenioFirmado', v)} />
             </div>
 
             <div className={`form-group ${styles.fullSpan}`} style={{ position: 'static' }}>
@@ -788,8 +811,8 @@ function ConveniosTab({ toast }) {
             {/* Referencia a un convenio previo (parte / continuación). Full-span al final para no
                 partir la grilla de 2 columnas. */}
             <div className={`form-group ${styles.fullSpan}`} style={{ position: 'static', marginBottom: 0 }}>
-              <Toggle label="¿Es parte o continuación de un convenio previo?" name="esContinuacion"
-                checked={form.esContinuacion}
+              <SiNoGroup label="¿Es parte o continuación de un convenio previo?" name="esContinuacion"
+                value={!!form.esContinuacion}
                 onChange={(v) => setForm((f) => ({ ...f, esContinuacion: v, convenioReferenciaId: v ? f.convenioReferenciaId : null }))} />
             </div>
             {form.esContinuacion && (
