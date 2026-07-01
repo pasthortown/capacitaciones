@@ -1433,9 +1433,12 @@ function DesvinculacionTab({ toast }) {
             <label className="form-label" style={{ position: 'static' }} htmlFor="desv-fecha">Fecha de salida</label>
             <input id="desv-fecha" type="date" className="form-input" value={fechaSalida} onChange={(e) => setFechaSalida(e.target.value)} />
           </div>
-          <button type="button" className="btn btn--primary" onClick={() => calcular()} disabled={loading}>
-            <Search width={16} height={16} /><span>{loading ? 'Calculando…' : 'Calcular reintegro'}</span>
-          </button>
+          <div className="form-group" style={{ position: 'static' }}>
+            <label className="form-label" style={{ position: 'static', visibility: 'hidden' }} aria-hidden="true">&nbsp;</label>
+            <button type="button" className="btn btn--primary" onClick={() => calcular()} disabled={loading}>
+              <Search width={16} height={16} /><span>{loading ? 'Calculando…' : 'Calcular reintegro'}</span>
+            </button>
+          </div>
         </div>
       </div>
 
