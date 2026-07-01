@@ -6,14 +6,20 @@
 /* El design system aplica `transition: all` a `.modal`, lo que hace que al cambiar el
    contenido dinámicamente (p.ej. mostrar/ocultar el bloque "es continuación") se animen
    propiedades de layout y quede un salto/hueco. Acotamos la transición a opacidad+escala. */
+/* Fix del colapso del body al re-renderizar (marcar un switch) en Chromium:
+   - `height: 90vh` da al modal un alto DEFINIDO (no `auto` + `max-height`).
+   - el body pasa de `flex: 1 1 auto` (basis `auto`, que cachea el tamaño por contenido y colapsa
+     al re-fluir) a `flex: 1 1 0` (basis 0): su alto se calcula desde el espacio libre del modal,
+     de forma estable en cada render. Así el body llena y scrollea sin colapsar. */
 :global(.modal).wideModal {
+  height: 90vh !important;
   transition: opacity var(--transition-normal, 0.2s) ease,
               transform var(--transition-normal, 0.2s) ease !important;
-  /* Alto DEFINIDO (no solo max-height con height:auto). Con `height:auto`+`max-height`, cuando el
-     alto usado cambiaba/re-fluía tras marcar un switch, el `.modal__body` (flex item con scroll) no
-     se re-resolvía y colapsaba, dejando un hueco blanco. Un alto definido hace que el body flex
-     llene de forma estable en cada render. El formulario de convenios siempre supera este alto. */
-  height: 90vh !important;
+}
+:global(.modal).wideModal :global(.modal__body) {
+  flex: 1 1 0 !important;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .grid2 {
