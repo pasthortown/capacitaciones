@@ -1,4 +1,5 @@
 using System.Text;
+using Capacitaciones.Api.Filters;
 using Capacitaciones.Application.Ports;
 using Capacitaciones.Application.UseCases.Admin;
 using Capacitaciones.Application.UseCases.Asistentes;
@@ -233,6 +234,31 @@ builder.Services.AddScoped<ListarAdminsUseCase>();
 builder.Services.AddScoped<EliminarAdminUseCase>();
 builder.Services.AddScoped<ObtenerNumeracionUseCase>();
 builder.Services.AddScoped<ActualizarNumeracionUseCase>();
+
+// --- Configuración de correo (Configuración → Correo) ---
+ISecretProtector secretProtector;
+try
+{
+    secretProtector = new AesGcmSecretProtector(builder.Configuration["CORREO_ENCRYPTION_KEY"]);
+}
+catch (Exception ex) when (ex is FormatException or ArgumentException)
+{
+    // Llave mal formada: el backend arranca igual; guardar una contraseña SMTP fallará con un mensaje claro.
+    Console.Error.WriteLine($"[CorreoConfig] CORREO_ENCRYPTION_KEY inválida: {ex.Message}");
+    secretProtector = new AesGcmSecretProtector(null);
+}
+builder.Services.AddSingleton<ISecretProtector>(secretProtector);
+builder.Services.AddSingleton(new InternalApiOptions { ApiKey = builder.Configuration["MAIL_CONFIG_API_KEY"] });
+builder.Services.AddScoped<InternalApiKeyFilter>();
+builder.Services.AddScoped<IConfiguracionCorreoRepository, ConfiguracionCorreoRepository>();
+builder.Services.AddScoped<IConfiguracionNotificacionRepository, ConfiguracionNotificacionRepository>();
+builder.Services.AddScoped<ObtenerConfiguracionCorreoUseCase>();
+builder.Services.AddScoped<ActualizarConfiguracionCorreoUseCase>();
+builder.Services.AddScoped<ListarNotificacionesUseCase>();
+builder.Services.AddScoped<ActualizarNotificacionesUseCase>();
+builder.Services.AddScoped<ObtenerConfiguracionCorreoInternaUseCase>();
+builder.Services.AddScoped<EnviarCorreoPruebaUseCase>();
+
 builder.Services.AddScoped<ListarCapacitacionesUseCase>();
 builder.Services.AddScoped<ObtenerCapacitacionUseCase>();
 builder.Services.AddScoped<CrearCapacitacionUseCase>();
