@@ -351,7 +351,7 @@ def send_mail(request: SendMailRequest) -> SendMailResponse:
     if last_exc is not None:
         raise HTTPException(
             status_code=502,
-            detail=f"Error de envío tras {SMTP_MAX_RETRIES} intentos: {last_exc}",
+            detail=f"Error de envío tras {SMTP_MAX_RETRIES} intentos: {describir_error_smtp(last_exc)}",
         )
 
     return SendMailResponse(
@@ -375,6 +375,16 @@ class SendTestResponse(BaseModel):
 TEST_SUBJECT = "Prueba de configuración de correo — CapacitaDOS"
 
 
+def describir_error_smtp(exc: BaseException) -> str:
+    """Texto legible del error: `"554 5.2.252 SendAsDenied; ..."` en vez de `"(554, b'...')"`."""
+    if isinstance(exc, smtplib.SMTPResponseException):
+        detalle = exc.smtp_error
+        if isinstance(detalle, bytes):
+            detalle = detalle.decode("utf-8", errors="replace")
+        return f"{exc.smtp_code} {detalle}".strip()
+    return str(exc)
+
+
 @app.post("/send-test", response_model=SendTestResponse)
 def send_test(request: SendTestRequest) -> SendTestResponse:
     """Envía un correo de prueba con la configuración recibida (sin reintentos, sin reglas)."""
@@ -387,5 +397,5 @@ def send_test(request: SendTestRequest) -> SendTestResponse:
         send_via_smtp(message, to, cfg)
     except (smtplib.SMTPException, OSError) as exc:
         log.warning("Correo de prueba falló: %s", exc)
-        return SendTestResponse(ok=False, error=str(exc))
+        return SendTestResponse(ok=False, error=describir_error_smtp(exc))
     return SendTestResponse(ok=True)

@@ -7,6 +7,7 @@ import Modal from '../../components/Modal/Modal.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
 import { useToast } from '../../components/Toast/useToast.js';
 import { HttpError } from '../../services/http.js';
+import { resumirErrorSmtp } from './errorSmtp.js';
 
 const EMPTY = {
   smtpHost: '', smtpPort: '587', smtpUser: '', password: '', quitarPassword: false,
@@ -49,6 +50,26 @@ function mapErrores(errores) {
     out[k.charAt(0).toLowerCase() + k.slice(1)] = v;
   });
   return out;
+}
+
+/** Error del correo de prueba: resumen en español, sugerencia y detalle técnico desplegable. */
+function ErrorPrueba({ mensaje }) {
+  const { resumen, sugerencia, detalle } = resumirErrorSmtp(mensaje);
+  return (
+    <div className="alert__message">
+      <div>{resumen}</div>
+      {sugerencia && <div style={{ marginTop: 'var(--spacing-1)' }}>{sugerencia}</div>}
+      {detalle && (
+        <details style={{ marginTop: 'var(--spacing-2)' }}>
+          <summary style={{ cursor: 'pointer' }}>Ver detalle</summary>
+          <pre style={{
+            whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 200, overflowY: 'auto',
+            fontSize: 'var(--font-size-xs, 12px)', margin: 'var(--spacing-2) 0 0',
+          }}>{detalle}</pre>
+        </details>
+      )}
+    </div>
+  );
 }
 
 /** Pestaña: servidor SMTP, remitente y copias globales. */
@@ -198,7 +219,11 @@ export default function CorreoServidorTab() {
             style={{ marginBottom: 'var(--spacing-4)' }}>
             <div className="alert__content">
               <div className="alert__title">{testResult.ok ? 'Prueba exitosa' : 'La prueba falló'}</div>
-              <div className="alert__message">{testResult.mensaje}</div>
+              {testResult.ok ? (
+                <div className="alert__message">{testResult.mensaje}</div>
+              ) : (
+                <ErrorPrueba mensaje={testResult.mensaje} />
+              )}
             </div>
           </div>
         )}

@@ -38,3 +38,18 @@ def test_send_test_devuelve_error_smtp(monkeypatch):
     assert r.status_code == 200
     assert r.json()["ok"] is False
     assert "535" in r.json()["error"]
+
+
+def test_send_test_error_smtp_legible(monkeypatch):
+    def fail(m, r, cfg):
+        raise smtplib.SMTPDataError(554, b"5.2.252 SendAsDenied; a@dos.com.ec not allowed to send as b@dos.com.ec")
+
+    monkeypatch.setattr(app_module, "send_via_smtp", fail)
+
+    r = client.post("/send-test", json=BODY)
+
+    assert r.json()["error"] == "554 5.2.252 SendAsDenied; a@dos.com.ec not allowed to send as b@dos.com.ec"
+
+
+def test_describir_error_smtp_errores_sin_codigo():
+    assert app_module.describir_error_smtp(OSError("Connection refused")) == "Connection refused"
