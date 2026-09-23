@@ -360,3 +360,32 @@ def send_mail(request: SendMailRequest) -> SendMailResponse:
         recipients=[str(r) for r in request.recipients],
         has_attachment=request.attachment is not None,
     )
+
+
+class SendTestRequest(BaseModel):
+    smtp: SmtpSettings
+    recipient: EmailStr
+
+
+class SendTestResponse(BaseModel):
+    ok: bool
+    error: Optional[str] = None
+
+
+TEST_SUBJECT = "Prueba de configuración de correo — CapacitaDOS"
+
+
+@app.post("/send-test", response_model=SendTestResponse)
+def send_test(request: SendTestRequest) -> SendTestResponse:
+    """Envía un correo de prueba con la configuración recibida (sin reintentos, sin reglas)."""
+    cfg = smtp_settings_to_cfg(request.smtp)
+    from_header = format_from_header(cfg)
+    html_body = render_template("prueba_configuracion", {"remitente": from_header, "servidor": f"{cfg['host']}:{cfg['port']}"})
+    to = [str(request.recipient)]
+    message = build_message(from_header, to, TEST_SUBJECT, html_body, [], None)
+    try:
+        send_via_smtp(message, to, cfg)
+    except (smtplib.SMTPException, OSError) as exc:
+        log.warning("Correo de prueba falló: %s", exc)
+        return SendTestResponse(ok=False, error=str(exc))
+    return SendTestResponse(ok=True)

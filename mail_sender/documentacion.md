@@ -38,10 +38,57 @@ Las credenciales se leen del `.env` global del proyecto y se inyectan al contene
 | `SMTP_HOST`     | Host del servidor SMTP (ej. `smtp.office365.com`)        |
 | `SMTP_PORT`     | Puerto SMTP (587 para STARTTLS)                          |
 | `SMTP_FROM`     | Cuenta remitente — también se usa como usuario de login  |
-| `SMTP_PASSWORD` | Contraseña de la cuenta remitente                        |
+| `SMTP_FROM_NAME`| Display name del remitente. Si está, el header `From` se arma como `"{name} <{email}>"`; si está vacío, va solo el email |
+| `SMTP_USER`     | Usuario para autenticar contra el servidor SMTP, cuando difiere de `SMTP_FROM` (alias con permiso *Send As* en Office 365). Si está vacío, se autentica con `SMTP_FROM` |
+| `SMTP_PASSWORD` | Contraseña de la cuenta remitente. Si está vacío, se omite el `LOGIN` (modo connector MX directo, sin auth) |
 | `SMTP_USE_TLS`  | `true` para usar STARTTLS antes del login                |
 
-Las cinco variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_PASSWORD`) son **obligatorias**; si falta alguna, el endpoint `/send-mail` responde 500 con el detalle de las que faltan. `SMTP_USE_TLS` por defecto es `true`.
+Las variables `SMTP_HOST`, `SMTP_PORT` y `SMTP_FROM` son **obligatorias**; si falta alguna, el endpoint `/send-mail` responde 500 con el detalle de las que faltan (siempre que no haya configuración administrada desde la app — ver abajo). `SMTP_USE_TLS` por defecto es `true`.
+
+### Configuración administrada desde la app (Configuración → Correo)
+
+Un administrador puede guardar la configuración SMTP desde la pantalla **Configuración → Correo** del front. Esa configuración se guarda cifrada en la base de datos del backend y `mail_sender` la consulta antes de cada envío de `/send-mail`:
+
+| Variable                | Descripción                                                                 |
+|--------------------------|------------------------------------------------------------------------------|
+| `BACKEND_INTERNAL_URL`   | URL interna del backend (ej. `http://capacitaciones-backend:8080`) donde `mail_sender` consulta `GET /api/internal/correo-config` |
+| `MAIL_CONFIG_API_KEY`    | Clave compartida backend ↔ mail_sender, enviada en el header `X-Internal-Key` |
+| `CONFIG_CACHE_SECONDS`   | Segundos que se cachea la configuración obtenida del backend (default `60`)  |
+
+**Precedencia:** si el backend responde con una configuración guardada y su contraseña se puede descifrar, `mail_sender` la usa para el envío. Si `BACKEND_INTERNAL_URL` o `MAIL_CONFIG_API_KEY` no están definidas, si el backend no responde, si no se ha configurado nada en la app, o si la contraseña guardada no se puede descifrar, se usan las variables `SMTP_*` del `.env` descritas arriba como respaldo.
+
+Además, cuando una notificación está desactivada desde **Configuración → Correo**, `/send-mail` no envía el correo y responde `{"status": "omitido", ...}` (mismo cuerpo que un envío exitoso, pero sin enviar nada).
+
+### `POST /send-test`
+
+Envía un correo de prueba con una configuración SMTP explícita (la que el admin está por guardar, antes de confirmarla), sin reintentos ni reglas de notificaciones.
+
+**Body:**
+
+```json
+{
+  "smtp": {
+    "host": "smtp.office365.com",
+    "port": 587,
+    "user": "usuario@dos.com.ec",
+    "password": "clave",
+    "useTls": true,
+    "from": "notificaciones@dos.com.ec",
+    "fromName": "CapacitaDOS"
+  },
+  "recipient": "admin@dos.com.ec"
+}
+```
+
+`user`, `password` y `fromName` son opcionales.
+
+**Respuesta (siempre 200):**
+
+```json
+{ "ok": true, "error": null }
+```
+
+Si el envío SMTP falla, `ok` es `false` y `error` trae el detalle de la excepción (por ejemplo `"(535, b'5.7.3 Authentication unsuccessful')"`).
 
 ## 4. Plantillas Jinja2
 
