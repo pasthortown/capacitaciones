@@ -16,7 +16,7 @@ public class ConfiguracionCorreoConfiguration : IEntityTypeConfiguration<Configu
         builder.Property(c => c.SmtpPort).IsRequired();
         builder.Property(c => c.SmtpUser).HasMaxLength(255);
         builder.Property(c => c.SmtpPasswordCifrada).HasMaxLength(1024);
-        builder.Property(c => c.UsarTls).IsRequired().HasDefaultValue(true);
+        builder.Property(c => c.UsarTls).IsRequired();
         builder.Property(c => c.RemitenteCorreo).HasMaxLength(255).IsRequired();
         builder.Property(c => c.RemitenteNombre).HasMaxLength(255);
         builder.Property(c => c.CcGlobal).HasMaxLength(1000);
