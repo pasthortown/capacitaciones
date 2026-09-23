@@ -12,7 +12,8 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateNotFound, select_autoescape
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from jinja2.sandbox import SandboxedEnvironment
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, ValidationError
 
 from config_provider import get_remote_config
 
@@ -133,11 +134,19 @@ def resolve_smtp_config(remote: Optional[Dict[str, Any]]) -> Dict[str, str]:
         if remote.get("passwordInvalida"):
             log.warning("La contraseña SMTP guardada no se puede descifrar; se usa la configuración del .env.")
         else:
-            return smtp_settings_to_cfg(SmtpSettings.model_validate(remote["smtp"]))
+            try:
+                return smtp_settings_to_cfg(SmtpSettings.model_validate(remote["smtp"]))
+            except ValidationError as exc:
+                log.warning("Configuración SMTP del backend inválida (%s); se usa la del .env.", exc)
     return load_smtp_config()
 
 
-subject_env = Environment(undefined=StrictUndefined, autoescape=False)
+# `SandboxedEnvironment`: el asunto personalizado viene de la BD (lo escribe un admin
+# desde la app); sin sandbox, Jinja2 permite escapar al `object` base y ejecutar código
+# arbitrario (p. ej. `{{ ''.__class__.__mro__[1].__subclasses__() }}`). `SecurityError`
+# (subclase de `TemplateError`, ya cubierta por el `except Exception` de abajo) hace que
+# se use el asunto original en vez de fallar el envío.
+subject_env = SandboxedEnvironment(undefined=StrictUndefined, autoescape=False)
 
 
 def resolve_subject(original: str, custom: Optional[str], parameters: Dict[str, Any]) -> str:

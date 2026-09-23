@@ -94,3 +94,30 @@ def test_plantilla_sin_regla_se_envia_normal(monkeypatch, sent):
     r = post("ejemplo", subject="Hola", params={})
     assert r.json()["status"] == "sent"
     assert sent[0]["message"]["Subject"] == "Hola"
+
+
+def test_asunto_con_intento_de_escape_del_sandbox_usa_el_original(monkeypatch, sent):
+    remote = {
+        **REMOTE,
+        "notificaciones": {
+            **REMOTE["notificaciones"],
+            "certificado_participante": {
+                "activo": True,
+                "asunto": "{{ ''.__class__.__mro__[1].__subclasses__() }}",
+            },
+        },
+    }
+    monkeypatch.setattr(app_module, "get_remote_config", lambda: remote)
+    r = post("certificado_participante", subject="Tu certificado: Excel")
+    assert r.json()["status"] == "sent"
+    assert sent[0]["message"]["Subject"] == "Tu certificado: Excel"
+
+
+def test_smtp_remoto_invalido_usa_env(monkeypatch, sent):
+    remote = {
+        **REMOTE,
+        "smtp": {"host": "x"},
+    }
+    monkeypatch.setattr(app_module, "get_remote_config", lambda: remote)
+    post("certificado_participante", subject="Tu certificado: Excel")
+    assert sent[0]["cfg"]["host"] == "smtp.env.local"
