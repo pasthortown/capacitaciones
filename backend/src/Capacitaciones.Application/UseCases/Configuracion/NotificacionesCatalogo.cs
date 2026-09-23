@@ -21,7 +21,7 @@ public static class NotificacionesCatalogo
     {
         new NotificacionDefinicion("invitacion_inscripcion", "Invitación de inscripción",
             "{tipo} Creado / {tipo} Actualizado / Invitación a {tipo}: {tema}",
-            new[] { "tema", "fecha", "hora", "duracion", "modalidad", "capacitador" }),
+            new[] { "tema", "tipoActividad", "fecha", "hora", "duracion", "modalidad", "capacitador" }),
         new NotificacionDefinicion("capacitador_descripcion", "Capacitador: cargar información del curso",
             "Cargar información del curso: {tema}",
             new[] { "nombre", "tema", "link" }),

@@ -38,6 +38,8 @@ public class NotificacionesUseCasesTests
 
         Assert.Equal(9, lista.Count);
         Assert.Equal("invitacion_inscripcion", lista[0].Plantilla);
+        // Misma clave que EnviarInvitacionInscripcionUseCase envía en Parameters.
+        Assert.Contains("tipoActividad", lista[0].Variables);
         var cert = lista.Single(n => n.Plantilla == "certificado_participante");
         Assert.Equal("Tu certificado: {tema}", cert.AsuntoActual);
         Assert.Contains("tema", cert.Variables);
