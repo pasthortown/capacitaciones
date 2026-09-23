@@ -150,8 +150,11 @@ La migración solo crea tablas; no modifica las existentes.
 - Respuesta: `{ configurado, smtp: {host, port, user, password, useTls, from, fromName},
   ccGlobal: [], bccGlobal: [], notificaciones: { "<plantilla>": {activo, asunto} } }`,
   con la contraseña descifrada. `smtp` es null si `configurado = false`.
-- nginx bloquea `location ^~ /capacitados/api/internal/ { return 403; }` (y el equivalente
-  sin prefijo si aplica) en `locations-capacitados.inc`.
+- nginx (`web-nginx`, que hace `proxy_pass` de `/api/` al backend) bloquea
+  `location ^~ /api/internal/ { return 403; }` en `locations-capacitados.inc`.
+- `mail_sender` llama al backend por su nombre de contenedor
+  (`http://capacitaciones-backend:8080`) porque el nombre `backend` está repetido por otro
+  proyecto del mismo servidor.
 
 ### 4.6 Certificados omitidos
 
@@ -187,7 +190,8 @@ La migración solo crea tablas; no modifica las existentes.
 4. CC/BCC globales se unen a los de la solicitud, sin duplicados (comparación sin
    distinguir mayúsculas), y excluyendo direcciones que ya son destinatarios.
 5. Envío con la configuración SMTP resuelta y la lógica actual de reintentos.
-   Éxito → `200 {"status": "enviado"}` (se conservan los campos que ya devuelve hoy).
+   Éxito → `200 {"status": "sent"}` (se conserva la respuesta actual; el backend solo
+   distingue `"omitido"` del resto).
 
 `event_monitor` no cambia: un `200` de omitido cuenta como procesado y se registra en
 `mail_control`, por lo que al reactivar un tipo no se envían avisos atrasados.
