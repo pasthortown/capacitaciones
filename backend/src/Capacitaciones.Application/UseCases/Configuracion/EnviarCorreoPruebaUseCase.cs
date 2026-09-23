@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Capacitaciones.Application.Dtos.Configuracion;
 using Capacitaciones.Application.Dtos.Notifications;
 using Capacitaciones.Application.Ports;
@@ -76,6 +77,25 @@ public class EnviarCorreoPruebaUseCase
             {
                 Ok = false,
                 Mensaje = $"No se pudo contactar al servicio de correo: {ex.Message}"
+            };
+        }
+        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // Timeout del HttpClient (no cancelación del caller): el HttpClient de MailSenderHttpClient
+            // lanza TaskCanceledException, no HttpRequestException, cuando expira su Timeout configurado.
+            return new CorreoPruebaResultadoDto
+            {
+                Ok = false,
+                Mensaje = "El servicio de correo no respondió a tiempo. Revisa el servidor y el puerto SMTP."
+            };
+        }
+        catch (JsonException)
+        {
+            // Respuesta 2xx pero no JSON válido: no es un error de red, es un contrato roto.
+            return new CorreoPruebaResultadoDto
+            {
+                Ok = false,
+                Mensaje = "Respuesta inválida del servicio de correo."
             };
         }
     }
