@@ -14,6 +14,13 @@ public interface IMailSenderClient
     /// si el servicio no responde o devuelve un código no exitoso. El caller
     /// decide si propaga el error o lo silencia (el flujo de notificaciones
     /// del backend lo silencia para no bloquear la operación principal).
+    /// Devuelve <see cref="MailSendResult.Omitido"/> si el aviso está desactivado.
     /// </summary>
-    Task SendMailAsync(SendMailRequest request, CancellationToken ct);
+    Task<MailSendResult> SendMailAsync(SendMailRequest request, CancellationToken ct);
+
+    /// <summary>
+    /// Invoca <c>POST /send-test</c> con una configuración SMTP explícita (no la guardada).
+    /// Lanza <see cref="HttpRequestException"/> si mail_sender no responde.
+    /// </summary>
+    Task<MailTestResult> SendTestAsync(SendTestMailRequest request, CancellationToken ct);
 }

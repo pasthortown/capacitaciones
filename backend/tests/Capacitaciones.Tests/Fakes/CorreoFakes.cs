@@ -34,3 +34,18 @@ internal sealed class InMemoryConfiguracionNotificacionRepository : IConfiguraci
         return Task.CompletedTask;
     }
 }
+
+internal sealed class FakeMailSenderClient : IMailSenderClient
+{
+    public SendTestMailRequest? LastTest { get; private set; }
+    public MailTestResult NextTestResult { get; set; } = new() { Ok = true };
+
+    public Task<MailSendResult> SendMailAsync(SendMailRequest request, CancellationToken ct) =>
+        Task.FromResult(MailSendResult.Enviado);
+
+    public Task<MailTestResult> SendTestAsync(SendTestMailRequest request, CancellationToken ct)
+    {
+        LastTest = request;
+        return Task.FromResult(NextTestResult);
+    }
+}

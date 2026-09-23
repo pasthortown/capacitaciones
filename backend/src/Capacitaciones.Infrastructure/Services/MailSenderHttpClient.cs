@@ -26,9 +26,35 @@ public class MailSenderHttpClient : IMailSenderClient
         _http = http;
     }
 
-    public async Task SendMailAsync(SendMailRequest request, CancellationToken ct)
+    public async Task<MailSendResult> SendMailAsync(SendMailRequest request, CancellationToken ct)
     {
         using var response = await _http.PostAsJsonAsync("send-mail", request, JsonOptions, ct);
         response.EnsureSuccessStatusCode();
+
+        var body = await response.Content.ReadAsStringAsync(ct);
+        if (string.IsNullOrWhiteSpace(body)) return MailSendResult.Enviado;
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object
+                && doc.RootElement.TryGetProperty("status", out var status)
+                && string.Equals(status.GetString(), "omitido", StringComparison.OrdinalIgnoreCase))
+            {
+                return MailSendResult.Omitido;
+            }
+        }
+        catch (JsonException)
+        {
+            // Respuesta no JSON con 2xx: se considera enviada (comportamiento previo).
+        }
+        return MailSendResult.Enviado;
+    }
+
+    public async Task<MailTestResult> SendTestAsync(SendTestMailRequest request, CancellationToken ct)
+    {
+        using var response = await _http.PostAsJsonAsync("send-test", request, JsonOptions, ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<MailTestResult>(JsonOptions, ct)
+            ?? new MailTestResult { Ok = false, Error = "Respuesta vacía de mail_sender." };
     }
 }
