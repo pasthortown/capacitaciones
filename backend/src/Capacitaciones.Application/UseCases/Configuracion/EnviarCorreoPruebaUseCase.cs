@@ -7,7 +7,8 @@ namespace Capacitaciones.Application.UseCases.Configuracion;
 
 /// <summary>
 /// Caso de uso: enviar un correo de prueba con los datos del formulario (aunque no estén
-/// guardados) al admin que lo pide. Si no se escribe contraseña, usa la guardada.
+/// guardados) al admin que lo pide. Si no se escribe contraseña, usa la guardada (solo si
+/// servidor, puerto y usuario no cambiaron).
 /// </summary>
 public class EnviarCorreoPruebaUseCase
 {
@@ -45,7 +46,9 @@ public class EnviarCorreoPruebaUseCase
         }
         else
         {
-            var guardada = (await _repo.GetAsync(ct))?.SmtpPasswordCifrada;
+            var existente = await _repo.GetAsync(ct);
+            ConfiguracionCorreoValidator.ExigirPasswordSiCambiaServidor(input, existente);
+            var guardada = existente?.SmtpPasswordCifrada;
             password = string.IsNullOrEmpty(guardada) ? null : _protector.TryUnprotect(guardada);
         }
 

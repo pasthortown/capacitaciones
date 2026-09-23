@@ -101,4 +101,68 @@ public class EnviarCorreoPruebaUseCaseTests
         await Assert.ThrowsAsync<TaskCanceledException>(
             () => uc.ExecuteAsync(ValidInput(), Admin, cts.Token));
     }
+
+    private static async Task<(InMemoryConfiguracionCorreoRepository Repo, AesGcmSecretProtector Protector)> RepoConPasswordGuardada()
+    {
+        var repo = new InMemoryConfiguracionCorreoRepository();
+        var protector = NewProtector();
+        await new ActualizarConfiguracionCorreoUseCase(repo, protector).ExecuteAsync(ValidInput(), Admin);
+        return (repo, protector);
+    }
+
+    [Fact]
+    public async Task SinPasswordMismoServidorYUsuario_UsaLaGuardada()
+    {
+        var (repo, protector) = await RepoConPasswordGuardada();
+        var mail = new FakeMailSenderClient();
+        var uc = new EnviarCorreoPruebaUseCase(repo, protector, mail);
+        var input = ValidInput();
+        input.Password = null;
+        input.SmtpHost = "SMTP.OFFICE365.COM";
+
+        var resultado = await uc.ExecuteAsync(input, Admin);
+
+        Assert.True(resultado.Ok);
+        Assert.Equal("Clave123*", mail.LastTest!.Smtp.Password);
+    }
+
+    [Theory]
+    [InlineData("atacante.example.com", 587, null)]
+    [InlineData("smtp.office365.com", 2525, null)]
+    [InlineData("smtp.office365.com", 587, "otro@dos.com.ec")]
+    public async Task SinPasswordCambiaServidorOUsuario_Lanza400EnPasswordSinEnviar(
+        string host, int port, string? user)
+    {
+        var (repo, protector) = await RepoConPasswordGuardada();
+        var mail = new FakeMailSenderClient();
+        var uc = new EnviarCorreoPruebaUseCase(repo, protector, mail);
+        var input = ValidInput();
+        input.Password = "";
+        input.SmtpHost = host;
+        input.SmtpPort = port;
+        input.SmtpUser = user;
+
+        var ex = await Assert.ThrowsAsync<ConfiguracionCorreoException>(() => uc.ExecuteAsync(input, Admin));
+
+        Assert.Equal("VALIDACION", ex.Codigo);
+        Assert.True(ex.Errores.ContainsKey("Password"));
+        Assert.Null(mail.LastTest);
+    }
+
+    [Fact]
+    public async Task CambiaServidorConPasswordNueva_EnviaConLaNueva()
+    {
+        var (repo, protector) = await RepoConPasswordGuardada();
+        var mail = new FakeMailSenderClient();
+        var uc = new EnviarCorreoPruebaUseCase(repo, protector, mail);
+        var input = ValidInput();
+        input.SmtpHost = "otro.servidor.com";
+        input.Password = "Nueva456*";
+
+        var resultado = await uc.ExecuteAsync(input, Admin);
+
+        Assert.True(resultado.Ok);
+        Assert.Equal("otro.servidor.com", mail.LastTest!.Smtp.Host);
+        Assert.Equal("Nueva456*", mail.LastTest.Smtp.Password);
+    }
 }

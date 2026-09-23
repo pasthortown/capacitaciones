@@ -1,5 +1,6 @@
 using System.Net.Mail;
 using Capacitaciones.Application.Dtos.Configuracion;
+using Capacitaciones.Domain.Entities;
 
 namespace Capacitaciones.Application.UseCases.Configuracion;
 
@@ -28,6 +29,41 @@ public static class ConfiguracionCorreoValidator
         ValidarLista(input.BccGlobal, nameof(input.BccGlobal), errores);
         return errores;
     }
+
+    /// <summary>
+    /// Impide reutilizar la contraseña guardada contra otro servidor o usuario: si el formulario
+    /// no trae contraseña (ni pide quitarla), hay una guardada y cambió el host, el puerto o el
+    /// usuario efectivo, lanza VALIDACION con error en Password. Así la contraseña guardada no se
+    /// puede enviar a un host elegido por quien edita el formulario.
+    /// </summary>
+    public static void ExigirPasswordSiCambiaServidor(UpdateConfiguracionCorreoDto input, ConfiguracionCorreo? guardada)
+    {
+        if (!string.IsNullOrEmpty(input.Password) || input.QuitarPassword) return;
+        if (guardada is null || string.IsNullOrEmpty(guardada.SmtpPasswordCifrada)) return;
+        if (MismoServidorYUsuario(input, guardada)) return;
+
+        throw new ConfiguracionCorreoException("VALIDACION", "Revisa los campos marcados.", new Dictionary<string, string>
+        {
+            [nameof(input.Password)] = "Vuelve a ingresar la contraseña al cambiar de servidor o usuario."
+        });
+    }
+
+    /// <summary>
+    /// True si host (sin mayúsculas/espacios), puerto y usuario efectivo (usuario SMTP, o el
+    /// remitente si no hay usuario) coinciden con los guardados.
+    /// </summary>
+    public static bool MismoServidorYUsuario(UpdateConfiguracionCorreoDto input, ConfiguracionCorreo guardada)
+    {
+        var comparer = StringComparer.OrdinalIgnoreCase;
+        return comparer.Equals(input.SmtpHost?.Trim() ?? "", guardada.SmtpHost?.Trim() ?? "")
+            && input.SmtpPort == guardada.SmtpPort
+            && comparer.Equals(
+                UsuarioEfectivo(input.SmtpUser, input.RemitenteCorreo),
+                UsuarioEfectivo(guardada.SmtpUser, guardada.RemitenteCorreo));
+    }
+
+    private static string UsuarioEfectivo(string? usuario, string? remitente) =>
+        string.IsNullOrWhiteSpace(usuario) ? remitente?.Trim() ?? "" : usuario.Trim();
 
     /// <summary>Separa por coma o punto y coma, recorta y descarta vacíos.</summary>
     public static List<string> ParsearLista(string? valor) =>

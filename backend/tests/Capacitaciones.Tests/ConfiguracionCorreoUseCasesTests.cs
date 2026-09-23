@@ -146,4 +146,81 @@ public class ConfiguracionCorreoUseCasesTests
         Assert.True(dto.TienePassword);
         Assert.True(dto.PasswordInvalida);
     }
+
+    [Fact]
+    public async Task Actualizar_SinPasswordMismoServidorYUsuario_ReutilizaLaGuardada()
+    {
+        var repo = new InMemoryConfiguracionCorreoRepository();
+        var uc = new ActualizarConfiguracionCorreoUseCase(repo, NewProtector());
+        await uc.ExecuteAsync(ValidInput(), Admin);
+        var cifradaAntes = repo.Current!.SmtpPasswordCifrada;
+
+        var input = ValidInput();
+        input.Password = "";
+        input.SmtpHost = "  SMTP.Office365.com ";
+        input.SmtpUser = "Capacitaciones@DOS.com.ec"; // igual al remitente usado como usuario efectivo
+        await uc.ExecuteAsync(input, Admin);
+
+        Assert.Equal(cifradaAntes, repo.Current!.SmtpPasswordCifrada);
+    }
+
+    [Theory]
+    [InlineData("otro.servidor.com", 587, null)]
+    [InlineData("smtp.office365.com", 25, null)]
+    [InlineData("smtp.office365.com", 587, "otro@dos.com.ec")]
+    public async Task Actualizar_SinPasswordCambiaServidorOUsuario_Lanza400EnPassword(
+        string host, int port, string? user)
+    {
+        var repo = new InMemoryConfiguracionCorreoRepository();
+        var uc = new ActualizarConfiguracionCorreoUseCase(repo, NewProtector());
+        await uc.ExecuteAsync(ValidInput(), Admin);
+        var cifradaAntes = repo.Current!.SmtpPasswordCifrada;
+
+        var input = ValidInput();
+        input.Password = null;
+        input.SmtpHost = host;
+        input.SmtpPort = port;
+        input.SmtpUser = user;
+
+        var ex = await Assert.ThrowsAsync<ConfiguracionCorreoException>(() => uc.ExecuteAsync(input, Admin));
+
+        Assert.Equal("VALIDACION", ex.Codigo);
+        Assert.Equal("Vuelve a ingresar la contraseña al cambiar de servidor o usuario.", ex.Errores["Password"]);
+        Assert.Equal("smtp.office365.com", repo.Current!.SmtpHost);
+        Assert.Equal(cifradaAntes, repo.Current.SmtpPasswordCifrada);
+    }
+
+    [Fact]
+    public async Task Actualizar_CambiaServidorConPasswordNueva_Guarda()
+    {
+        var repo = new InMemoryConfiguracionCorreoRepository();
+        var protector = NewProtector();
+        var uc = new ActualizarConfiguracionCorreoUseCase(repo, protector);
+        await uc.ExecuteAsync(ValidInput(), Admin);
+
+        var input = ValidInput();
+        input.SmtpHost = "otro.servidor.com";
+        input.Password = "Nueva456*";
+        await uc.ExecuteAsync(input, Admin);
+
+        Assert.Equal("otro.servidor.com", repo.Current!.SmtpHost);
+        Assert.Equal("Nueva456*", protector.TryUnprotect(repo.Current.SmtpPasswordCifrada!));
+    }
+
+    [Fact]
+    public async Task Actualizar_CambiaServidorYQuitaPassword_Guarda()
+    {
+        var repo = new InMemoryConfiguracionCorreoRepository();
+        var uc = new ActualizarConfiguracionCorreoUseCase(repo, NewProtector());
+        await uc.ExecuteAsync(ValidInput(), Admin);
+
+        var input = ValidInput();
+        input.SmtpHost = "relay.interno";
+        input.Password = null;
+        input.QuitarPassword = true;
+        await uc.ExecuteAsync(input, Admin);
+
+        Assert.Equal("relay.interno", repo.Current!.SmtpHost);
+        Assert.Null(repo.Current.SmtpPasswordCifrada);
+    }
 }

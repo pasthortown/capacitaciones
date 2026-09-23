@@ -27,6 +27,9 @@ public class ActualizarConfiguracionCorreoUseCase
             throw new ConfiguracionCorreoException("VALIDACION", "Revisa los campos marcados.", errores);
         }
 
+        var existente = await _repo.GetAsync(ct);
+        ConfiguracionCorreoValidator.ExigirPasswordSiCambiaServidor(input, existente);
+
         var passwordNueva = string.IsNullOrEmpty(input.Password) ? null : input.Password;
         if (passwordNueva is not null && !input.QuitarPassword && !_protector.IsConfigured)
         {
@@ -35,7 +38,7 @@ public class ActualizarConfiguracionCorreoUseCase
                 "El servidor no tiene configurada la llave de cifrado (CORREO_ENCRYPTION_KEY). Contacta al administrador del sistema.");
         }
 
-        var cfg = await _repo.GetAsync(ct) ?? new ConfiguracionCorreo { Id = 1 };
+        var cfg = existente ?? new ConfiguracionCorreo { Id = 1 };
         cfg.SmtpHost = input.SmtpHost.Trim();
         cfg.SmtpPort = input.SmtpPort;
         cfg.SmtpUser = string.IsNullOrWhiteSpace(input.SmtpUser) ? null : input.SmtpUser.Trim();

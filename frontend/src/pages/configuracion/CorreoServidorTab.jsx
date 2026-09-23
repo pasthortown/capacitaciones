@@ -166,8 +166,8 @@ export default function CorreoServidorTab() {
               helper="Si se deja vacío se usa el correo del remitente." error={errors.smtpUser} disabled={busy} />
             <TextField label="Contraseña" name="password" type="password" value={form.password} onChange={set('password')}
               placeholder={passwordPlaceholder} autoComplete="new-password"
-              helper={data?.tienePassword ? 'Déjala vacía para conservar la actual.' : undefined}
-              disabled={busy || form.quitarPassword} />
+              helper={data?.tienePassword ? 'Déjala vacía para conservar la actual (si no cambias servidor, puerto ni usuario).' : undefined}
+              error={errors.password} disabled={busy || form.quitarPassword} />
             <Toggle label="Sin contraseña (relay)" name="quitarPassword" checked={form.quitarPassword}
               onChange={set('quitarPassword')} disabled={busy} />
             <Toggle label="Usar TLS (STARTTLS)" name="usarTls" checked={form.usarTls}
