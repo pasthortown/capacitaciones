@@ -310,7 +310,7 @@ def send_mail(request: SendMailRequest) -> SendMailResponse:
     regla = ((remote or {}).get("notificaciones") or {}).get(request.template)
 
     if regla is not None and regla.get("activo") is False:
-        log.info("Notificación '%s' desactivada; se omite el envío a %s.", request.template, request.recipients)
+        log.info("Notificación '%s' desactivada; se omite el envío (%d destinatario(s)).", request.template, len(request.recipients))
         return SendMailResponse(
             status="omitido",
             template=request.template,

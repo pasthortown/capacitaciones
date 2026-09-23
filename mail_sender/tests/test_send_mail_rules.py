@@ -53,6 +53,16 @@ def test_desactivado_no_envia_y_responde_omitido(monkeypatch, sent):
     assert sent == []
 
 
+def test_desactivado_log_no_incluye_correos(monkeypatch, sent, caplog):
+    monkeypatch.setattr(app_module, "get_remote_config", lambda: REMOTE)
+    with caplog.at_level("INFO"):
+        post("encuesta_satisfaccion")
+    omitidos = [r.getMessage() for r in caplog.records if "desactivada" in r.getMessage()]
+    assert omitidos and "encuesta_satisfaccion" in omitidos[0]
+    assert "1 destinatario" in omitidos[0]
+    assert "@" not in omitidos[0]
+
+
 def test_asunto_personalizado_y_copias_globales(monkeypatch, sent):
     monkeypatch.setattr(app_module, "get_remote_config", lambda: REMOTE)
     r = post("certificado_participante", subject="Tu certificado: Excel", cc=["copia@dos.com.ec"])
