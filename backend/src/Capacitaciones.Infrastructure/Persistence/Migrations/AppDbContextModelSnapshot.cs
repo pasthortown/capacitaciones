@@ -374,6 +374,146 @@ namespace Capacitaciones.Infrastructure.Persistence.Migrations
                     b.ToTable("Colaborador", "dbo");
                 });
 
+            modelBuilder.Entity("Capacitaciones.Domain.Entities.ConfiguracionCorreo", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ActualizadoEn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ActualizadoPor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("BccGlobal")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("CcGlobal")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("RemitenteCorreo")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("RemitenteNombre")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("SmtpHost")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("SmtpPasswordCifrada")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<int>("SmtpPort")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SmtpUser")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("UsarTls")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ConfiguracionCorreo", "dbo");
+                });
+
+            modelBuilder.Entity("Capacitaciones.Domain.Entities.ConfiguracionNotificacion", b =>
+                {
+                    b.Property<string>("Plantilla")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ActualizadoEn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ActualizadoPor")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("AsuntoPersonalizado")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Plantilla");
+
+                    b.ToTable("ConfiguracionNotificacion", "dbo");
+
+                    b.HasData(
+                        new
+                        {
+                            Plantilla = "invitacion_inscripcion",
+                            Activo = true,
+                            Nombre = "Invitación de inscripción"
+                        },
+                        new
+                        {
+                            Plantilla = "capacitador_descripcion",
+                            Activo = true,
+                            Nombre = "Capacitador: cargar información del curso"
+                        },
+                        new
+                        {
+                            Plantilla = "capacitador_pase_lista",
+                            Activo = true,
+                            Nombre = "Capacitador: pase de lista"
+                        },
+                        new
+                        {
+                            Plantilla = "responsable_firma",
+                            Activo = true,
+                            Nombre = "Responsable: carga de datos y firma"
+                        },
+                        new
+                        {
+                            Plantilla = "registro_asistencia_admin",
+                            Activo = true,
+                            Nombre = "Reporte de asistencia al admin"
+                        },
+                        new
+                        {
+                            Plantilla = "certificado_participante",
+                            Activo = true,
+                            Nombre = "Certificado al participante"
+                        },
+                        new
+                        {
+                            Plantilla = "recordatorio_inicio_proximo",
+                            Activo = true,
+                            Nombre = "Recordatorio: capacitación por iniciar"
+                        },
+                        new
+                        {
+                            Plantilla = "recordatorio_evento_iniciado",
+                            Activo = true,
+                            Nombre = "Aviso: capacitación iniciada"
+                        },
+                        new
+                        {
+                            Plantilla = "encuesta_satisfaccion",
+                            Activo = true,
+                            Nombre = "Encuesta de satisfacción"
+                        });
+                });
+
             modelBuilder.Entity("Capacitaciones.Domain.Entities.ConfiguracionNumeracion", b =>
                 {
                     b.Property<int>("Id")

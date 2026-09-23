@@ -1,4 +1,5 @@
 import base64
+import logging
 import os
 import smtplib
 import socket
@@ -10,9 +11,13 @@ from email import encoders
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
-from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
-from pydantic import BaseModel, EmailStr, Field
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateNotFound, select_autoescape
+from jinja2.sandbox import SandboxedEnvironment
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, ValidationError
 
+from config_provider import get_remote_config
+
+logging.basicConfig(level=logging.INFO)
 
 TEMPLATES_DIR = os.environ.get("TEMPLATES_DIR", "plantillas")
 ASSETS_DIR = os.environ.get("ASSETS_DIR", "assets")
@@ -23,6 +28,8 @@ ASSETS_DIR = os.environ.get("ASSETS_DIR", "assets")
 # lineal antes de devolver error para que un parpadeo no impida el envío del correo.
 SMTP_MAX_RETRIES = int(os.environ.get("SMTP_MAX_RETRIES", "3"))
 SMTP_RETRY_BACKOFF_SECONDS = float(os.environ.get("SMTP_RETRY_BACKOFF_SECONDS", "2"))
+
+log = logging.getLogger("mail_sender")
 
 
 def load_logo_base64() -> str:
@@ -94,6 +101,79 @@ def format_from_header(cfg: Dict[str, str]) -> str:
     return formataddr((name, email))
 
 
+class SmtpSettings(BaseModel):
+    """Configuración SMTP explícita (del backend o de /send-test). Claves camelCase del backend."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    host: str
+    port: int
+    user: Optional[str] = None
+    password: Optional[str] = None
+    use_tls: bool = Field(default=True, alias="useTls")
+    from_email: str = Field(alias="from")
+    from_name: Optional[str] = Field(default=None, alias="fromName")
+
+
+def smtp_settings_to_cfg(s: SmtpSettings) -> Dict[str, str]:
+    """Convierte a la misma forma que devuelve `load_smtp_config()`."""
+    return {
+        "host": s.host,
+        "port": str(s.port),
+        "from_email": s.from_email,
+        "from_name": (s.from_name or "").strip(),
+        "user": (s.user or "").strip() or s.from_email,
+        "password": s.password or "",
+        "use_tls": "true" if s.use_tls else "false",
+    }
+
+
+def resolve_smtp_config(remote: Optional[Dict[str, Any]]) -> Dict[str, str]:
+    """SMTP de la BD si está configurado y la contraseña es legible; si no, el del entorno (.env)."""
+    if remote and remote.get("configurado") and remote.get("smtp"):
+        if remote.get("passwordInvalida"):
+            log.warning("La contraseña SMTP guardada no se puede descifrar; se usa la configuración del .env.")
+        else:
+            try:
+                return smtp_settings_to_cfg(SmtpSettings.model_validate(remote["smtp"]))
+            except ValidationError as exc:
+                log.warning("Configuración SMTP del backend inválida (%s); se usa la del .env.", exc)
+    return load_smtp_config()
+
+
+# `SandboxedEnvironment`: el asunto personalizado viene de la BD (lo escribe un admin
+# desde la app); sin sandbox, Jinja2 permite escapar al `object` base y ejecutar código
+# arbitrario (p. ej. `{{ ''.__class__.__mro__[1].__subclasses__() }}`). `SecurityError`
+# (subclase de `TemplateError`, ya cubierta por el `except Exception` de abajo) hace que
+# se use el asunto original en vez de fallar el envío.
+subject_env = SandboxedEnvironment(undefined=StrictUndefined, autoescape=False)
+
+
+def resolve_subject(original: str, custom: Optional[str], parameters: Dict[str, Any]) -> str:
+    """Renderiza el asunto personalizado con los parámetros del correo; ante error, el original."""
+    if not custom or not custom.strip():
+        return original
+    try:
+        rendered = subject_env.from_string(custom).render(**{**parameters, "asunto_original": original})
+    except Exception as exc:
+        log.warning("Asunto personalizado inválido (%r): %s. Se usa el original.", custom, exc)
+        return original
+    rendered = " ".join(rendered.split())  # sin saltos de línea en el header Subject
+    return rendered or original
+
+
+def merge_addresses(own: Optional[List[str]], extra: Optional[List[str]], exclude: List[str]) -> List[str]:
+    """Une dos listas sin duplicados (sin distinguir mayúsculas) y sin direcciones de `exclude`."""
+    seen = {str(e).strip().lower() for e in exclude}
+    result: List[str] = []
+    for addr in list(own or []) + list(extra or []):
+        value = str(addr).strip()
+        if value and value.lower() not in seen:
+            seen.add(value.lower())
+            result.append(value)
+    return result
+
+
 jinja_env = Environment(
     loader=FileSystemLoader(TEMPLATES_DIR),
     autoescape=select_autoescape(["html", "xml"]),
@@ -144,41 +224,43 @@ def render_template(template_name: str, parameters: Dict[str, Any]) -> str:
 
 def build_message(
     sender: str,
-    request: SendMailRequest,
+    to: List[str],
+    subject: str,
     html_body: str,
+    cc: List[str],
+    attachment: Optional[Attachment],
 ) -> MIMEMultipart:
     msg = MIMEMultipart("mixed")
-    msg["Subject"] = request.subject
+    msg["Subject"] = subject
     msg["From"] = sender
-    msg["To"] = ", ".join(request.recipients)
-    if request.cc:
-        msg["Cc"] = ", ".join(request.cc)
+    msg["To"] = ", ".join(to)
+    if cc:
+        msg["Cc"] = ", ".join(cc)
 
     alt = MIMEMultipart("alternative")
     alt.attach(MIMEText(html_body, "html", "utf-8"))
     msg.attach(alt)
 
-    if request.attachment:
+    if attachment:
         try:
-            data = base64.b64decode(request.attachment.content_base64, validate=True)
+            data = base64.b64decode(attachment.content_base64, validate=True)
         except Exception as exc:
             raise HTTPException(status_code=400, detail=f"Adjunto base64 inválido: {exc}")
 
-        maintype, _, subtype = (request.attachment.mime_type or "application/octet-stream").partition("/")
+        maintype, _, subtype = (attachment.mime_type or "application/octet-stream").partition("/")
         part = MIMEBase(maintype or "application", subtype or "octet-stream")
         part.set_payload(data)
         encoders.encode_base64(part)
         part.add_header(
             "Content-Disposition",
-            f'attachment; filename="{request.attachment.filename}"',
+            f'attachment; filename="{attachment.filename}"',
         )
         msg.attach(part)
 
     return msg
 
 
-def send_via_smtp(message: MIMEMultipart, recipients: List[str]) -> None:
-    cfg = load_smtp_config()
+def send_via_smtp(message: MIMEMultipart, recipients: List[str], cfg: Dict[str, str]) -> None:
     host = cfg["host"]
     port = int(cfg["port"])
     auth_user = cfg["user"]            # usuario que autentica
@@ -224,18 +306,32 @@ def list_templates() -> Dict[str, List[str]]:
 
 @app.post("/send-mail", response_model=SendMailResponse)
 def send_mail(request: SendMailRequest) -> SendMailResponse:
-    html_body = render_template(request.template, request.parameters)
+    remote = get_remote_config()
+    regla = ((remote or {}).get("notificaciones") or {}).get(request.template)
 
-    cfg = load_smtp_config()
+    if regla is not None and regla.get("activo") is False:
+        log.info("Notificación '%s' desactivada; se omite el envío (%d destinatario(s)).", request.template, len(request.recipients))
+        return SendMailResponse(
+            status="omitido",
+            template=request.template,
+            recipients=[str(r) for r in request.recipients],
+            has_attachment=request.attachment is not None,
+        )
+
+    subject = resolve_subject(request.subject, (regla or {}).get("asunto"), request.parameters)
+    # Las plantillas pueden mostrar {{ subject }} en el cuerpo: que coincida con el asunto final.
+    parameters = {**request.parameters, "subject": subject}
+    html_body = render_template(request.template, parameters)
+
+    cfg = resolve_smtp_config(remote)
     from_header = format_from_header(cfg)
 
-    message = build_message(from_header, request, html_body)
+    to = [str(r) for r in request.recipients]
+    cc = merge_addresses(request.cc, (remote or {}).get("ccGlobal"), exclude=to)
+    bcc = merge_addresses(request.bcc, (remote or {}).get("bccGlobal"), exclude=to + cc)
 
-    all_recipients = list(request.recipients)
-    if request.cc:
-        all_recipients += list(request.cc)
-    if request.bcc:
-        all_recipients += list(request.bcc)
+    message = build_message(from_header, to, subject, html_body, cc, request.attachment)
+    all_recipients = to + cc + bcc
 
     # Reintentos con backoff. Capturamos `OSError` además de `smtplib.SMTPException`
     # porque los fallos de resolución de DNS (`socket.gaierror`) y los cortes de red
@@ -244,7 +340,7 @@ def send_mail(request: SendMailRequest) -> SendMailResponse:
     last_exc: Optional[BaseException] = None
     for intento in range(1, SMTP_MAX_RETRIES + 1):
         try:
-            send_via_smtp(message, all_recipients)
+            send_via_smtp(message, all_recipients, cfg)
             last_exc = None
             break
         except (smtplib.SMTPException, OSError) as exc:
@@ -255,7 +351,7 @@ def send_mail(request: SendMailRequest) -> SendMailResponse:
     if last_exc is not None:
         raise HTTPException(
             status_code=502,
-            detail=f"Error de envío tras {SMTP_MAX_RETRIES} intentos: {last_exc}",
+            detail=f"Error de envío tras {SMTP_MAX_RETRIES} intentos: {describir_error_smtp(last_exc)}",
         )
 
     return SendMailResponse(
@@ -264,3 +360,42 @@ def send_mail(request: SendMailRequest) -> SendMailResponse:
         recipients=[str(r) for r in request.recipients],
         has_attachment=request.attachment is not None,
     )
+
+
+class SendTestRequest(BaseModel):
+    smtp: SmtpSettings
+    recipient: EmailStr
+
+
+class SendTestResponse(BaseModel):
+    ok: bool
+    error: Optional[str] = None
+
+
+TEST_SUBJECT = "Prueba de configuración de correo — CapacitaDOS"
+
+
+def describir_error_smtp(exc: BaseException) -> str:
+    """Texto legible del error: `"554 5.2.252 SendAsDenied; ..."` en vez de `"(554, b'...')"`."""
+    if isinstance(exc, smtplib.SMTPResponseException):
+        detalle = exc.smtp_error
+        if isinstance(detalle, bytes):
+            detalle = detalle.decode("utf-8", errors="replace")
+        return f"{exc.smtp_code} {detalle}".strip()
+    return str(exc)
+
+
+@app.post("/send-test", response_model=SendTestResponse)
+def send_test(request: SendTestRequest) -> SendTestResponse:
+    """Envía un correo de prueba con la configuración recibida (sin reintentos, sin reglas)."""
+    cfg = smtp_settings_to_cfg(request.smtp)
+    from_header = format_from_header(cfg)
+    html_body = render_template("prueba_configuracion", {"remitente": from_header, "servidor": f"{cfg['host']}:{cfg['port']}"})
+    to = [str(request.recipient)]
+    message = build_message(from_header, to, TEST_SUBJECT, html_body, [], None)
+    try:
+        send_via_smtp(message, to, cfg)
+    except (smtplib.SMTPException, OSError) as exc:
+        log.warning("Correo de prueba falló: %s", exc)
+        return SendTestResponse(ok=False, error=describir_error_smtp(exc))
+    return SendTestResponse(ok=True)

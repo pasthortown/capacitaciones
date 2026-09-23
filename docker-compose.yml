@@ -70,6 +70,8 @@ services:
       EmisorDocumentos__BaseUrl: http://emisor_documentos:3000
       EmisorReportes__BaseUrl: http://emisor_reportes:5000
       MailSender__BaseUrl: http://mail_sender:8000
+      CORREO_ENCRYPTION_KEY: ${CORREO_ENCRYPTION_KEY}
+      MAIL_CONFIG_API_KEY: ${MAIL_CONFIG_API_KEY}
       Notifications__PublicBaseUrl: ${PUBLIC_BASE_URL}
       REPOSITORIO_DIR: /repository
       IMAGEN_CAPACITACIONES_DIR: /imagen_capacitaciones
@@ -196,6 +198,10 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_USE_TLS: ${SMTP_USE_TLS}
       LOGO_URL: ${LOGO_URL}
+      # Configuración administrada desde la app (Configuración → Correo). Si falta
+      # alguna, mail_sender usa solo las SMTP_* de arriba.
+      BACKEND_INTERNAL_URL: http://capacitaciones-backend:8080
+      MAIL_CONFIG_API_KEY: ${MAIL_CONFIG_API_KEY}
     volumes:
       - ./mail_sender/plantillas:/app/plantillas
     networks:
