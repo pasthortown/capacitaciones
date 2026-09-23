@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Server, BellRing } from 'lucide-react';
 import CorreoServidorTab from './CorreoServidorTab.jsx';
+import CorreoNotificacionesTab from './CorreoNotificacionesTab.jsx';
 
 /**
  * Configuración de correo: servidor/remitente/copias y reglas por tipo de notificación.
@@ -39,7 +40,7 @@ export default function CorreoPage() {
       </div>
 
       {tab === 'servidor' && <CorreoServidorTab />}
-      {tab === 'notificaciones' && <p className="text-secondary">Disponible en el siguiente paso.</p>}
+      {tab === 'notificaciones' && <CorreoNotificacionesTab />}
     </div>
   );
 }
