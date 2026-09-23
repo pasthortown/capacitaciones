@@ -38,6 +38,7 @@ public class MailSenderHttpClient : IMailSenderClient
             using var doc = JsonDocument.Parse(body);
             if (doc.RootElement.ValueKind == JsonValueKind.Object
                 && doc.RootElement.TryGetProperty("status", out var status)
+                && status.ValueKind == JsonValueKind.String
                 && string.Equals(status.GetString(), "omitido", StringComparison.OrdinalIgnoreCase))
             {
                 return MailSendResult.Omitido;

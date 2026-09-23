@@ -57,6 +57,13 @@ public class MailSenderHttpClientTests
     }
 
     [Fact]
+    public async Task SendMail_StatusNoTexto_DevuelveEnviado()
+    {
+        var (client, _) = Build(HttpStatusCode.OK, "{\"status\":1}");
+        Assert.Equal(MailSendResult.Enviado, await client.SendMailAsync(Req(), CancellationToken.None));
+    }
+
+    [Fact]
     public async Task SendMail_CuerpoVacio_DevuelveEnviado()
     {
         var (client, _) = Build(HttpStatusCode.OK, "");
