@@ -35,6 +35,8 @@ public class AppDbContext : DbContext
     public DbSet<ConvenioItem> ConvenioItems => Set<ConvenioItem>();
     public DbSet<ConvenioAnexo> ConvenioAnexos => Set<ConvenioAnexo>();
     public DbSet<ConvenioNumeracion> ConvenioNumeracion => Set<ConvenioNumeracion>();
+    public DbSet<ConfiguracionCorreo> ConfiguracionCorreo => Set<ConfiguracionCorreo>();
+    public DbSet<ConfiguracionNotificacion> ConfiguracionNotificaciones => Set<ConfiguracionNotificacion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
