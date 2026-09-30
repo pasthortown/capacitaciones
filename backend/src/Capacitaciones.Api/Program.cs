@@ -284,6 +284,7 @@ builder.Services.AddScoped<ActualizarCapacitadorCapacitacionUseCase>();
 builder.Services.AddScoped<GenerarLinkInscripcionUseCase>();
 builder.Services.AddScoped<ObtenerInscripcionPublicaUseCase>();
 builder.Services.AddScoped<InscribirAsistenteUseCase>();
+builder.Services.AddScoped<BuscarPersonaInscritaUseCase>();
 builder.Services.AddScoped<ListarAsistentesUseCase>();
 builder.Services.AddScoped<DescargarCertificadoUseCase>();
 builder.Services.AddScoped<DescargarReporteAsistenciaUseCase>();
