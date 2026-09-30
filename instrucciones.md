@@ -555,6 +555,14 @@ Pantalla `/entrenamiento/convenios` con barra de pestañas: **Convenios**, **Das
 
 > ⚠️ **PENDIENTE Dashboard ROI:** el ROI por marca/persona/área del prototipo necesita la "Utilidad Bruta del pipeline" (vía Excel/vista SQL `v_roi_por_marca`), que **no existe** en el sistema. El dashboard actual muestra inversión/devengado/por devengar (datos propios); el ROI queda a la espera de definir el origen de la utilidad.
 
+### 7.15 Registro de personas inscritas y reuso de firma
+
+- Tabla `dbo.PersonaInscrita` (única por `Identificacion`): nombres, apellidos, área, correo (`@dos.com.ec`), firma. Migración `AddPersonaInscrita` con backfill desde la inscripción más reciente de cada cédula en `dbo.Asistente`.
+- `InscribirAsistenteUseCase` crea/actualiza la persona en el mismo `SaveChanges` que el asistente. `usarFirmaRegistrada: true` copia la firma guardada (400 `FIRMA_REGISTRADA_NO_DISPONIBLE` si no hay); una firma nueva reemplaza la guardada. Choque concurrente del índice → 409 `INSCRIPCION_CONCURRENTE`.
+- `GET /api/inscripcion/capacitacion/persona/{identificacion}` (policy `Inscripcion`): `{ nombres, apellidos, areaId (solo si activa), emailUsuario (sin sufijo), tieneFirma }`. **Nunca** devuelve la firma. Busca solo en el registro propio (no DOS/Externos).
+- Página pública: Identificación es el primer campo; al salir del campo autocompleta y ofrece "Usar mi firma registrada". Cambiar la cédula limpia el autocompletado.
+- Riesgo aceptado: con un link válido y una cédula registrada se ven nombres/área/correo y se puede inscribir con la firma guardada (caso organizador).
+
 ## 8. Estado actual
 
 - [x] Design system en `./style/` listo para consumo.
