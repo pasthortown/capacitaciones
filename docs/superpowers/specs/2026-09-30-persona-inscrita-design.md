@@ -111,9 +111,9 @@ Después de las validaciones actuales:
 2. Crea el `Asistente` como hoy, con la firma resuelta.
 3. **Alta o actualización de `PersonaInscrita`** con nombres, apellidos, área, correo y fecha actualizados. La firma solo se reemplaza si llegó una firma nueva.
 4. Los pasos 2 y 3 se guardan **atómicamente** (un solo `SaveChanges`/transacción). Si la inscripción es duplicada, no se toca la persona.
-5. Carrera por el índice único de `PersonaInscrita` (dos inscripciones simultáneas de una cédula nueva): se reintenta una vez como actualización.
+5. Carrera por el índice único de `PersonaInscrita` (dos inscripciones simultáneas de una cédula nueva a capacitaciones distintas): no se reintenta automáticamente. El repositorio la traduce a `409 INSCRIPCION_CONCURRENTE` ("Vuelve a intentarlo") y no se guarda nada; al reenviar, la persona ya existe y se actualiza.
 
-Nuevo código en `ToProblem` del controlador: `FIRMA_REGISTRADA_NO_DISPONIBLE` → `400`.
+Nuevos códigos en `ToProblem` del controlador: `FIRMA_REGISTRADA_NO_DISPONIBLE` → `400`, `INSCRIPCION_CONCURRENTE` → `409`.
 
 ## 5. Frontend
 
