@@ -11,8 +11,9 @@ namespace Capacitaciones.Application.UseCases.Inscripcion;
 ///
 /// Validaciones:
 ///   - Capacitación existe, activa y NO finalizada (si lo está → <see cref="InscripcionCerradaException"/>).
-///   - <c>Nombres</c>, <c>Apellidos</c>, <c>Identificacion</c>, <c>EmailUsuario</c>, <c>Firma</c>
-///     se trimean y no pueden quedar vacíos.
+///   - <c>Nombres</c>, <c>Apellidos</c>, <c>Identificacion</c>, <c>EmailUsuario</c> se trimean y no
+///     pueden quedar vacíos; <c>Firma</c> también, salvo que <c>UsarFirmaRegistrada</c> sea true
+///     (se copia de <c>PersonaInscrita</c>).
 ///   - <c>EmailUsuario</c> valida que NO contenga <c>@</c> (es solo la parte local; el dominio
 ///     <c>@dos.com.ec</c> lo concatena este caso de uso). Aparte del '@' no se aplican otras
 ///     reglas — el dominio corporativo acepta cualquier cadena no vacía como usuario.
@@ -23,6 +24,8 @@ namespace Capacitaciones.Application.UseCases.Inscripcion;
 /// después del trim). La BD con collation CI (SQL Server por defecto) actuará como segunda línea.
 /// Normalizar case de la identificación a nivel aplicación podría esconder datos reales (ej. "AB-123"
 /// vs "ab-123" podrían ser personas distintas en pasaportes extranjeros); preferimos no tocar.
+///
+/// Crea o actualiza la <c>PersonaInscrita</c> de la identificación en la misma operación.
 /// </summary>
 public class InscribirAsistenteUseCase
 {
@@ -31,15 +34,18 @@ public class InscribirAsistenteUseCase
     private readonly ICapacitacionRepository _capacitaciones;
     private readonly IAreaRepository _areas;
     private readonly IAsistenteRepository _asistentes;
+    private readonly IPersonaInscritaRepository _personas;
 
     public InscribirAsistenteUseCase(
         ICapacitacionRepository capacitaciones,
         IAreaRepository areas,
-        IAsistenteRepository asistentes)
+        IAsistenteRepository asistentes,
+        IPersonaInscritaRepository personas)
     {
         _capacitaciones = capacitaciones;
         _areas = areas;
         _asistentes = asistentes;
+        _personas = personas;
     }
 
     public async Task<AsistenteSummaryDto> ExecuteAsync(
@@ -68,7 +74,6 @@ public class InscribirAsistenteUseCase
         var apellidos = RequireTrimmed(input.Apellidos, "apellidos");
         var identificacion = RequireTrimmed(input.Identificacion, "identificacion");
         var emailUsuario = RequireTrimmed(input.EmailUsuario, "emailUsuario");
-        var firma = RequireTrimmed(input.Firma, "firma");
 
         if (emailUsuario.Contains('@'))
         {
@@ -90,6 +95,24 @@ public class InscribirAsistenteUseCase
             throw new InscripcionDuplicadaException();
         }
 
+        // Firma: la registrada (si se pidió) o la nueva. Se resuelve después del chequeo de
+        // duplicado para no tocar la persona en una inscripción que igual se va a rechazar.
+        var persona = await _personas.GetByIdentificacionAsync(identificacion, ct);
+        string firma;
+        if (input.UsarFirmaRegistrada)
+        {
+            if (persona is null || string.IsNullOrWhiteSpace(persona.Firma))
+            {
+                throw new FirmaRegistradaNoDisponibleException();
+            }
+            firma = persona.Firma;
+        }
+        else
+        {
+            firma = RequireTrimmed(input.Firma, "firma");
+        }
+
+        var ahora = DateTime.UtcNow;
         var entity = new Asistente
         {
             Id = Guid.NewGuid(),
@@ -100,11 +123,42 @@ public class InscribirAsistenteUseCase
             AreaId = area.Id,
             EmailUsuario = emailUsuario + EmailDomain,
             Firma = firma,
-            FechaInscripcion = DateTime.UtcNow
+            FechaInscripcion = ahora
         };
 
+        // Alta/actualización de la persona. Queda pendiente (tracked) y se persiste en el mismo
+        // SaveChanges de AddAsync: inscripción + persona son atómicas.
+        if (persona is null)
+        {
+            _personas.Agregar(new PersonaInscrita
+            {
+                Id = Guid.NewGuid(),
+                Identificacion = identificacion,
+                Nombres = nombres,
+                Apellidos = apellidos,
+                AreaId = area.Id,
+                EmailUsuario = entity.EmailUsuario,
+                Firma = firma,
+                FechaCreacion = ahora,
+                FechaActualizacion = ahora
+            });
+        }
+        else
+        {
+            persona.Nombres = nombres;
+            persona.Apellidos = apellidos;
+            persona.AreaId = area.Id;
+            persona.EmailUsuario = entity.EmailUsuario;
+            persona.FechaActualizacion = ahora;
+            if (!input.UsarFirmaRegistrada)
+            {
+                persona.Firma = firma;
+            }
+        }
+
         // El repositorio traduce la violación del UNIQUE INDEX (carrera contra pre-check) a
-        // InscripcionDuplicadaException para mantener Application desacoplado de EF.
+        // InscripcionDuplicadaException (o InscripcionConcurrenteException si el choque es en
+        // PersonaInscrita) para mantener Application desacoplado de EF.
         await _asistentes.AddAsync(entity, ct);
 
         return new AsistenteSummaryDto

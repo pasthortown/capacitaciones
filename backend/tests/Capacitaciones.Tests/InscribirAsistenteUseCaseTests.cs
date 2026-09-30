@@ -59,7 +59,7 @@ public class InscribirAsistenteUseCaseTests
         var capRepo = new FakeCapacitacionRepo(capacitacion);
         var areaRepo = new FakeAreaRepo(area);
         var asisRepo = new FakeAsistenteRepo();
-        var useCase = new InscribirAsistenteUseCase(capRepo, areaRepo, asisRepo);
+        var useCase = new InscribirAsistenteUseCase(capRepo, areaRepo, asisRepo, new FakePersonaInscritaRepo());
 
         var antes = DateTime.UtcNow;
         var dto = await useCase.ExecuteAsync(capacitacion.Id, BuildInput(area.Id));
@@ -90,7 +90,8 @@ public class InscribirAsistenteUseCaseTests
         var useCase = new InscribirAsistenteUseCase(
             new FakeCapacitacionRepo(capacitacion),
             new FakeAreaRepo(area),
-            new FakeAsistenteRepo(out var asisRepo));
+            new FakeAsistenteRepo(out var asisRepo),
+            new FakePersonaInscritaRepo());
 
         await useCase.ExecuteAsync(capacitacion.Id, new CreateInscripcionDto
         {
@@ -121,7 +122,8 @@ public class InscribirAsistenteUseCaseTests
         var useCase = new InscribirAsistenteUseCase(
             new FakeCapacitacionRepo(capacitacion),
             new FakeAreaRepo(area),
-            asisRepo);
+            asisRepo,
+            new FakePersonaInscritaRepo());
 
         await Assert.ThrowsAsync<InscripcionDuplicadaException>(() =>
             useCase.ExecuteAsync(capacitacion.Id, BuildInput(area.Id)));
@@ -139,7 +141,8 @@ public class InscribirAsistenteUseCaseTests
         var useCase = new InscribirAsistenteUseCase(
             new FakeCapacitacionRepo(capacitacion),
             new FakeAreaRepo(area),
-            asisRepo);
+            asisRepo,
+            new FakePersonaInscritaRepo());
 
         await Assert.ThrowsAsync<InscripcionCerradaException>(() =>
             useCase.ExecuteAsync(capacitacion.Id, BuildInput(area.Id)));
@@ -159,7 +162,8 @@ public class InscribirAsistenteUseCaseTests
         var useCase = new InscribirAsistenteUseCase(
             new FakeCapacitacionRepo(capacitacion),
             new FakeAreaRepo(area),
-            asisRepo);
+            asisRepo,
+            new FakePersonaInscritaRepo());
 
         var dto = await useCase.ExecuteAsync(capacitacion.Id, BuildInput(area.Id));
 
@@ -177,7 +181,8 @@ public class InscribirAsistenteUseCaseTests
         var useCase = new InscribirAsistenteUseCase(
             new FakeCapacitacionRepo(capacitacion),
             new FakeAreaRepo(area),
-            asisRepo);
+            asisRepo,
+            new FakePersonaInscritaRepo());
 
         var ex = await Assert.ThrowsAsync<CapacitacionServiceException>(() =>
             useCase.ExecuteAsync(capacitacion.Id, BuildInput(area.Id, emailUsuario: "juan@dos.com.ec")));
@@ -196,7 +201,8 @@ public class InscribirAsistenteUseCaseTests
         var useCase = new InscribirAsistenteUseCase(
             new FakeCapacitacionRepo(capacitacion),
             new FakeAreaRepo(area),
-            asisRepo);
+            asisRepo,
+            new FakePersonaInscritaRepo());
 
         var ex = await Assert.ThrowsAsync<CapacitacionServiceException>(() =>
             useCase.ExecuteAsync(capacitacion.Id, BuildInput(area.Id)));
@@ -205,7 +211,168 @@ public class InscribirAsistenteUseCaseTests
         Assert.Empty(asisRepo.Added);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_PrimeraInscripcion_CreaPersonaConFirma()
+    {
+        var capacitacion = BuildCapacitacion();
+        var area = new Area { Id = Guid.NewGuid(), Nombre = "TI", Activo = true, FechaCreacion = DateTime.UtcNow };
+        var personas = new FakePersonaInscritaRepo();
+        var useCase = new InscribirAsistenteUseCase(
+            new FakeCapacitacionRepo(capacitacion), new FakeAreaRepo(area), new FakeAsistenteRepo(), personas);
+
+        await useCase.ExecuteAsync(capacitacion.Id, BuildInput(area.Id));
+
+        var p = Assert.Single(personas.Agregadas);
+        Assert.Equal("1712345678", p.Identificacion);
+        Assert.Equal("Juan", p.Nombres);
+        Assert.Equal("Perez", p.Apellidos);
+        Assert.Equal(area.Id, p.AreaId);
+        Assert.Equal("juan.perez@dos.com.ec", p.EmailUsuario);
+        Assert.Equal("data:image/png;base64,AAA==", p.Firma);
+        Assert.Equal(p.FechaCreacion, p.FechaActualizacion);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_UsarFirmaRegistrada_CopiaFirmaYActualizaDatosSinReemplazarla()
+    {
+        var capacitacion = BuildCapacitacion();
+        var area = new Area { Id = Guid.NewGuid(), Nombre = "TI", Activo = true, FechaCreacion = DateTime.UtcNow };
+        var persona = BuildPersona();
+        var personas = new FakePersonaInscritaRepo(persona);
+        var asisRepo = new FakeAsistenteRepo();
+        var useCase = new InscribirAsistenteUseCase(
+            new FakeCapacitacionRepo(capacitacion), new FakeAreaRepo(area), asisRepo, personas);
+
+        var input = BuildInput(area.Id);
+        input.UsarFirmaRegistrada = true;
+        input.Firma = "data:image/png;base64,IGNORADA==";
+
+        await useCase.ExecuteAsync(capacitacion.Id, input);
+
+        Assert.Equal("data:image/png;base64,GUARDADA==", asisRepo.Added.Single().Firma);
+        Assert.Empty(personas.Agregadas);
+        Assert.Equal("data:image/png;base64,GUARDADA==", persona.Firma);
+        Assert.Equal("Juan", persona.Nombres);
+        Assert.Equal("Perez", persona.Apellidos);
+        Assert.Equal(area.Id, persona.AreaId);
+        Assert.Equal("juan.perez@dos.com.ec", persona.EmailUsuario);
+        Assert.True(persona.FechaActualizacion > persona.FechaCreacion);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_FirmaNueva_ReemplazaLaGuardada()
+    {
+        var capacitacion = BuildCapacitacion();
+        var area = new Area { Id = Guid.NewGuid(), Nombre = "TI", Activo = true, FechaCreacion = DateTime.UtcNow };
+        var persona = BuildPersona();
+        var useCase = new InscribirAsistenteUseCase(
+            new FakeCapacitacionRepo(capacitacion), new FakeAreaRepo(area), new FakeAsistenteRepo(), new FakePersonaInscritaRepo(persona));
+
+        await useCase.ExecuteAsync(capacitacion.Id, BuildInput(area.Id)); // Firma = AAA==, UsarFirmaRegistrada = false
+
+        Assert.Equal("data:image/png;base64,AAA==", persona.Firma);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_UsarFirmaRegistrada_SinPersona_LanzaFirmaNoDisponible()
+    {
+        var capacitacion = BuildCapacitacion();
+        var area = new Area { Id = Guid.NewGuid(), Nombre = "TI", Activo = true, FechaCreacion = DateTime.UtcNow };
+        var asisRepo = new FakeAsistenteRepo();
+        var useCase = new InscribirAsistenteUseCase(
+            new FakeCapacitacionRepo(capacitacion), new FakeAreaRepo(area), asisRepo, new FakePersonaInscritaRepo());
+
+        var input = BuildInput(area.Id);
+        input.UsarFirmaRegistrada = true;
+        input.Firma = null;
+
+        var ex = await Assert.ThrowsAsync<FirmaRegistradaNoDisponibleException>(() => useCase.ExecuteAsync(capacitacion.Id, input));
+        Assert.Equal("FIRMA_REGISTRADA_NO_DISPONIBLE", ex.Codigo);
+        Assert.Empty(asisRepo.Added);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_UsarFirmaRegistrada_PersonaSinFirma_LanzaFirmaNoDisponible()
+    {
+        var capacitacion = BuildCapacitacion();
+        var area = new Area { Id = Guid.NewGuid(), Nombre = "TI", Activo = true, FechaCreacion = DateTime.UtcNow };
+        var asisRepo = new FakeAsistenteRepo();
+        var useCase = new InscribirAsistenteUseCase(
+            new FakeCapacitacionRepo(capacitacion), new FakeAreaRepo(area), asisRepo, new FakePersonaInscritaRepo(BuildPersona(firma: null)));
+
+        var input = BuildInput(area.Id);
+        input.UsarFirmaRegistrada = true;
+
+        await Assert.ThrowsAsync<FirmaRegistradaNoDisponibleException>(() => useCase.ExecuteAsync(capacitacion.Id, input));
+        Assert.Empty(asisRepo.Added);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_SinFirmaYSinUsarRegistrada_LanzaCampoRequerido()
+    {
+        var capacitacion = BuildCapacitacion();
+        var area = new Area { Id = Guid.NewGuid(), Nombre = "TI", Activo = true, FechaCreacion = DateTime.UtcNow };
+        var useCase = new InscribirAsistenteUseCase(
+            new FakeCapacitacionRepo(capacitacion), new FakeAreaRepo(area), new FakeAsistenteRepo(), new FakePersonaInscritaRepo(BuildPersona()));
+
+        var input = BuildInput(area.Id);
+        input.Firma = "   ";
+
+        var ex = await Assert.ThrowsAsync<CapacitacionServiceException>(() => useCase.ExecuteAsync(capacitacion.Id, input));
+        Assert.Equal("CAMPO_REQUERIDO", ex.Codigo);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Duplicado_NoModificaPersona()
+    {
+        var capacitacion = BuildCapacitacion();
+        var area = new Area { Id = Guid.NewGuid(), Nombre = "TI", Activo = true, FechaCreacion = DateTime.UtcNow };
+        var persona = BuildPersona();
+        var asisRepo = new FakeAsistenteRepo();
+        asisRepo.PreExistingDupes.Add((capacitacion.Id, "1712345678"));
+        var useCase = new InscribirAsistenteUseCase(
+            new FakeCapacitacionRepo(capacitacion), new FakeAreaRepo(area), asisRepo, new FakePersonaInscritaRepo(persona));
+
+        await Assert.ThrowsAsync<InscripcionDuplicadaException>(() => useCase.ExecuteAsync(capacitacion.Id, BuildInput(area.Id)));
+
+        Assert.Equal("Nombre Viejo", persona.Nombres);
+        Assert.Equal("data:image/png;base64,GUARDADA==", persona.Firma);
+    }
+
     // ----- Fakes -----
+
+    private sealed class FakePersonaInscritaRepo : IPersonaInscritaRepository
+    {
+        public Dictionary<string, PersonaInscrita> Store { get; } = new();
+        public List<PersonaInscrita> Agregadas { get; } = new();
+
+        public FakePersonaInscritaRepo(params PersonaInscrita[] existentes)
+        {
+            foreach (var p in existentes) Store[p.Identificacion] = p;
+        }
+
+        public Task<PersonaInscrita?> GetByIdentificacionAsync(string identificacion, CancellationToken ct = default)
+            => Task.FromResult(Store.TryGetValue(identificacion.Trim(), out var p) ? p : null);
+
+        public void Agregar(PersonaInscrita entity)
+        {
+            Agregadas.Add(entity);
+            Store[entity.Identificacion] = entity;
+        }
+    }
+
+    private static PersonaInscrita BuildPersona(string identificacion = "1712345678", string? firma = "data:image/png;base64,GUARDADA==") => new()
+    {
+        Id = Guid.NewGuid(),
+        Identificacion = identificacion,
+        Nombres = "Nombre Viejo",
+        Apellidos = "Apellido Viejo",
+        AreaId = null,
+        EmailUsuario = "viejo@dos.com.ec",
+        Firma = firma,
+        FechaCreacion = DateTime.UtcNow.AddDays(-30),
+        FechaActualizacion = DateTime.UtcNow.AddDays(-30)
+    };
 
     private sealed class FakeCapacitacionRepo : ICapacitacionRepository
     {
