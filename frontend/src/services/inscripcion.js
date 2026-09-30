@@ -13,9 +13,14 @@
  *   GET  /api/inscripcion/capacitacion     -> 200 { capacitacion, areas }
  *       - 401/403 token inválido/expirado.
  *       - 409 capacitación Finalizada → inscripciones cerradas.
+ *   GET  /api/inscripcion/capacitacion/persona/{identificacion}
+ *       -> 200 { nombres, apellidos, areaId, emailUsuario, tieneFirma }  (nunca la firma)
+ *       - 404 no registrada.
  *   POST /api/inscripcion/capacitacion     -> 201 AsistenteSummaryDto
- *       body: { nombres, apellidos, identificacion, areaId, emailUsuario, firma }
+ *       body: { nombres, apellidos, identificacion, areaId, emailUsuario, firma, usarFirmaRegistrada }
  *       - 400 validación.
+ *       - 400 FIRMA_REGISTRADA_NO_DISPONIBLE si se pidió la firma registrada y no existe.
+ *       - 409 INSCRIPCION_CONCURRENTE (reintentar).
  *       - 409 duplicado por identificación (o finalizada).
  */
 
@@ -86,6 +91,26 @@ export function getCapacitacion(token) {
 }
 
 /**
+ * GET /inscripcion/capacitacion/persona/{identificacion} — autocompletado por cédula.
+ * @param {string} token
+ * @param {string} identificacion
+ * @returns {Promise<{ nombres: string, apellidos: string, areaId: string|null, emailUsuario: string, tieneFirma: boolean } | null>}
+ *   null si la persona no está registrada (404).
+ */
+export async function buscarPersona(token, identificacion) {
+  try {
+    return await requestWithToken(
+      `/inscripcion/capacitacion/persona/${encodeURIComponent(identificacion)}`,
+      token,
+      { method: 'GET' },
+    );
+  } catch (err) {
+    if (err instanceof HttpError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+/**
  * POST /inscripcion/capacitacion — registra al asistente.
  *
  * @param {string} token
@@ -95,7 +120,8 @@ export function getCapacitacion(token) {
  *   identificacion: string,
  *   areaId: string,
  *   emailUsuario: string, // solo la parte local (sin @dos.com.ec)
- *   firma: string,        // dataURL PNG
+ *   firma: string|null,          // dataURL PNG; null si usarFirmaRegistrada
+ *   usarFirmaRegistrada: boolean,
  * }} payload
  * @returns {Promise<object>} AsistenteSummaryDto
  */
@@ -108,5 +134,6 @@ export function inscribir(token, payload) {
 
 export default {
   getCapacitacion,
+  buscarPersona,
   inscribir,
 };

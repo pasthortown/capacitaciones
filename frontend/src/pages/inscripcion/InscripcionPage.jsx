@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Send, RotateCcw } from 'lucide-react';
 import SignaturePad from '../../components/SignaturePad/SignaturePad.jsx';
@@ -6,7 +6,7 @@ import Spinner from '../../components/Spinner/Spinner.jsx';
 import EmailConSufijo from '../../components/EmailConSufijo/EmailConSufijo.jsx';
 import { useToast } from '../../components/Toast/useToast.js';
 import { HttpError } from '../../services/http.js';
-import { getCapacitacion, inscribir } from '../../services/inscripcion.js';
+import { buscarPersona, getCapacitacion, inscribir } from '../../services/inscripcion.js';
 import { formatFechaHora, formatDuracion } from '../../utils/formatters.js';
 import styles from './InscripcionPage.module.css';
 
@@ -17,6 +17,9 @@ import styles from './InscripcionPage.module.css';
  *  - Lee `?token=...` del querystring (JWT específico del link de inscripción).
  *  - GET /inscripcion/capacitacion con ese Bearer → muestra datos read-only
  *    de la capacitación + el listado de áreas para el combo.
+ *  - Al salir del campo Identificación: GET /inscripcion/capacitacion/persona/{id}
+ *    → autocompleta nombres/apellidos/área/correo y ofrece "Usar mi firma registrada"
+ *    (la firma nunca viaja al navegador; el servidor la copia).
  *  - POST /inscripcion/capacitacion con los datos del asistente + firma.
  *  - Éxito: pantalla de confirmación + botón "Inscribir a otra persona".
  *
@@ -47,6 +50,19 @@ export default function InscripcionPage() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [success, setSuccess] = useState(null); // { nombres, apellidos }
 
+  // Autocompletado por cédula (registro propio de personas inscritas).
+  const [personaEncontrada, setPersonaEncontrada] = useState(false);
+  const [tieneFirmaRegistrada, setTieneFirmaRegistrada] = useState(false);
+  const [usarFirmaRegistrada, setUsarFirmaRegistrada] = useState(false);
+  // Última identificación consultada: evita repetir la búsqueda y descarta respuestas viejas.
+  const ultimaIdentificacionRef = useRef('');
+
+  const limpiarAutocompletado = () => {
+    setPersonaEncontrada(false);
+    setTieneFirmaRegistrada(false);
+    setUsarFirmaRegistrada(false);
+  };
+
   const mapLoadError = (err) => {
     if (err instanceof HttpError) {
       if (err.status === 401 || err.status === 403) {
@@ -64,6 +80,13 @@ export default function InscripcionPage() {
 
   const mapSubmitError = (err) => {
     if (err instanceof HttpError) {
+      const codigo = err.body && typeof err.body === 'object' ? err.body.error : null;
+      if (codigo === 'FIRMA_REGISTRADA_NO_DISPONIBLE') {
+        return 'No encontramos una firma registrada para esta identificación. Dibuja o sube tu firma.';
+      }
+      if (codigo === 'INSCRIPCION_CONCURRENTE') {
+        return err.body.message || 'Vuelve a intentarlo.';
+      }
       if (err.status === 409) {
         return 'Ya existe una inscripción con esa identificación.';
       }
@@ -109,6 +132,41 @@ export default function InscripcionPage() {
     setForm(INITIAL_FORM);
     setFormError('');
     setSuccess(null);
+    limpiarAutocompletado();
+    ultimaIdentificacionRef.current = '';
+  };
+
+  const handleIdentificacionChange = (value) => {
+    setForm((prev) => ({ ...prev, identificacion: value }));
+    // Si cambia la cédula, lo autocompletado ya no aplica: nunca usar la firma de otra persona.
+    if (value.trim() !== ultimaIdentificacionRef.current) {
+      ultimaIdentificacionRef.current = '';
+      limpiarAutocompletado();
+    }
+  };
+
+  const handleIdentificacionBlur = async () => {
+    const identificacion = form.identificacion.trim();
+    if (!identificacion || identificacion === ultimaIdentificacionRef.current) return;
+    ultimaIdentificacionRef.current = identificacion;
+    try {
+      const persona = await buscarPersona(token, identificacion);
+      // Descarta la respuesta si el usuario cambió la cédula mientras se consultaba.
+      if (ultimaIdentificacionRef.current !== identificacion || !persona) return;
+      const areaValida = Boolean(persona.areaId) && areas.some((a) => a.id === persona.areaId);
+      setForm((prev) => ({
+        ...prev,
+        nombres: persona.nombres || prev.nombres,
+        apellidos: persona.apellidos || prev.apellidos,
+        emailUsuario: persona.emailUsuario || prev.emailUsuario,
+        areaId: areaValida ? persona.areaId : prev.areaId,
+      }));
+      setPersonaEncontrada(true);
+      setTieneFirmaRegistrada(Boolean(persona.tieneFirma));
+      setUsarFirmaRegistrada(Boolean(persona.tieneFirma));
+    } catch {
+      // Silencioso: si la búsqueda falla, el formulario funciona como siempre.
+    }
   };
 
   const validate = () => {
@@ -127,7 +185,7 @@ export default function InscripcionPage() {
     if (emailLocal.includes('@')) {
       return 'Ingresa solo la parte local del correo; el dominio @dos.com.ec se agrega automáticamente.';
     }
-    if (!firma) return 'La firma es obligatoria.';
+    if (!firma && !usarFirmaRegistrada) return 'La firma es obligatoria.';
     return null;
   };
 
@@ -148,12 +206,17 @@ export default function InscripcionPage() {
         identificacion: form.identificacion.trim(),
         areaId: form.areaId,
         emailUsuario: form.emailUsuario.trim(),
-        firma: form.firma,
+        firma: usarFirmaRegistrada ? null : form.firma,
+        usarFirmaRegistrada,
       };
       await inscribir(token, payload);
       setSuccess({ nombres: payload.nombres, apellidos: payload.apellidos });
       toast.success('Inscripción registrada.');
     } catch (error) {
+      if (error instanceof HttpError && error.body?.error === 'FIRMA_REGISTRADA_NO_DISPONIBLE') {
+        setTieneFirmaRegistrada(false);
+        setUsarFirmaRegistrada(false);
+      }
       const message = mapSubmitError(error);
       setFormError(message);
       toast.error(message);
@@ -312,6 +375,54 @@ export default function InscripcionPage() {
           <form onSubmit={handleSubmit} noValidate>
             <div className={styles.twoCols}>
               <div className={styles.formRow}>
+                <label className={styles.formLabel} htmlFor="identificacion">
+                  Identificación
+                </label>
+                <input
+                  id="identificacion"
+                  type="text"
+                  className="form-input"
+                  value={form.identificacion}
+                  onChange={(e) => handleIdentificacionChange(e.target.value)}
+                  onBlur={handleIdentificacionBlur}
+                  placeholder="Cédula o pasaporte"
+                  disabled={submitting}
+                  maxLength={50}
+                  required
+                />
+              </div>
+              <div className={styles.formRow}>
+                <label className={styles.formLabel} htmlFor="area">
+                  Área
+                </label>
+                <select
+                  id="area"
+                  className="form-input"
+                  value={form.areaId}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, areaId: e.target.value }))
+                  }
+                  disabled={submitting || areas.length === 0}
+                  required
+                >
+                  <option value="">Selecciona un área</option>
+                  {areas.map((area) => (
+                    <option key={area.id} value={area.id}>
+                      {area.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {personaEncontrada && (
+              <p className="form-helper" role="status">
+                Encontramos tus datos. Revísalos antes de inscribirte.
+              </p>
+            )}
+
+            <div className={styles.twoCols}>
+              <div className={styles.formRow}>
                 <label className={styles.formLabel} htmlFor="nombres">
                   Nombres
                 </label>
@@ -349,52 +460,6 @@ export default function InscripcionPage() {
               </div>
             </div>
 
-            <div className={styles.twoCols}>
-              <div className={styles.formRow}>
-                <label className={styles.formLabel} htmlFor="identificacion">
-                  Identificación
-                </label>
-                <input
-                  id="identificacion"
-                  type="text"
-                  className="form-input"
-                  value={form.identificacion}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      identificacion: e.target.value,
-                    }))
-                  }
-                  placeholder="Cédula o pasaporte"
-                  disabled={submitting}
-                  maxLength={50}
-                  required
-                />
-              </div>
-              <div className={styles.formRow}>
-                <label className={styles.formLabel} htmlFor="area">
-                  Área
-                </label>
-                <select
-                  id="area"
-                  className="form-input"
-                  value={form.areaId}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, areaId: e.target.value }))
-                  }
-                  disabled={submitting || areas.length === 0}
-                  required
-                >
-                  <option value="">Selecciona un área</option>
-                  {areas.map((area) => (
-                    <option key={area.id} value={area.id}>
-                      {area.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             <div className={styles.formRow}>
               <label className={styles.formLabel} htmlFor="emailUsuario">
                 Correo
@@ -414,15 +479,29 @@ export default function InscripcionPage() {
 
             <div className={styles.formRow}>
               <label className={styles.formLabel}>Firma</label>
-              <SignaturePad
-                value={form.firma}
-                onChange={(dataUrl) =>
-                  setForm((prev) => ({ ...prev, firma: dataUrl }))
-                }
-                width={400}
-                height={150}
-                disabled={submitting}
-              />
+              {tieneFirmaRegistrada && (
+                <label className="form-checkbox">
+                  <input
+                    type="checkbox"
+                    className="form-checkbox__input"
+                    checked={usarFirmaRegistrada}
+                    onChange={(e) => setUsarFirmaRegistrada(e.target.checked)}
+                    disabled={submitting}
+                  />
+                  <span className="form-checkbox__label">Usar mi firma registrada</span>
+                </label>
+              )}
+              {!usarFirmaRegistrada && (
+                <SignaturePad
+                  value={form.firma}
+                  onChange={(dataUrl) =>
+                    setForm((prev) => ({ ...prev, firma: dataUrl }))
+                  }
+                  width={400}
+                  height={150}
+                  disabled={submitting}
+                />
+              )}
             </div>
 
             {formError && (
