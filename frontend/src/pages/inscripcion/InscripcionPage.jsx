@@ -56,6 +56,8 @@ export default function InscripcionPage() {
   const [usarFirmaRegistrada, setUsarFirmaRegistrada] = useState(false);
   // Última identificación consultada: evita repetir la búsqueda y descarta respuestas viejas.
   const ultimaIdentificacionRef = useRef('');
+  // Valores que puso el autocompletado; al cambiar la cédula se limpian (si no fueron editados).
+  const autocompletadoRef = useRef(null);
 
   const limpiarAutocompletado = () => {
     setPersonaEncontrada(false);
@@ -134,13 +136,27 @@ export default function InscripcionPage() {
     setSuccess(null);
     limpiarAutocompletado();
     ultimaIdentificacionRef.current = '';
+    autocompletadoRef.current = null;
   };
 
   const handleIdentificacionChange = (value) => {
-    setForm((prev) => ({ ...prev, identificacion: value }));
-    // Si cambia la cédula, lo autocompletado ya no aplica: nunca usar la firma de otra persona.
-    if (value.trim() !== ultimaIdentificacionRef.current) {
+    const autocompletado = autocompletadoRef.current;
+    const cambio = value.trim() !== ultimaIdentificacionRef.current;
+    setForm((prev) => {
+      const next = { ...prev, identificacion: value };
+      // Si cambia la cédula, lo autocompletado ya no aplica: se quitan los datos de la otra
+      // persona (salvo los que el usuario ya editó a mano).
+      if (cambio && autocompletado) {
+        for (const campo of Object.keys(autocompletado)) {
+          if (next[campo] === autocompletado[campo]) next[campo] = INITIAL_FORM[campo];
+        }
+      }
+      return next;
+    });
+    if (cambio) {
       ultimaIdentificacionRef.current = '';
+      autocompletadoRef.current = null;
+      // Nunca usar la firma de otra persona.
       limpiarAutocompletado();
     }
   };
@@ -154,13 +170,13 @@ export default function InscripcionPage() {
       // Descarta la respuesta si el usuario cambió la cédula mientras se consultaba.
       if (ultimaIdentificacionRef.current !== identificacion || !persona) return;
       const areaValida = Boolean(persona.areaId) && areas.some((a) => a.id === persona.areaId);
-      setForm((prev) => ({
-        ...prev,
-        nombres: persona.nombres || prev.nombres,
-        apellidos: persona.apellidos || prev.apellidos,
-        emailUsuario: persona.emailUsuario || prev.emailUsuario,
-        areaId: areaValida ? persona.areaId : prev.areaId,
-      }));
+      const autocompletado = {};
+      if (persona.nombres) autocompletado.nombres = persona.nombres;
+      if (persona.apellidos) autocompletado.apellidos = persona.apellidos;
+      if (persona.emailUsuario) autocompletado.emailUsuario = persona.emailUsuario;
+      if (areaValida) autocompletado.areaId = persona.areaId;
+      autocompletadoRef.current = autocompletado;
+      setForm((prev) => ({ ...prev, ...autocompletado }));
       setPersonaEncontrada(true);
       setTieneFirmaRegistrada(Boolean(persona.tieneFirma));
       setUsarFirmaRegistrada(Boolean(persona.tieneFirma));
