@@ -198,6 +198,7 @@ builder.Services.AddScoped<IConfiguracionNumeracionRepository, ConfiguracionNume
 builder.Services.AddScoped<ICapacitacionRepository, CapacitacionRepository>();
 builder.Services.AddScoped<IResponsableRepository, ResponsableRepository>();
 builder.Services.AddScoped<IAsistenteRepository, AsistenteRepository>();
+builder.Services.AddScoped<IPersonaInscritaRepository, PersonaInscritaRepository>();
 builder.Services.AddScoped<IRecursoRepository, RecursoRepository>();
 builder.Services.AddScoped<IColaboradorRepository, ColaboradorRepository>();
 builder.Services.AddScoped<IConvenioRepository, ConvenioRepository>();
@@ -283,6 +284,7 @@ builder.Services.AddScoped<ActualizarCapacitadorCapacitacionUseCase>();
 builder.Services.AddScoped<GenerarLinkInscripcionUseCase>();
 builder.Services.AddScoped<ObtenerInscripcionPublicaUseCase>();
 builder.Services.AddScoped<InscribirAsistenteUseCase>();
+builder.Services.AddScoped<BuscarPersonaInscritaUseCase>();
 builder.Services.AddScoped<ListarAsistentesUseCase>();
 builder.Services.AddScoped<DescargarCertificadoUseCase>();
 builder.Services.AddScoped<DescargarReporteAsistenciaUseCase>();

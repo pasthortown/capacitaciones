@@ -22,7 +22,14 @@ public class AsistenteRepository : IAsistenteRepository
         await _db.Asistentes.AddAsync(entity, ct);
         try
         {
+            // Este SaveChanges también persiste la PersonaInscrita que el caso de uso dejó
+            // pendiente (tracked) en el mismo DbContext: inscripción + persona son atómicas.
             await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (IsIndexViolation(ex, "UX_PersonaInscrita_Identificacion"))
+        {
+            // Dos inscripciones simultáneas de una cédula nueva a capacitaciones distintas.
+            throw new InscripcionConcurrenteException();
         }
         catch (DbUpdateException ex) when (IsUniqueIndexViolation(ex))
         {
@@ -31,6 +38,12 @@ public class AsistenteRepository : IAsistenteRepository
             // para que el controller traduzca a 409 Conflict de forma consistente.
             throw new InscripcionDuplicadaException();
         }
+    }
+
+    private static bool IsIndexViolation(DbUpdateException ex, string indexName)
+    {
+        var msg = ex.InnerException?.Message ?? ex.Message;
+        return msg.Contains(indexName, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

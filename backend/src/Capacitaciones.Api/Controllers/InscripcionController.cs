@@ -23,13 +23,16 @@ public class InscripcionController : ControllerBase
 
     private readonly ObtenerInscripcionPublicaUseCase _obtener;
     private readonly InscribirAsistenteUseCase _inscribir;
+    private readonly BuscarPersonaInscritaUseCase _buscarPersona;
 
     public InscripcionController(
         ObtenerInscripcionPublicaUseCase obtener,
-        InscribirAsistenteUseCase inscribir)
+        InscribirAsistenteUseCase inscribir,
+        BuscarPersonaInscritaUseCase buscarPersona)
     {
         _obtener = obtener;
         _inscribir = inscribir;
+        _buscarPersona = buscarPersona;
     }
 
     [HttpGet]
@@ -53,6 +56,39 @@ public class InscripcionController : ControllerBase
         {
             return ToProblem(ex);
         }
+    }
+
+    /// <summary>
+    /// Autocompletado por cédula: datos de la persona si ya se inscribió alguna vez.
+    /// Nunca incluye la firma (solo <c>tieneFirma</c>).
+    ///
+    /// Solo responde mientras la capacitación del link acepta inscripciones (existe, activa y no
+    /// finalizada) — mismas reglas que <see cref="Get"/>. Los links no caducan, así que sin esta
+    /// validación un link viejo permitiría recorrer cédulas del registro indefinidamente.
+    /// </summary>
+    [HttpGet("persona/{identificacion}")]
+    public async Task<IActionResult> BuscarPersona(string identificacion, CancellationToken ct)
+    {
+        if (!TryGetCapacitacionId(out var capacitacionId))
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            await _obtener.ExecuteAsync(capacitacionId, ct);
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CapacitacionServiceException ex)
+        {
+            return ToProblem(ex);
+        }
+
+        var dto = await _buscarPersona.ExecuteAsync(identificacion, ct);
+        return dto is null ? NotFound() : Ok(dto);
     }
 
     [HttpPost]
@@ -101,6 +137,8 @@ public class InscripcionController : ControllerBase
             "INSCRIPCION_CERRADA" => StatusCodes.Status409Conflict,
             "INSCRIPCION_DUPLICADA" => StatusCodes.Status409Conflict,
             "CAPACITACION_INACTIVA" => StatusCodes.Status409Conflict,
+            "INSCRIPCION_CONCURRENTE" => StatusCodes.Status409Conflict,
+            "FIRMA_REGISTRADA_NO_DISPONIBLE" => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status400BadRequest
         };
         return new ObjectResult(new { error = ex.Codigo, message = ex.Message }) { StatusCode = status };
