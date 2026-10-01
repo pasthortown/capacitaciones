@@ -19,6 +19,7 @@ import PreguntasEncuestaPage from './pages/catalogos/PreguntasEncuestaPage.jsx';
 import EncuestaPublicaPage from './pages/encuesta/EncuestaPublicaPage.jsx';
 import ResultadosEncuestaPage from './pages/encuesta/ResultadosEncuestaPage.jsx';
 import NumeracionPage from './pages/configuracion/NumeracionPage.jsx';
+import CorreoPage from './pages/configuracion/CorreoPage.jsx';
 import UsuariosPage from './pages/UsuariosPage.jsx';
 import ProtectedRoute from './auth/ProtectedRoute.jsx';
 
@@ -36,6 +37,7 @@ import ProtectedRoute from './auth/ProtectedRoute.jsx';
  *   /catalogos/tipos-actividad   → Tipos de actividad
  *   /catalogos/areas             → Áreas
  *   /configuracion/numeracion    → Configuración del contador
+ *   /configuracion/correo        → Configuración de correo
  */
 function PlaceholderPage({ titulo, descripcion }) {
   return (
@@ -119,6 +121,7 @@ export default function App() {
             element={<Navigate to="/configuracion/numeracion" replace />}
           />
           <Route path="/configuracion/numeracion" element={<NumeracionPage />} />
+          <Route path="/configuracion/correo" element={<CorreoPage />} />
           {/* Usuarios permitidos (dentro de Configuración) */}
           <Route path="/configuracion/usuarios" element={<UsuariosPage />} />
 

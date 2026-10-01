@@ -418,6 +418,16 @@ export default function AsistentesPage() {
         </span>
       );
     }
+    if (estado === 'Omitido') {
+      return (
+        <span
+          className={`${styles.badge} ${styles.badgeCertSkipped}`}
+          title="No se envió: el aviso 'Certificado al participante' está desactivado en Configuración → Correo."
+        >
+          Omitido
+        </span>
+      );
+    }
     return '—';
   };
 
@@ -468,7 +478,7 @@ export default function AsistentesPage() {
       accessor: (row) => formatFechaHora(row?.fechaInscripcion) || '—',
     },
     // Columna Certificado: estado del envío por correo. Visible sólo si el
-    // evento emite certificado. "Enviado" | "Pendiente" | "Error" | sin envío.
+    // evento emite certificado. "Enviado" | "Pendiente" | "Error" | "Omitido" | sin envío.
     ...(emiteCertificado
       ? [
           {

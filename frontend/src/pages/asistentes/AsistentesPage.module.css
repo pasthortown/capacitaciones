@@ -58,6 +58,12 @@
   cursor: help;
 }
 
+.badgeCertSkipped {
+  background-color: var(--color-bg-main, #f3f4f6);
+  color: var(--color-text-secondary, #6b7280);
+  cursor: help;
+}
+
 /* --- Celda de calificación (Fase 11) --- */
 .calificacionCell {
   display: inline-flex;

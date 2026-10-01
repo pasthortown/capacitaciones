@@ -4,6 +4,7 @@ using Capacitaciones.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Capacitaciones.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260923204054_ConfiguracionCorreoSinDefaultTls")]
+    partial class ConfiguracionCorreoSinDefaultTls
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -831,55 +834,6 @@ namespace Capacitaciones.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Capacitaciones.Domain.Entities.PersonaInscrita", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Apellidos")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
-
-                    b.Property<Guid?>("AreaId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("EmailUsuario")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<DateTime>("FechaActualizacion")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Firma")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Identificacion")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("Nombres")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AreaId");
-
-                    b.HasIndex("Identificacion")
-                        .IsUnique()
-                        .HasDatabaseName("UX_PersonaInscrita_Identificacion");
-
-                    b.ToTable("PersonaInscrita", "dbo");
-                });
-
             modelBuilder.Entity("Capacitaciones.Domain.Entities.PreguntaEncuesta", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1222,16 +1176,6 @@ namespace Capacitaciones.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ConvenioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Capacitaciones.Domain.Entities.PersonaInscrita", b =>
-                {
-                    b.HasOne("Capacitaciones.Domain.Entities.Area", "Area")
-                        .WithMany()
-                        .HasForeignKey("AreaId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Area");
                 });
 
             modelBuilder.Entity("Capacitaciones.Domain.Entities.PreguntaEncuesta", b =>

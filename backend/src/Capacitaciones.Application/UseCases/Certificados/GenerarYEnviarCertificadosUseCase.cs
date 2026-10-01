@@ -178,14 +178,15 @@ public class GenerarYEnviarCertificadosUseCase
             };
 
             // 3. Envío del correo (mail_sender → O365) con reintentos.
-            await ReintentarAsync(async () =>
-            {
-                await _mail.SendMailAsync(request, ct);
-                return true;
-            }, ct);
+            var resultado = await ReintentarAsync(() => _mail.SendMailAsync(request, ct), ct);
 
-            await _asistentes.ActualizarResultadoEnvioAsync(
-                asistenteId, EstadoEnvioCertificado.Enviado, DateTime.UtcNow, null, ct);
+            // Aviso desactivado en Configuración → Correo: no salió ningún correo.
+            var estado = resultado == MailSendResult.Omitido
+                ? EstadoEnvioCertificado.Omitido
+                : EstadoEnvioCertificado.Enviado;
+            DateTime? fechaEnvio = estado == EstadoEnvioCertificado.Enviado ? DateTime.UtcNow : null;
+
+            await _asistentes.ActualizarResultadoEnvioAsync(asistenteId, estado, fechaEnvio, null, ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {

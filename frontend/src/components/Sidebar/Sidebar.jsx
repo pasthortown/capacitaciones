@@ -17,6 +17,7 @@ import {
   Dumbbell,
   Users,
   Handshake,
+  Mail,
 } from 'lucide-react';
 import { useAuth } from '../../auth/useAuth.js';
 
@@ -296,6 +297,12 @@ export default function Sidebar({ collapsed = false }) {
                   <NavLink to="/configuracion/numeracion" title="Numeración" className={navLinkClass}>
                     <Hash className="sidebar__nav-icon" />
                     <span>Numeración</span>
+                  </NavLink>
+                </li>
+                <li className="sidebar__nav-item">
+                  <NavLink to="/configuracion/correo" title="Correo" className={navLinkClass}>
+                    <Mail className="sidebar__nav-icon" />
+                    <span>Correo</span>
                   </NavLink>
                 </li>
                 <li className="sidebar__nav-item">
