@@ -61,13 +61,30 @@ public class InscripcionController : ControllerBase
     /// <summary>
     /// Autocompletado por cédula: datos de la persona si ya se inscribió alguna vez.
     /// Nunca incluye la firma (solo <c>tieneFirma</c>).
+    ///
+    /// Solo responde mientras la capacitación del link acepta inscripciones (existe, activa y no
+    /// finalizada) — mismas reglas que <see cref="Get"/>. Los links no caducan, así que sin esta
+    /// validación un link viejo permitiría recorrer cédulas del registro indefinidamente.
     /// </summary>
     [HttpGet("persona/{identificacion}")]
     public async Task<IActionResult> BuscarPersona(string identificacion, CancellationToken ct)
     {
-        if (!TryGetCapacitacionId(out _))
+        if (!TryGetCapacitacionId(out var capacitacionId))
         {
             return Unauthorized();
+        }
+
+        try
+        {
+            await _obtener.ExecuteAsync(capacitacionId, ct);
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CapacitacionServiceException ex)
+        {
+            return ToProblem(ex);
         }
 
         var dto = await _buscarPersona.ExecuteAsync(identificacion, ct);

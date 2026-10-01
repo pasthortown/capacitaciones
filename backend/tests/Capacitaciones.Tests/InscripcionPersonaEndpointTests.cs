@@ -44,7 +44,7 @@ public class InscripcionPersonaEndpointTests : IClassFixture<InMemoryWebAppFacto
         db.SaveChanges();
     }
 
-    private Guid CrearCapacitacion()
+    private Guid CrearCapacitacion(bool activo = true, bool finalizada = false)
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -57,9 +57,9 @@ public class InscripcionPersonaEndpointTests : IClassFixture<InMemoryWebAppFacto
             ModalidadId = SeededModalidadId,
             TipoActividadId = SeededTipoActividadId,
             TipoCertificacion = TipoCertificacion.Participacion,
-            FechaHoraInicio = DateTime.UtcNow.AddDays(1),
+            FechaHoraInicio = finalizada ? DateTime.UtcNow.AddHours(-5) : DateTime.UtcNow.AddDays(1),
             DuracionMinutos = 60,
-            Activo = true,
+            Activo = activo,
             FechaCreacion = DateTime.UtcNow
         };
         db.Capacitaciones.Add(cap);
@@ -135,6 +135,33 @@ public class InscripcionPersonaEndpointTests : IClassFixture<InMemoryWebAppFacto
         var resp = await client.GetAsync("/api/inscripcion/capacitacion/persona/1700000001");
 
         Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task BuscarPersona_CapacitacionFinalizada_Devuelve409SinDatos()
+    {
+        var capId = CrearCapacitacion(finalizada: true);
+        CrearPersona("1700000005");
+        var client = ClienteConToken(capId);
+
+        var resp = await client.GetAsync("/api/inscripcion/capacitacion/persona/1700000005");
+
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+        Assert.DoesNotContain("María", await resp.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task BuscarPersona_CapacitacionInactiva_Devuelve404SinDatos()
+    {
+        var capId = CrearCapacitacion(activo: false);
+        CrearPersona("1700000006");
+        var client = ClienteConToken(capId);
+
+        var resp = await client.GetAsync("/api/inscripcion/capacitacion/persona/1700000006");
+
+        // El filtro global de EF oculta las capacitaciones inactivas: mismo 404 que GET /capacitacion.
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+        Assert.DoesNotContain("María", await resp.Content.ReadAsStringAsync());
     }
 
     [Fact]
