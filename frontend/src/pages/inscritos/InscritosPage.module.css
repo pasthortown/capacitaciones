@@ -1,0 +1,60 @@
+/* El CSS global del design system se carga después de este módulo en el bundle; las reglas
+   que pisan una propiedad de una clase global van combinadas con ella (:global) para ganarle
+   por especificidad y no por orden. */
+
+.filters {
+  gap: var(--spacing-3, 12px);
+  flex-wrap: wrap;
+}
+
+.filtroCapacitacion {
+  min-width: 280px;
+}
+
+.filtroBuscar {
+  min-width: 260px;
+}
+
+:global(.alert).loadError {
+  margin-bottom: var(--spacing-3, 12px);
+}
+
+:global(.card__body).tableBody {
+  padding: 0;
+}
+
+.rowActions {
+  display: flex;
+  gap: var(--spacing-1, 4px);
+  justify-content: flex-end;
+}
+
+/* La firma se muestra siempre sobre blanco (no un token de tema) para detectar firmas
+   en blanco o cortadas tal como saldrán en los documentos. */
+.firmaBox {
+  background: #fff;
+  border: 1px solid var(--color-border-main, #D1D5DB);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--spacing-4, 16px);
+  display: flex;
+  justify-content: center;
+}
+
+.firmaBoxCompacta {
+  padding: var(--spacing-3, 12px);
+}
+
+.firmaImg {
+  max-width: 100%;
+  max-height: 260px;
+}
+
+.firmaImgCompacta {
+  max-width: 100%;
+  max-height: 150px;
+}
+
+.spaceTop,
+:global(.form-helper).spaceTop {
+  margin-top: var(--spacing-2, 8px);
+}
