@@ -283,7 +283,7 @@ export default function PreguntasEncuestaPage() {
               Filtrar por tipo de actividad
             </label>
             <select
-              className="form-input"
+              className="form-input form-select"
               value={filtroTipoId}
               onChange={(e) => setFiltroTipoId(e.target.value)}
             >
@@ -375,7 +375,7 @@ export default function PreguntasEncuestaPage() {
               Tipo de actividad
             </label>
             <select
-              className={`form-input${errors.tipoActividadId ? ' form-input--error' : ''}`}
+              className={`form-input form-select${errors.tipoActividadId ? ' form-input--error' : ''}`}
               value={tipoActividadId}
               onChange={(e) => {
                 setTipoActividadId(e.target.value);
@@ -400,7 +400,7 @@ export default function PreguntasEncuestaPage() {
               Formato de la pregunta
             </label>
             <select
-              className="form-input"
+              className="form-input form-select"
               value={tipoPregunta}
               onChange={(e) => handleTipoPreguntaChange(e.target.value)}
             >

@@ -284,7 +284,7 @@ export default function InscritosPage() {
       <form className="toolbar" onSubmit={handleBuscar}>
         <div className={`toolbar__filters ${styles.filters}`}>
           <select
-            className={`form-select ${styles.filtroCapacitacion}`}
+            className={`form-input form-select ${styles.filtroCapacitacion}`}
             aria-label="Filtrar por capacitación"
             value={capacitacionId}
             onChange={(e) => setCapacitacionId(e.target.value)}
@@ -310,7 +310,7 @@ export default function InscritosPage() {
           </button>
         </div>
         <div className="toolbar__actions">
-          <span className="text-secondary">{loading ? '' : `${rows.length} inscrito(s)`}</span>
+          <span className={`text-secondary ${styles.contador}`}>{loading ? '' : `${rows.length} inscrito(s)`}</span>
         </div>
       </form>
 
@@ -474,7 +474,7 @@ export default function InscritosPage() {
                 <label className="form-label form-label--required" htmlFor="ins-area">Área</label>
                 <select
                   id="ins-area"
-                  className="form-select"
+                  className="form-input form-select"
                   value={form.areaId}
                   onChange={(e) => setForm((p) => ({ ...p, areaId: e.target.value }))}
                   disabled={saving}

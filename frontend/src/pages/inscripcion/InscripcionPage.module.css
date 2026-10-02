@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  background: var(--color-bg-default, #f5f7fa);
+  background: var(--color-bg-main, #F0EEF5);
   padding: var(--spacing-6, 24px);
   display: flex;
   flex-direction: column;
@@ -161,17 +161,11 @@
   margin-top: var(--spacing-5, 20px);
 }
 
-.alert {
-  padding: var(--spacing-4, 16px);
-  border-radius: var(--radius-md, 6px);
+/* Los mensajes de error usan .alert/.alert--error globales. El CSS global se carga después
+   de este módulo, así que estos ajustes van combinados con .alert para ganar por especificidad. */
+:global(.alert).formError {
+  margin: var(--spacing-3, 12px) 0 0;
   font-size: var(--font-size-sm, 0.875rem);
-  line-height: 1.5;
-}
-
-.alertError {
-  background-color: var(--color-error-bg, #FEE2E2);
-  color: var(--color-error-text, #991B1B);
-  border: 1px solid var(--color-error-border, #FCA5A5);
 }
 
 .loadingWrap {
@@ -180,8 +174,11 @@
   padding: var(--spacing-10, 40px) 0;
 }
 
-.fullMessage {
+:global(.alert).fullMessage {
   width: 100%;
   max-width: 560px;
+  justify-content: center;
   text-align: center;
+  margin-bottom: 0;
+  font-size: var(--font-size-sm, 0.875rem);
 }
