@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Eye, Pencil, Search } from 'lucide-react';
 import DataTable from '../../components/Table/DataTable.jsx';
 import Modal from '../../components/Modal/Modal.jsx';
@@ -72,6 +72,12 @@ export default function InscritosPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
+  // Identificadores de la última solicitud de cada modal: una respuesta que llega después de
+  // cerrar el modal o de abrir otra fila se descarta (si no, se reabriría el modal o el
+  // formulario quedaría con los datos de otra persona y el PUT iría al inscrito equivocado).
+  const firmaReq = useRef(0);
+  const editReq = useRef(0);
+
   // Catálogos para filtros y edición.
   useEffect(() => {
     listCapacitaciones()
@@ -106,17 +112,26 @@ export default function InscritosPage() {
 
   // ---- Ver firma ----
   const abrirFirma = async (row) => {
+    const req = ++firmaReq.current;
     setVerFirma({ inscrito: row, loading: true, error: '', dims: null });
     try {
       const detalle = await getInscrito(row.id);
+      if (firmaReq.current !== req) return;
       setVerFirma({ inscrito: detalle, loading: false, error: '', dims: null });
     } catch (err) {
+      if (firmaReq.current !== req) return;
       setVerFirma({ inscrito: row, loading: false, error: mensajeError(err, 'No se pudo cargar la firma.'), dims: null });
     }
   };
 
+  const cerrarFirma = () => {
+    firmaReq.current += 1;
+    setVerFirma(null);
+  };
+
   // ---- Editar ----
   const abrirEditar = async (row) => {
+    const req = ++editReq.current;
     setEditando({ ...row });
     setEditLoading(true);
     setFormError('');
@@ -124,6 +139,7 @@ export default function InscritosPage() {
     setFirmaNueva(null);
     try {
       const detalle = await getInscrito(row.id);
+      if (editReq.current !== req) return;
       setEditando(detalle);
       setForm({
         nombres: detalle.nombres || '',
@@ -135,14 +151,17 @@ export default function InscritosPage() {
       // Sin firma guardada: se pide directamente una nueva.
       setReemplazarFirma(!detalle.firma);
     } catch (err) {
+      if (editReq.current !== req) return;
       setFormError(mensajeError(err, 'No se pudo cargar el inscrito.'));
     } finally {
-      setEditLoading(false);
+      if (editReq.current === req) setEditLoading(false);
     }
   };
 
   const cerrarEditar = () => {
     if (saving) return;
+    editReq.current += 1;
+    setEditLoading(false);
     setEditando(null);
     setForm(EMPTY_FORM);
     setFirmaNueva(null);
@@ -328,7 +347,7 @@ export default function InscritosPage() {
       {/* Modal: ver firma */}
       <Modal
         isOpen={Boolean(verFirma)}
-        onClose={() => setVerFirma(null)}
+        onClose={cerrarFirma}
         title={verFirma ? `Firma de ${verFirma.inscrito.nombres} ${verFirma.inscrito.apellidos}` : ''}
         footer={
           <>
@@ -338,7 +357,7 @@ export default function InscritosPage() {
                 className="btn btn--secondary"
                 onClick={() => {
                   const row = verFirma.inscrito;
-                  setVerFirma(null);
+                  cerrarFirma();
                   abrirEditar(row);
                 }}
               >
@@ -346,7 +365,7 @@ export default function InscritosPage() {
                 <span>Editar</span>
               </button>
             )}
-            <button type="button" className="btn btn--primary" onClick={() => setVerFirma(null)}>
+            <button type="button" className="btn btn--primary" onClick={cerrarFirma}>
               Cerrar
             </button>
           </>

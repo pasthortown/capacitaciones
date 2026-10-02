@@ -64,6 +64,10 @@ public class InscritoRepository : IInscritoRepository
         => _db.Asistentes.AsNoTracking()
             .AnyAsync(a => a.CapacitacionId == capacitacionId && a.Identificacion == identificacion && a.Id != excluirId, ct);
 
+    public Task<bool> ExistsInscripcionMasRecienteAsync(string identificacion, DateTime fechaInscripcion, Guid excluirId, CancellationToken ct = default)
+        => _db.Asistentes.AsNoTracking()
+            .AnyAsync(a => a.Identificacion == identificacion && a.Id != excluirId && a.FechaInscripcion > fechaInscripcion, ct);
+
     public async Task SaveChangesAsync(CancellationToken ct = default)
     {
         try

@@ -188,6 +188,71 @@ public class EditarInscritoUseCaseTests
         await Assert.ThrowsAsync<InscritoNotFoundException>(() => useCase.ExecuteAsync(Guid.NewGuid(), BuildInput()));
     }
 
+    [Fact]
+    public async Task InscripcionAntigua_NoPisaLosDatosDeLaPersona()
+    {
+        var asistente = BuildAsistente();
+        var persona = new PersonaInscrita { Id = Guid.NewGuid(), Identificacion = "1712345678", Nombres = "Juan Reciente", Apellidos = "Perez", AreaId = AreaTi.Id, EmailUsuario = "nuevo@dos.com.ec", Firma = "data:image/png;base64,RECIENTE==" };
+        var (useCase, repo, _) = Build(asistente, persona);
+        repo.HayInscripcionMasReciente = true;
+
+        await useCase.ExecuteAsync(asistente.Id, BuildInput(firma: FirmaNueva));
+
+        Assert.Equal("Juan", asistente.Nombres);
+        Assert.Equal(FirmaNueva, asistente.Firma);
+        Assert.Equal("Juan Reciente", persona.Nombres);
+        Assert.Equal(AreaTi.Id, persona.AreaId);
+        Assert.Equal("nuevo@dos.com.ec", persona.EmailUsuario);
+        Assert.Equal("data:image/png;base64,RECIENTE==", persona.Firma);
+    }
+
+    [Fact]
+    public async Task CambioACedulaDeOtraPersona_NoModificaEsaPersona()
+    {
+        var asistente = BuildAsistente();
+        var otra = new PersonaInscrita { Id = Guid.NewGuid(), Identificacion = "0911111111", Nombres = "María", Apellidos = "López", AreaId = AreaTi.Id, EmailUsuario = "maria@dos.com.ec", Firma = null };
+        var (useCase, repo, personas) = Build(asistente, otra);
+
+        await useCase.ExecuteAsync(asistente.Id, BuildInput(identificacion: "0911111111"));
+
+        Assert.Equal("0911111111", asistente.Identificacion);
+        Assert.Equal(1, repo.Saves);
+        Assert.Equal("María", otra.Nombres);
+        Assert.Equal("López", otra.Apellidos);
+        Assert.Equal("maria@dos.com.ec", otra.EmailUsuario);
+        Assert.Null(otra.Firma);
+        Assert.Empty(personas.Agregadas);
+    }
+
+    [Fact]
+    public async Task CambioACedulaDeLaMismaPersona_ActualizaElRegistro()
+    {
+        var asistente = BuildAsistente();
+        var misma = new PersonaInscrita { Id = Guid.NewGuid(), Identificacion = "0922222222", Nombres = "JUAN", Apellidos = "pérez", AreaId = AreaTi.Id, EmailUsuario = "x@dos.com.ec", Firma = null };
+        var (useCase, _, _) = Build(asistente, misma);
+
+        await useCase.ExecuteAsync(asistente.Id, BuildInput(identificacion: "0922222222"));
+
+        Assert.Equal("Juan", misma.Nombres);
+        Assert.Equal(AreaRrhh.Id, misma.AreaId);
+        Assert.Equal(FirmaVieja, misma.Firma);
+    }
+
+    [Fact]
+    public async Task AreaInactivaSinCambiar_PermiteGuardar()
+    {
+        var asistente = BuildAsistente();
+        asistente.AreaId = AreaInactiva.Id;
+        asistente.Area = AreaInactiva;
+        var (useCase, repo, _) = Build(asistente);
+
+        await useCase.ExecuteAsync(asistente.Id, BuildInput(areaId: AreaInactiva.Id));
+
+        Assert.Equal("Juan", asistente.Nombres);
+        Assert.Equal(AreaInactiva.Id, asistente.AreaId);
+        Assert.Equal(1, repo.Saves);
+    }
+
     // ----- Fakes -----
 
     private sealed class FakeInscritos : IInscritoRepository
@@ -195,6 +260,7 @@ public class EditarInscritoUseCaseTests
         private readonly Asistente? _asistente;
         public HashSet<string> OtrasIdentificaciones { get; } = new();
         public int Saves { get; private set; }
+        public bool HayInscripcionMasReciente { get; set; }
 
         public FakeInscritos(Asistente? asistente) { _asistente = asistente; }
 
@@ -206,6 +272,9 @@ public class EditarInscritoUseCaseTests
 
         public Task<bool> ExistsOtroConIdentificacionAsync(Guid capacitacionId, string identificacion, Guid excluirId, CancellationToken ct = default)
             => Task.FromResult(OtrasIdentificaciones.Contains(identificacion));
+
+        public Task<bool> ExistsInscripcionMasRecienteAsync(string identificacion, DateTime fechaInscripcion, Guid excluirId, CancellationToken ct = default)
+            => Task.FromResult(HayInscripcionMasReciente);
 
         public Task SaveChangesAsync(CancellationToken ct = default)
         {

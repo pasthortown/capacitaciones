@@ -42,6 +42,12 @@ public interface IInscritoRepository
     /// <summary>true si otro asistente (distinto de <paramref name="excluirId"/>) de la misma capacitación usa la identificación.</summary>
     Task<bool> ExistsOtroConIdentificacionAsync(Guid capacitacionId, string identificacion, Guid excluirId, CancellationToken ct = default);
 
+    /// <summary>
+    /// true si existe otra inscripción (distinta de <paramref name="excluirId"/>) de la misma identificación
+    /// con fecha posterior a <paramref name="fechaInscripcion"/>. El registro de personas refleja la más reciente.
+    /// </summary>
+    Task<bool> ExistsInscripcionMasRecienteAsync(string identificacion, DateTime fechaInscripcion, Guid excluirId, CancellationToken ct = default);
+
     /// <summary>Persiste los cambios pendientes. Traduce el choque del índice único de asistentes a <c>InscripcionDuplicadaException</c>.</summary>
     Task SaveChangesAsync(CancellationToken ct = default);
 }
