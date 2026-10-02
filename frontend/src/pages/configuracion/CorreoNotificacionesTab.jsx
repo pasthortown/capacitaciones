@@ -65,7 +65,7 @@ export default function CorreoNotificacionesTab() {
       </div>
       <div className="card__body" style={{ display: 'grid', gap: 'var(--spacing-4)' }}>
         {items.map((n) => (
-          <div key={n.plantilla} style={{ display: 'grid', gap: 'var(--spacing-2)', paddingBottom: 'var(--spacing-3)', borderBottom: '1px solid var(--color-border, #e5e7eb)' }}>
+          <div key={n.plantilla} style={{ display: 'grid', gap: 'var(--spacing-2)', paddingBottom: 'var(--spacing-3)', borderBottom: '1px solid var(--color-border-light, #e5e7eb)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--spacing-3)' }}>
               <strong>{n.nombre}</strong>
               <Toggle
