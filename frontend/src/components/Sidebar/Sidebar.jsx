@@ -18,6 +18,7 @@ import {
   Users,
   Handshake,
   Mail,
+  ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '../../auth/useAuth.js';
 
@@ -49,6 +50,7 @@ export default function Sidebar({ collapsed = false }) {
   const isConfigActive = location.pathname.startsWith('/configuracion');
   const isResponsablesActive = location.pathname.startsWith('/responsables');
   const isRepositorioActive = location.pathname.startsWith('/repositorio');
+  const isInscritosActive = location.pathname.startsWith('/inscritos');
   const isEntrenamientoActive = location.pathname.startsWith('/entrenamiento');
   // "Capacitaciones" se resalta cuando la ruta empieza con /capacitaciones
   // y NO con /catalogos. Como son prefijos disjuntos en el router, basta con
@@ -108,6 +110,22 @@ export default function Sidebar({ collapsed = false }) {
             >
               <GraduationCap className="sidebar__nav-icon" />
               <span>Capacitaciones</span>
+            </NavLink>
+          </li>
+
+          {/* Inscritos: personas inscritas a las capacitaciones (filtro, edición, firma) */}
+          <li className="sidebar__nav-item">
+            <NavLink
+              to="/inscritos"
+              title="Inscritos"
+              className={() =>
+                `sidebar__nav-link${
+                  isInscritosActive ? ' sidebar__nav-link--active' : ''
+                }`
+              }
+            >
+              <ClipboardList className="sidebar__nav-icon" />
+              <span>Inscritos</span>
             </NavLink>
           </li>
 

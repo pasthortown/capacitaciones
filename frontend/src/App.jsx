@@ -21,6 +21,7 @@ import ResultadosEncuestaPage from './pages/encuesta/ResultadosEncuestaPage.jsx'
 import NumeracionPage from './pages/configuracion/NumeracionPage.jsx';
 import CorreoPage from './pages/configuracion/CorreoPage.jsx';
 import UsuariosPage from './pages/UsuariosPage.jsx';
+import InscritosPage from './pages/inscritos/InscritosPage.jsx';
 import ProtectedRoute from './auth/ProtectedRoute.jsx';
 
 /**
@@ -90,6 +91,9 @@ export default function App() {
             path="/capacitaciones/:id/encuesta/resultados"
             element={<ResultadosEncuestaPage />}
           />
+
+          {/* Inscritos: lista transversal con filtro, edición y ver firma */}
+          <Route path="/inscritos" element={<InscritosPage />} />
 
           {/* Responsables (catálogo global) */}
           <Route path="/responsables" element={<ResponsablesPage />} />
