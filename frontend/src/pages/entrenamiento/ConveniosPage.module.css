@@ -42,7 +42,7 @@
 .itemsTable th,
 .itemsTable td {
   padding: var(--spacing-2);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  border-bottom: 1px solid var(--color-border-light, #e5e7eb);
   text-align: left;
   vertical-align: top;
 }
@@ -95,7 +95,7 @@
 
 .comboMenu {
   margin-top: 4px;
-  border: 1px solid var(--color-border, #e5e7eb);
+  border: 1px solid var(--color-border-light, #e5e7eb);
   border-radius: var(--radius-md, 8px);
   background: var(--color-surface, #fff);
   max-height: 260px;
@@ -131,7 +131,7 @@
   justify-content: space-between;
   gap: var(--spacing-2);
   padding: var(--spacing-2) var(--spacing-3);
-  border: 1px solid var(--color-border, #e5e7eb);
+  border: 1px solid var(--color-border-light, #e5e7eb);
   border-radius: var(--radius-md, 8px);
   background: var(--color-surface-alt, #f8fafc);
 }

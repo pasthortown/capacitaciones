@@ -111,7 +111,7 @@ function GruposConvenios({ rows, columns, loading, montoKey, subtotalLabel, empt
   return (
     <div style={{ padding: 'var(--spacing-3)' }}>
       {cadenas.map((g) => (
-        <div key={g.rootId} style={{ marginBottom: 'var(--spacing-4)', border: '1px solid var(--color-border, #e5e7eb)', borderRadius: 8, overflow: 'hidden' }}>
+        <div key={g.rootId} style={{ marginBottom: 'var(--spacing-4)', border: '1px solid var(--color-border-light, #e5e7eb)', borderRadius: 8, overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '8px 12px', background: 'var(--color-surface-alt, #f8fafc)' }}>
             <strong>
               Cadena: {g.root.codigoRegistro || '—'} — {g.root.nombreCurso || 'Sin curso'}{' '}
@@ -138,7 +138,7 @@ function GruposConvenios({ rows, columns, loading, montoKey, subtotalLabel, empt
  * scroll, disparaba un reajuste de layout que colapsaba el cuerpo del modal en Chromium.
  */
 function SiNoGroup({ label, value, onChange, name }) {
-  const base = { padding: '6px 18px', border: '1px solid var(--color-border, #d1d5db)', cursor: 'pointer', background: '#fff', fontWeight: 600 };
+  const base = { padding: '6px 18px', border: '1px solid var(--color-border-main, #d1d5db)', cursor: 'pointer', background: '#fff', fontWeight: 600 };
   const on = { background: 'var(--color-primary, #e4003a)', color: '#fff', borderColor: 'var(--color-primary, #e4003a)' };
   return (
     <div className="form-group" style={{ position: 'static' }}>
@@ -1025,7 +1025,7 @@ function ConveniosTab({ toast }) {
               {anexoBusy && uploadName ? (
                 <div style={{ margin: 'var(--spacing-2) 0' }}>
                   <div style={{ fontSize: 13, marginBottom: 4 }}>Subiendo <strong>{uploadName}</strong> — {uploadPct}%</div>
-                  <div style={{ height: 8, background: 'var(--color-border, #e5e7eb)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ height: 8, background: 'var(--color-border-light, #e5e7eb)', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{ width: `${uploadPct}%`, height: '100%', background: 'var(--color-primary, #2563eb)', transition: 'width .15s' }} />
                   </div>
                 </div>
@@ -1204,7 +1204,7 @@ function SectionTitle({ children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: 'var(--spacing-5) 0 var(--spacing-3)', fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--color-text-secondary, #6b7280)' }}>
       <span>{children}</span>
-      <span style={{ flex: 1, height: 1, background: 'var(--color-border, #e5e7eb)' }} />
+      <span style={{ flex: 1, height: 1, background: 'var(--color-border-light, #e5e7eb)' }} />
     </div>
   );
 }
