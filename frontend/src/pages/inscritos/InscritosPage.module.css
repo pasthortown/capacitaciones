@@ -7,15 +7,16 @@
   flex-wrap: wrap;
 }
 
-/* .form-input trae width: 100%; en el toolbar cada filtro ocuparía una línea entera. */
+/* .form-input trae width: 100%; en el toolbar cada filtro ocuparía una línea entera. Ancho fijo:
+   con width: auto el select toma el ancho de su opción más larga (código + tema). */
 :global(.form-input).filtroCapacitacion {
-  width: auto;
-  min-width: 280px;
+  width: 320px;
+  max-width: 100%;
 }
 
 :global(.form-input).filtroBuscar {
-  width: auto;
-  min-width: 260px;
+  width: 280px;
+  max-width: 100%;
 }
 
 :global(.alert).loadError {
@@ -30,10 +31,43 @@
   white-space: nowrap;
 }
 
-.rowActions {
+/* Los correos largos se parten para que la tabla quepa sin scroll horizontal. */
+.correo {
+  overflow-wrap: anywhere;
+}
+
+.capacitacion {
   display: flex;
-  gap: var(--spacing-1, 4px);
-  justify-content: flex-end;
+  flex-direction: column;
+  width: 220px;
+}
+
+.capacitacion > * {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Mismo indicador de firma que la tabla de Responsables. */
+.signatureBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.signatureBadgeOk {
+  background-color: var(--color-success-bg, #DCFCE7);
+  color: var(--color-success-text, #166534);
+}
+
+.signatureBadgeMissing {
+  background-color: var(--color-border-light, #e5e7eb);
+  color: var(--color-text-secondary, #6b7280);
 }
 
 /* La firma se muestra siempre sobre blanco (no un token de tema) para detectar firmas
