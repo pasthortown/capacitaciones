@@ -48,7 +48,7 @@ public class ObtenerInscritoUseCase
 
     public async Task<InscritoDetalleDto> ExecuteAsync(Guid id, CancellationToken ct = default)
     {
-        var asistente = await _inscritos.GetForEditAsync(id, ct) ?? throw new InscritoNotFoundException();
+        var asistente = await _inscritos.GetDetalleAsync(id, ct) ?? throw new InscritoNotFoundException();
         return InscritoMapper.ToDetalle(asistente);
     }
 }

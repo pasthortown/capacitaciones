@@ -1,4 +1,5 @@
 using Capacitaciones.Application.Ports;
+using Capacitaciones.Application.UseCases.Capacitaciones;
 using Capacitaciones.Application.UseCases.Inscripcion;
 using Capacitaciones.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -54,6 +55,25 @@ public class InscritoRepository : IInscritoRepository
             .ToListAsync(ct);
     }
 
+    public Task<Asistente?> GetDetalleAsync(Guid id, CancellationToken ct = default)
+        => _db.Asistentes.AsNoTracking()
+            .Where(a => a.Id == id && a.Capacitacion != null)
+            .Select(a => new Asistente
+            {
+                Id = a.Id,
+                CapacitacionId = a.CapacitacionId,
+                Capacitacion = new Capacitacion { Id = a.CapacitacionId, Codigo = a.Capacitacion!.Codigo, Tema = a.Capacitacion.Tema },
+                Nombres = a.Nombres,
+                Apellidos = a.Apellidos,
+                Identificacion = a.Identificacion,
+                AreaId = a.AreaId,
+                Area = a.Area,
+                EmailUsuario = a.EmailUsuario,
+                Firma = a.Firma,
+                FechaInscripcion = a.FechaInscripcion
+            })
+            .FirstOrDefaultAsync(ct);
+
     public Task<Asistente?> GetForEditAsync(Guid id, CancellationToken ct = default)
         => _db.Asistentes
             .Include(a => a.Area)
@@ -76,7 +96,10 @@ public class InscritoRepository : IInscritoRepository
         }
         catch (DbUpdateException ex) when (Contiene(ex, "UX_PersonaInscrita_Identificacion"))
         {
-            throw new InscripcionConcurrenteException();
+            // En la edición admin el choque es con otro guardado simultáneo de la misma cédula.
+            throw new CapacitacionServiceException(
+                "INSCRIPCION_CONCURRENTE",
+                "Se guardó otro registro con esta cédula al mismo tiempo. Vuelve a intentarlo.");
         }
         catch (DbUpdateException ex) when (Contiene(ex, "UX_Asistente_Capacitacion_Identificacion"))
         {

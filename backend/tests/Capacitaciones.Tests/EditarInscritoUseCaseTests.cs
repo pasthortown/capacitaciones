@@ -267,6 +267,9 @@ public class EditarInscritoUseCaseTests
         public Task<IReadOnlyList<InscritoResumen>> ListAsync(Guid? capacitacionId, string? buscar, CancellationToken ct = default)
             => throw new NotImplementedException();
 
+        public Task<Asistente?> GetDetalleAsync(Guid id, CancellationToken ct = default)
+            => throw new NotImplementedException();
+
         public Task<Asistente?> GetForEditAsync(Guid id, CancellationToken ct = default)
             => Task.FromResult(_asistente is not null && _asistente.Id == id ? _asistente : null);
 
