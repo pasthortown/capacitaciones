@@ -66,6 +66,7 @@ export default function InscritosPage() {
   // Modal "Editar"
   const [editando, setEditando] = useState(null); // detalle del inscrito
   const [editLoading, setEditLoading] = useState(false);
+  const [editLoadError, setEditLoadError] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
   const [reemplazarFirma, setReemplazarFirma] = useState(false);
   const [firmaNueva, setFirmaNueva] = useState(null);
@@ -77,6 +78,7 @@ export default function InscritosPage() {
   // formulario quedaría con los datos de otra persona y el PUT iría al inscrito equivocado).
   const firmaReq = useRef(0);
   const editReq = useRef(0);
+  const listReq = useRef(0);
 
   // Catálogos para filtros y edición.
   useEffect(() => {
@@ -93,12 +95,20 @@ export default function InscritosPage() {
   }, []);
 
   const cargar = useCallback(() => {
+    // Si el filtro cambia antes de que llegue la respuesta, la respuesta vieja se descarta.
+    const req = ++listReq.current;
     setLoading(true);
     setLoadError('');
     listInscritos({ capacitacionId, buscar: buscarAplicado })
-      .then((items) => setRows(Array.isArray(items) ? items : []))
-      .catch((err) => setLoadError(mensajeError(err, 'No se pudo cargar la lista de inscritos.')))
-      .finally(() => setLoading(false));
+      .then((items) => {
+        if (listReq.current === req) setRows(Array.isArray(items) ? items : []);
+      })
+      .catch((err) => {
+        if (listReq.current === req) setLoadError(mensajeError(err, 'No se pudo cargar la lista de inscritos.'));
+      })
+      .finally(() => {
+        if (listReq.current === req) setLoading(false);
+      });
   }, [capacitacionId, buscarAplicado]);
 
   useEffect(() => {
@@ -134,6 +144,7 @@ export default function InscritosPage() {
     const req = ++editReq.current;
     setEditando({ ...row });
     setEditLoading(true);
+    setEditLoadError('');
     setFormError('');
     setReemplazarFirma(false);
     setFirmaNueva(null);
@@ -152,7 +163,7 @@ export default function InscritosPage() {
       setReemplazarFirma(!detalle.firma);
     } catch (err) {
       if (editReq.current !== req) return;
-      setFormError(mensajeError(err, 'No se pudo cargar el inscrito.'));
+      setEditLoadError(mensajeError(err, 'No se pudo cargar el inscrito.'));
     } finally {
       if (editReq.current === req) setEditLoading(false);
     }
@@ -162,6 +173,7 @@ export default function InscritosPage() {
     if (saving) return;
     editReq.current += 1;
     setEditLoading(false);
+    setEditLoadError('');
     setEditando(null);
     setForm(EMPTY_FORM);
     setFirmaNueva(null);
@@ -178,12 +190,11 @@ export default function InscritosPage() {
     if (form.emailUsuario.includes('@')) {
       return 'Ingresa solo la parte del correo antes de @dos.com.ec.';
     }
-    if (reemplazarFirma && !firmaNueva && !editando?.firma) return 'La firma es obligatoria.';
     return null;
   };
 
   const guardar = async () => {
-    if (!editando || saving) return;
+    if (!editando || saving || editLoadError) return;
     const err = validar();
     if (err) {
       setFormError(err);
@@ -417,7 +428,7 @@ export default function InscritosPage() {
               type="button"
               className="btn btn--primary"
               onClick={guardar}
-              disabled={saving || editLoading}
+              disabled={saving || editLoading || Boolean(editLoadError)}
             >
               {saving ? 'Guardando...' : 'Guardar'}
             </button>
@@ -426,6 +437,10 @@ export default function InscritosPage() {
       >
         {editLoading ? (
           <Spinner size={28} label="Cargando..." />
+        ) : editLoadError ? (
+          <div className="alert alert--error" role="alert">
+            {editLoadError}
+          </div>
         ) : (
           <div>
             <div className="form-row">
@@ -547,6 +562,11 @@ export default function InscritosPage() {
                     </button>
                   )}
                 </div>
+              )}
+              {!editando?.firma && !firmaNueva && (
+                <p className="form-helper">
+                  Este inscrito no tiene firma. Puedes dibujarla o subirla, o guardar sin firma.
+                </p>
               )}
               <p className="form-helper">
                 Los cambios también se guardan en el registro de personas que autocompleta la inscripción.

@@ -36,6 +36,12 @@ public interface IInscritoRepository
     /// </summary>
     Task<IReadOnlyList<InscritoResumen>> ListAsync(Guid? capacitacionId, string? buscar, CancellationToken ct = default);
 
+    /// <summary>
+    /// Asistente para mostrar (sin tracking): firma, <c>Area</c> y solo código/tema de la capacitación
+    /// (no carga columnas pesadas de la capacitación como la firma del capacitador). Null si no existe.
+    /// </summary>
+    Task<Asistente?> GetDetalleAsync(Guid id, CancellationToken ct = default);
+
     /// <summary>Asistente tracked con <c>Area</c> y <c>Capacitacion</c> cargadas, o null.</summary>
     Task<Asistente?> GetForEditAsync(Guid id, CancellationToken ct = default);
 
