@@ -245,7 +245,7 @@ export default function InscripcionPage() {
   if (!token) {
     return (
       <div className={styles.page}>
-        <div className={`${styles.fullMessage} ${styles.alert} ${styles.alertError}`}>
+        <div className={`alert alert--error ${styles.fullMessage}`}>
           Enlace inválido. Solicita al administrador uno nuevo.
         </div>
       </div>
@@ -267,7 +267,7 @@ export default function InscripcionPage() {
   if (loadError && !capacitacion) {
     return (
       <div className={styles.page}>
-        <div className={`${styles.fullMessage} ${styles.alert} ${styles.alertError}`}>
+        <div className={`alert alert--error ${styles.fullMessage}`}>
           {loadError}
         </div>
       </div>
@@ -413,7 +413,7 @@ export default function InscripcionPage() {
                 </label>
                 <select
                   id="area"
-                  className="form-input"
+                  className="form-input form-select"
                   value={form.areaId}
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, areaId: e.target.value }))
@@ -522,9 +522,8 @@ export default function InscripcionPage() {
 
             {formError && (
               <div
-                className={`${styles.alert} ${styles.alertError}`}
+                className={`alert alert--error ${styles.formError}`}
                 role="alert"
-                style={{ marginTop: 12 }}
               >
                 {formError}
               </div>
