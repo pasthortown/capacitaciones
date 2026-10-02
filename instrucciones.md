@@ -563,6 +563,13 @@ Pantalla `/entrenamiento/convenios` con barra de pestañas: **Convenios**, **Das
 - Página pública: Identificación es el primer campo; al salir del campo autocompleta y ofrece "Usar mi firma registrada". Cambiar la cédula limpia el autocompletado.
 - Riesgo aceptado: con un link válido y una cédula registrada se ven nombres/área/correo y se puede inscribir con la firma guardada (caso organizador).
 
+### 7.16 Pantalla admin "Inscritos"
+
+- Menú lateral **Inscritos** (`/inscritos`): lista de asistentes de todas las capacitaciones activas con filtro por capacitación y búsqueda por cédula, nombre, apellidos o correo. Columna **Firma** (Sí/Falta).
+- **Ver firma**: modal con la imagen sobre fondo blanco, dimensiones y peso (detecta firmas cortadas, en blanco o equivocadas). **Editar**: nombres, apellidos, cédula, área, correo (parte local) y firma ("Reemplazar firma" → `SignaturePad`; sin reemplazo se conserva).
+- API (policy Admin): `GET /api/inscritos?capacitacionId=&buscar=` (sin firma, `tieneFirma`), `GET /api/inscritos/{id}` (con firma), `PUT /api/inscritos/{id}` (409 `INSCRIPCION_DUPLICADA` si la cédula ya está en esa capacitación).
+- Al editar se actualiza también `PersonaInscrita` de la cédula final (§7.15); su firma solo se reemplaza si se envía una nueva o no tenía.
+
 ## 8. Estado actual
 
 - [x] Design system en `./style/` listo para consumo.
