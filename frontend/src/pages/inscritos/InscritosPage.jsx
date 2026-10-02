@@ -11,6 +11,7 @@ import { listCapacitaciones } from '../../services/capacitaciones.js';
 import { list as listCatalogo, CATALOGO_SLUGS } from '../../services/catalogos.js';
 import { listInscritos, getInscrito, updateInscrito } from '../../services/inscritos.js';
 import { formatFechaHora } from '../../utils/formatters.js';
+import styles from './InscritosPage.module.css';
 
 /**
  * Pantalla admin "Inscritos": personas inscritas a las capacitaciones, con filtro por
@@ -281,13 +282,12 @@ export default function InscritosPage() {
       </div>
 
       <form className="toolbar" onSubmit={handleBuscar}>
-        <div className="toolbar__filters" style={{ gap: 12, flexWrap: 'wrap' }}>
+        <div className={`toolbar__filters ${styles.filters}`}>
           <select
-            className="form-select"
+            className={`form-select ${styles.filtroCapacitacion}`}
             aria-label="Filtrar por capacitación"
             value={capacitacionId}
             onChange={(e) => setCapacitacionId(e.target.value)}
-            style={{ minWidth: 280 }}
           >
             <option value="">Todas las capacitaciones</option>
             {capacitaciones.map((c) => (
@@ -298,12 +298,11 @@ export default function InscritosPage() {
           </select>
           <input
             type="search"
-            className="form-input"
+            className={`form-input ${styles.filtroBuscar}`}
             aria-label="Buscar por cédula, nombre o correo"
             placeholder="Buscar por cédula, nombre o correo"
             value={buscar}
             onChange={(e) => setBuscar(e.target.value)}
-            style={{ minWidth: 260 }}
           />
           <button type="submit" className="btn btn--secondary">
             <Search width={16} height={16} />
@@ -316,20 +315,20 @@ export default function InscritosPage() {
       </form>
 
       {loadError && (
-        <div className="alert alert--error" role="alert" style={{ marginBottom: 12 }}>
+        <div className={`alert alert--error ${styles.loadError}`} role="alert">
           {loadError}
         </div>
       )}
 
       <div className="card">
-        <div className="card__body" style={{ padding: 0 }}>
+        <div className={`card__body ${styles.tableBody}`}>
           <DataTable
             columns={columns}
             rows={rows}
             loading={loading}
             emptyMessage="No hay inscritos con esos filtros."
             actions={(row) => (
-              <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+              <div className={styles.rowActions}>
                 <button
                   type="button"
                   className="btn btn--ghost btn--sm btn--icon"
@@ -386,27 +385,18 @@ export default function InscritosPage() {
         {verFirma?.error && <div className="alert alert--error">{verFirma.error}</div>}
         {!verFirma?.loading && !verFirma?.error && firmaActual && (
           <div>
-            <div
-              style={{
-                background: '#fff',
-                border: '1px solid var(--color-border, #d1d5db)',
-                borderRadius: 8,
-                padding: 16,
-                display: 'flex',
-                justifyContent: 'center',
-              }}
-            >
+            <div className={styles.firmaBox}>
               <img
                 src={firmaActual}
                 alt="Firma del inscrito"
-                style={{ maxWidth: '100%', maxHeight: 260 }}
+                className={styles.firmaImg}
                 onLoad={(e) => {
                   const { naturalWidth, naturalHeight } = e.currentTarget;
                   setVerFirma((prev) => (prev ? { ...prev, dims: { w: naturalWidth, h: naturalHeight } } : prev));
                 }}
               />
             </div>
-            <p className="form-helper" style={{ marginTop: 8 }}>
+            <p className={`form-helper ${styles.spaceTop}`}>
               {verFirma.dims ? `${verFirma.dims.w} × ${verFirma.dims.h} px · ` : ''}
               {pesoKb(firmaActual)} KB · {verFirma.inscrito.capacitacionCodigo} — {verFirma.inscrito.capacitacionTema}
             </p>
@@ -515,22 +505,12 @@ export default function InscritosPage() {
               <label className="form-label">Firma</label>
               {editando?.firma && !reemplazarFirma && (
                 <div>
-                  <div
-                    style={{
-                      background: '#fff',
-                      border: '1px solid var(--color-border, #d1d5db)',
-                      borderRadius: 8,
-                      padding: 12,
-                      display: 'flex',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <img src={editando.firma} alt="Firma actual" style={{ maxWidth: '100%', maxHeight: 150 }} />
+                  <div className={`${styles.firmaBox} ${styles.firmaBoxCompacta}`}>
+                    <img src={editando.firma} alt="Firma actual" className={styles.firmaImgCompacta} />
                   </div>
                   <button
                     type="button"
-                    className="btn btn--secondary btn--sm"
-                    style={{ marginTop: 8 }}
+                    className={`btn btn--secondary btn--sm ${styles.spaceTop}`}
                     onClick={() => setReemplazarFirma(true)}
                     disabled={saving}
                   >
@@ -550,8 +530,7 @@ export default function InscritosPage() {
                   {editando?.firma && (
                     <button
                       type="button"
-                      className="btn btn--ghost btn--sm"
-                      style={{ marginTop: 8 }}
+                      className={`btn btn--ghost btn--sm ${styles.spaceTop}`}
                       onClick={() => {
                         setReemplazarFirma(false);
                         setFirmaNueva(null);
