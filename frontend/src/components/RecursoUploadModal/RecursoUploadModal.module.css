@@ -10,7 +10,7 @@
   justify-content: center;
   gap: var(--spacing-2);
   padding: var(--spacing-5);
-  border: 2px dashed var(--color-border, #d1d5db);
+  border: 2px dashed var(--color-border-main, #d1d5db);
   border-radius: var(--radius-md, 8px);
   background-color: var(--color-bg-subtle, #f9fafb);
   cursor: pointer;
@@ -47,7 +47,7 @@
   justify-content: space-between;
   gap: var(--spacing-3);
   padding: var(--spacing-3) var(--spacing-4);
-  border: 1px solid var(--color-border, #d1d5db);
+  border: 1px solid var(--color-border-main, #d1d5db);
   border-radius: var(--radius-md, 8px);
   background-color: var(--color-bg-main, #ffffff);
   margin-top: var(--spacing-3);
@@ -100,7 +100,7 @@
   width: 100%;
   min-height: 110px;
   padding: var(--spacing-3) var(--spacing-4);
-  border: 1px solid var(--color-border, #d1d5db);
+  border: 1px solid var(--color-border-main, #d1d5db);
   border-radius: var(--radius-md, 8px);
   font-family: inherit;
   font-size: var(--font-size-base);

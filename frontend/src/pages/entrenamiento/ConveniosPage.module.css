@@ -112,7 +112,7 @@
   padding: var(--spacing-2) var(--spacing-3);
   background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--color-border, #eef0f2);
+  border-bottom: 1px solid var(--color-border-light, #e5e7eb);
   cursor: pointer;
 }
 .comboItem:last-child { border-bottom: 0; }
