@@ -94,3 +94,15 @@ h1, h2, h3, h4, h5, h6,
 .layout__sidebar--collapsed .sidebar__nav-chevron {
   display: none;
 }
+
+/* ============================================================
+   Contenido principal — no crecer más que la ventana
+   ------------------------------------------------------------
+   `.layout__main` es hijo flex y por defecto (min-width: auto) se ensancha hasta el
+   contenido más ancho: una tabla con muchas columnas desbordaba toda la página y el
+   contenido se metía bajo el sidebar. Con min-width: 0 la tabla usa el scroll de su
+   `.table-container`.
+   ============================================================ */
+.layout__main {
+  min-width: 0;
+}

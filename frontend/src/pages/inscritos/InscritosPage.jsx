@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Eye, Pencil, Search } from 'lucide-react';
+import { Check, Eye, Pencil, Search } from 'lucide-react';
 import DataTable from '../../components/Table/DataTable.jsx';
 import Modal from '../../components/Modal/Modal.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
@@ -233,17 +233,24 @@ export default function InscritosPage() {
 
   const columns = [
     { key: 'identificacion', header: 'Cédula', width: '120px' },
-    { key: 'nombres', header: 'Nombres' },
-    { key: 'apellidos', header: 'Apellidos' },
+    {
+      key: 'nombre',
+      header: 'Nombre',
+      accessor: (r) => [r.nombres, r.apellidos].filter(Boolean).join(' ') || '—',
+    },
     { key: 'areaNombre', header: 'Área', accessor: (r) => r.areaNombre || '—' },
-    { key: 'email', header: 'Correo', accessor: (r) => r.email || '—' },
+    {
+      key: 'email',
+      header: 'Correo',
+      accessor: (r) => <span className={styles.correo}>{r.email || '—'}</span>,
+    },
     {
       key: 'capacitacion',
       header: 'Capacitación',
+      // Código y tema en una línea cada uno, recortados con "…"; el tema completo va en el title.
       accessor: (r) => (
-        <span title={r.capacitacionTema}>
+        <span className={styles.capacitacion} title={`${r.capacitacionCodigo} — ${r.capacitacionTema}`}>
           <strong>{r.capacitacionCodigo}</strong>
-          <br />
           <span className="text-secondary">{r.capacitacionTema}</span>
         </span>
       ),
@@ -257,13 +264,17 @@ export default function InscritosPage() {
     {
       key: 'tieneFirma',
       header: 'Firma',
-      width: '80px',
+      width: '90px',
       align: 'center',
       accessor: (r) =>
         r.tieneFirma ? (
-          <span className="badge badge--active">Sí</span>
+          <span className={`${styles.signatureBadge} ${styles.signatureBadgeOk}`} title="Firma cargada">
+            <Check width={14} height={14} />
+          </span>
         ) : (
-          <span className="badge badge--blocked">Falta</span>
+          <span className={`${styles.signatureBadge} ${styles.signatureBadgeMissing}`} title="Sin firma">
+            ✗
+          </span>
         ),
     },
   ];
@@ -328,7 +339,7 @@ export default function InscritosPage() {
             loading={loading}
             emptyMessage="No hay inscritos con esos filtros."
             actions={(row) => (
-              <div className={styles.rowActions}>
+              <>
                 <button
                   type="button"
                   className="btn btn--ghost btn--sm btn--icon"
@@ -348,7 +359,7 @@ export default function InscritosPage() {
                 >
                   <Pencil width={16} height={16} />
                 </button>
-              </div>
+              </>
             )}
           />
         </div>
