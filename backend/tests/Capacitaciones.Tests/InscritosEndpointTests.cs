@@ -38,7 +38,7 @@ public class InscritosEndpointTests : IClassFixture<InMemoryWebAppFactory>
         db.SaveChanges();
     }
 
-    private Guid CrearCapacitacion(string tema)
+    private Guid CrearCapacitacion(string tema, bool finalizada = false, bool activo = true)
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -51,9 +51,9 @@ public class InscritosEndpointTests : IClassFixture<InMemoryWebAppFactory>
             ModalidadId = ModalidadId,
             TipoActividadId = TipoActividadId,
             TipoCertificacion = TipoCertificacion.Participacion,
-            FechaHoraInicio = DateTime.UtcNow.AddDays(1),
+            FechaHoraInicio = finalizada ? DateTime.UtcNow.AddDays(-2) : DateTime.UtcNow.AddDays(1),
             DuracionMinutos = 60,
-            Activo = true,
+            Activo = activo,
             FechaCreacion = DateTime.UtcNow
         };
         db.Capacitaciones.Add(cap);
@@ -192,6 +192,171 @@ public class InscritosEndpointTests : IClassFixture<InMemoryWebAppFactory>
         Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
         using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
         Assert.Equal("INSCRIPCION_DUPLICADA", doc.RootElement.GetProperty("error").GetString());
+    }
+
+    private void CrearPersona(string identificacion, string? firma)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.PersonasInscritas.Add(new PersonaInscrita
+        {
+            Id = Guid.NewGuid(),
+            Identificacion = identificacion,
+            Nombres = "Maria",
+            Apellidos = "Lopez",
+            AreaId = AreaId,
+            EmailUsuario = "maria.lopez@dos.com.ec",
+            Firma = firma,
+            FechaCreacion = DateTime.UtcNow,
+            FechaActualizacion = DateTime.UtcNow
+        });
+        db.SaveChanges();
+    }
+
+    private static object AgregarPayload(
+        Guid capacitacionId,
+        string identificacion,
+        bool asistio = true,
+        string? firma = null,
+        bool usarFirmaRegistrada = false) => new
+    {
+        capacitacionId,
+        nombres = "Maria",
+        apellidos = "Lopez",
+        identificacion,
+        areaId = AreaId,
+        emailUsuario = "maria.lopez",
+        firma,
+        usarFirmaRegistrada,
+        asistio
+    };
+
+    [Fact]
+    public async Task Agregar_CapacitacionFinalizada_CreaInscritoPresenteYPersona()
+    {
+        var cap = CrearCapacitacion("Tema agregar", finalizada: true);
+
+        var resp = await AdminClient().PostAsJsonAsync("/api/inscritos",
+            AgregarPayload(cap, "1800000101", firma: "data:image/png;base64,NUEVA=="));
+
+        Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
+        var doc = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("1800000101", doc.GetProperty("identificacion").GetString());
+        Assert.Equal("maria.lopez@dos.com.ec", doc.GetProperty("email").GetString());
+        Assert.True(doc.GetProperty("tieneFirma").GetBoolean());
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var a = await db.Asistentes.AsNoTracking().SingleAsync(x => x.CapacitacionId == cap && x.Identificacion == "1800000101");
+        Assert.Equal(EstadoAsistencia.Presente, a.EstadoAsistencia);
+        Assert.NotNull(a.FechaMarcacionAsistencia);
+        Assert.Equal("data:image/png;base64,NUEVA==", a.Firma);
+        var p = await db.PersonasInscritas.AsNoTracking().SingleAsync(x => x.Identificacion == "1800000101");
+        Assert.Equal("Maria", p.Nombres);
+        Assert.Equal("data:image/png;base64,NUEVA==", p.Firma);
+    }
+
+    [Fact]
+    public async Task Agregar_SinAsistioYSinFirma_QuedaSinMarcarYSinFirma()
+    {
+        var cap = CrearCapacitacion("Tema sin asistencia", finalizada: true);
+
+        var resp = await AdminClient().PostAsJsonAsync("/api/inscritos", AgregarPayload(cap, "1800000102", asistio: false));
+
+        Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var a = await db.Asistentes.AsNoTracking().SingleAsync(x => x.CapacitacionId == cap);
+        Assert.Null(a.EstadoAsistencia);
+        Assert.Null(a.FechaMarcacionAsistencia);
+        Assert.True(string.IsNullOrEmpty(a.Firma));
+        var p = await db.PersonasInscritas.AsNoTracking().SingleAsync(x => x.Identificacion == "1800000102");
+        Assert.Null(p.Firma);
+    }
+
+    [Fact]
+    public async Task Agregar_UsarFirmaRegistrada_CopiaLaFirmaDeLaPersona()
+    {
+        CrearPersona("1800000103", "data:image/png;base64,REGISTRADA==");
+        var cap = CrearCapacitacion("Tema firma registrada", finalizada: true);
+
+        var resp = await AdminClient().PostAsJsonAsync("/api/inscritos",
+            AgregarPayload(cap, "1800000103", usarFirmaRegistrada: true));
+
+        Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var a = await db.Asistentes.AsNoTracking().SingleAsync(x => x.CapacitacionId == cap);
+        Assert.Equal("data:image/png;base64,REGISTRADA==", a.Firma);
+    }
+
+    [Fact]
+    public async Task Agregar_SinFirma_NoBorraLaFirmaRegistrada()
+    {
+        CrearPersona("1800000104", "data:image/png;base64,REGISTRADA==");
+        var cap = CrearCapacitacion("Tema conservar firma", finalizada: true);
+
+        var resp = await AdminClient().PostAsJsonAsync("/api/inscritos", AgregarPayload(cap, "1800000104"));
+
+        Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var p = await db.PersonasInscritas.AsNoTracking().SingleAsync(x => x.Identificacion == "1800000104");
+        Assert.Equal("data:image/png;base64,REGISTRADA==", p.Firma);
+    }
+
+    [Fact]
+    public async Task Agregar_CedulaYaInscrita_Devuelve409()
+    {
+        var cap = CrearCapacitacion("Tema agregar duplicado", finalizada: true);
+        CrearInscrito(cap, "1800000105");
+
+        var resp = await AdminClient().PostAsJsonAsync("/api/inscritos", AgregarPayload(cap, "1800000105"));
+
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+        using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+        Assert.Equal("INSCRIPCION_DUPLICADA", doc.RootElement.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Agregar_CapacitacionInexistente_Devuelve404()
+    {
+        var resp = await AdminClient().PostAsJsonAsync("/api/inscritos", AgregarPayload(Guid.NewGuid(), "1800000106"));
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Agregar_CapacitacionInactiva_Devuelve404()
+    {
+        // El filtro global de Capacitacion (Activo) la oculta: se trata como inexistente.
+        var cap = CrearCapacitacion("Tema inactiva", finalizada: true, activo: false);
+
+        var resp = await AdminClient().PostAsJsonAsync("/api/inscritos", AgregarPayload(cap, "1800000107"));
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task BuscarPersona_DevuelveDatosSinFirma()
+    {
+        CrearPersona("1800000108", "data:image/png;base64,REGISTRADA==");
+
+        var resp = await AdminClient().GetAsync("/api/inscritos/persona/1800000108");
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("REGISTRADA", body);
+        using var doc = JsonDocument.Parse(body);
+        Assert.Equal("Maria", doc.RootElement.GetProperty("nombres").GetString());
+        Assert.Equal("maria.lopez", doc.RootElement.GetProperty("emailUsuario").GetString());
+        Assert.True(doc.RootElement.GetProperty("tieneFirma").GetBoolean());
+    }
+
+    [Fact]
+    public async Task BuscarPersona_Inexistente_Devuelve404()
+    {
+        var resp = await AdminClient().GetAsync("/api/inscritos/persona/1800000199");
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }
 
     [Fact]

@@ -313,10 +313,11 @@ builder.Services.AddScoped<GenerarLinkInscripcionUseCase>();
 builder.Services.AddScoped<ObtenerInscripcionPublicaUseCase>();
 builder.Services.AddScoped<InscribirAsistenteUseCase>();
 builder.Services.AddScoped<BuscarPersonaInscritaUseCase>();
-// Pantalla admin "Inscritos" (lista transversal, detalle con firma y edición).
+// Pantalla admin "Inscritos" (lista transversal, detalle con firma, edición y alta).
 builder.Services.AddScoped<ListarInscritosUseCase>();
 builder.Services.AddScoped<ObtenerInscritoUseCase>();
 builder.Services.AddScoped<EditarInscritoUseCase>();
+builder.Services.AddScoped<AgregarInscritoUseCase>();
 builder.Services.AddScoped<ListarAsistentesUseCase>();
 builder.Services.AddScoped<DescargarCertificadoUseCase>();
 builder.Services.AddScoped<DescargarReporteAsistenciaUseCase>();
