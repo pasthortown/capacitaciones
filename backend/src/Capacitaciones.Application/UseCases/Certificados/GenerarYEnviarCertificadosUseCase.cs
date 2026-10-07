@@ -81,6 +81,45 @@ public class GenerarYEnviarCertificadosUseCase
     }
 
     /// <summary>
+    /// Envío a UNA persona (botón por fila): mismas validaciones que el lote más que el asistente
+    /// pertenezca a la capacitación (404) y esté <c>Presente</c> (409). Lo marca <c>Pendiente</c>
+    /// —también si ya se le envió: es un reenvío— y el worker lo procesa como a cualquier pendiente.
+    /// No toca a los demás asistentes.
+    /// </summary>
+    public async Task IniciarEnvioIndividualAsync(Guid capacitacionId, Guid asistenteId, CancellationToken ct = default)
+    {
+        var capacitacion = await _capacitaciones.GetByIdWithResponsablesAsync(capacitacionId, ct)
+            ?? throw new CapacitacionNotFoundException(capacitacionId);
+
+        var asistente = await _asistentes.GetByIdAsync(asistenteId, ct);
+        if (asistente is null || asistente.CapacitacionId != capacitacionId)
+        {
+            throw new CapacitacionNotFoundException(capacitacionId);
+        }
+
+        if (CapacitacionEstadoCalculator.Calcular(capacitacion) != CapacitacionEstadoCalculator.Finalizada)
+        {
+            throw CertificadoNoDisponibleException.CapacitacionNoFinalizada();
+        }
+
+        if (!capacitacion.EmiteCertificado)
+        {
+            throw CertificadoNoDisponibleException.CapacitacionNoEmiteCertificado();
+        }
+
+        if (asistente.EstadoAsistencia == EstadoAsistencia.Ausente)
+        {
+            throw CertificadoAsistenteNoElegibleException.Ausente();
+        }
+        if (asistente.EstadoAsistencia is null)
+        {
+            throw CertificadoAsistenteNoElegibleException.SinMarcar();
+        }
+
+        await _asistentes.ActualizarResultadoEnvioAsync(asistenteId, EstadoEnvioCertificado.Pendiente, null, null, ct);
+    }
+
+    /// <summary>
     /// Reabre los asistentes en estado <c>Error</c> (los vuelve a <c>Pendiente</c>) para reintentar.
     /// Valida la capacitación igual que el inicio. Devuelve cuántos se reabrieron.
     /// </summary>
