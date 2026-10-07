@@ -451,6 +451,46 @@ public class CapacitacionesController : ControllerBase
     }
 
     /// <summary>
+    /// Envía (o reenvía) el certificado de UN asistente: lo marca <c>Pendiente</c>, encola la
+    /// capacitación para el mismo proceso en segundo plano del lote y responde <c>202 Accepted</c>.
+    /// 404 si la capacitación o el asistente no existen; 409 si no está finalizada, no emite
+    /// certificado o el asistente no está Presente.
+    /// </summary>
+    [HttpPost("{id:guid}/asistentes/{asistenteId:guid}/certificado/enviar")]
+    public async Task<IActionResult> EnviarCertificadoIndividual(Guid id, Guid asistenteId, CancellationToken ct)
+    {
+        try
+        {
+            await _generarYEnviarCertificados.IniciarEnvioIndividualAsync(id, asistenteId, ct);
+            _certificadoEnvioQueue.Encolar(id);
+            return Accepted(new
+            {
+                estado = "EN_PROCESO",
+                pendientes = 1,
+                message = "Se está generando y enviando el certificado en segundo plano."
+            });
+        }
+        catch (CapacitacionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CertificadoNoDisponibleException ex)
+        {
+            return new ObjectResult(new { error = ex.Codigo, message = ex.Message })
+            {
+                StatusCode = StatusCodes.Status409Conflict
+            };
+        }
+        catch (CertificadoAsistenteNoElegibleException ex)
+        {
+            return new ObjectResult(new { error = ex.Codigo, message = ex.Message, motivo = ex.Motivo })
+            {
+                StatusCode = StatusCodes.Status409Conflict
+            };
+        }
+    }
+
+    /// <summary>
     /// Reintenta el envío de los certificados que quedaron en estado <c>Error</c>: los vuelve a
     /// <c>Pendiente</c> y re-encola el proceso en segundo plano. Responde <c>202 Accepted</c>.
     /// </summary>

@@ -10,6 +10,11 @@
  *     -> 409 { error: 'FIRMAS_FALTANTES', message, faltantes: [string,...] }
  *     -> 503 { error: 'SERVICIO_EMISOR_NO_DISPONIBLE', message }
  *     -> 404 si el asistente o capacitación no existe.
+ *   POST /api/capacitaciones/{capId}/asistentes/{asistenteId}/certificado/enviar
+ *     -> 202 { estado: 'EN_PROCESO', pendientes: 1, message } (el envío sigue en segundo plano)
+ *     -> 409 CAPACITACION_NO_FINALIZADA | CAPACITACION_NO_EMITE_CERTIFICADO
+ *     -> 409 { error: 'ASISTENTE_NO_ELEGIBLE_CERTIFICADO', motivo: 'AUSENTE'|'SIN_MARCAR' }
+ *     -> 404 si el asistente o capacitación no existe.
  *
  * Todos los endpoints requieren Bearer (policy Admin) — usan `http.js`.
  */
@@ -100,6 +105,17 @@ export function descargarCertificado(
 }
 
 /**
+ * Envía (o reenvía) por correo el certificado de un solo asistente. Responde 202: el
+ * resultado se ve en `estadoEnvioCertificado` del listado (Pendiente → Enviado / Error).
+ *
+ * @param {string} capacitacionId
+ * @param {string} asistenteId
+ */
+export function enviarCertificado(capacitacionId, asistenteId) {
+  return http.post(`${BASE}/${capacitacionId}/asistentes/${asistenteId}/certificado/enviar`);
+}
+
+/**
  * Descarga el reporte PDF de asistencia de la capacitación (modelo "Registro de
  * Capacitación de Personal"). Incluye a todos los inscritos; firma solo de los Presentes.
  *
@@ -127,5 +143,6 @@ export default {
   marcarAsistenciaAdmin,
   calificarAsistenteAdmin,
   descargarCertificado,
+  enviarCertificado,
   descargarReporteAsistencia,
 };

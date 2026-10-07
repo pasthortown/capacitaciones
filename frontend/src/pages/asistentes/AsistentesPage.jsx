@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ClipboardList, FileBadge, FileCheck2 } from 'lucide-react';
+import { ArrowLeft, ClipboardList, FileBadge, FileCheck2, Mail } from 'lucide-react';
 import DataTable from '../../components/Table/DataTable.jsx';
 import Modal from '../../components/Modal/Modal.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
@@ -14,6 +14,7 @@ import {
 import {
   listByCapacitacion,
   descargarCertificado,
+  enviarCertificado,
   descargarReporteAsistencia,
   marcarAsistenciaAdmin,
   calificarAsistenteAdmin,
@@ -27,8 +28,9 @@ import styles from './AsistentesPage.module.css';
  * Flujo:
  *  - `useParams` para obtener el id de la capacitación.
  *  - Al montar: carga en paralelo detalle de la capacitación + listado de asistentes.
- *  - Acción individual "Descargar certificado" por fila (habilitada sólo si la
- *    capacitación está en estado "Finalizada").
+ *  - Acciones individuales por fila "Descargar certificado" y "Enviar certificado"
+ *    (habilitadas sólo si la capacitación está "Finalizada" y el asistente Presente).
+ *    El envío individual pide confirmación si ya se le había enviado (reenvío).
  *  - Acción global "Generar todos los certificados" (habilitada sólo si la
  *    capacitación está Finalizada). Muestra resumen modal si hay errores parciales.
  *
@@ -47,6 +49,10 @@ export default function AsistentesPage() {
   const [capacitacion, setCapacitacion] = useState(null);
   const [asistentes, setAsistentes] = useState([]);
   const [downloadingId, setDownloadingId] = useState(null);
+
+  // Envío individual: id en curso y fila pendiente de confirmar reenvío.
+  const [enviandoId, setEnviandoId] = useState(null);
+  const [confirmReenvio, setConfirmReenvio] = useState(null);
 
   // Generación en lote (envío en segundo plano: el avance por asistente se
   // refleja en la columna "Certificado" vía polling del listado).
@@ -136,7 +142,42 @@ export default function AsistentesPage() {
     }
   };
 
-  const handleCertificadoError = (err, asistente) => {
+  const handleEnviar = (asistente) => {
+    if (!asistente?.id || enviandoId) return;
+    // Ya enviado: confirmar antes de reenviar.
+    if (asistente.estadoEnvioCertificado === 'Enviado') {
+      setConfirmReenvio(asistente);
+      return;
+    }
+    ejecutarEnvio(asistente);
+  };
+
+  const ejecutarEnvio = async (asistente) => {
+    setConfirmReenvio(null);
+    setEnviandoId(asistente.id);
+    try {
+      // 202: el backend lo marca Pendiente y el proceso en segundo plano lo envía.
+      await enviarCertificado(id, asistente.id);
+      if (!mountedRef.current) return;
+      toast.success('Se está generando y enviando el certificado.');
+      setAsistentes((prev) =>
+        prev.map((a) =>
+          a.id === asistente.id
+            ? { ...a, estadoEnvioCertificado: 'Pendiente', mensajeErrorEnvio: null }
+            : a,
+        ),
+      );
+      setEnviandoId(null);
+      await pollEstadoEnvio();
+    } catch (err) {
+      if (!mountedRef.current) return;
+      handleCertificadoError(err, asistente, 'No se pudo enviar el certificado.');
+    } finally {
+      if (mountedRef.current) setEnviandoId(null);
+    }
+  };
+
+  const handleCertificadoError = (err, asistente, fallbackMsg = 'No se pudo descargar el certificado.') => {
     if (err instanceof HttpError) {
       const code = err.body?.error;
       if (err.status === 409 && code === 'FIRMAS_FALTANTES') {
@@ -180,10 +221,10 @@ export default function AsistentesPage() {
         toast.error('Asistente o capacitación no encontrados.');
         return;
       }
-      toast.error(err.message || 'No se pudo descargar el certificado.');
+      toast.error(err.message || fallbackMsg);
       return;
     }
-    toast.error(err?.message || 'No se pudo descargar el certificado.');
+    toast.error(err?.message || fallbackMsg);
   };
 
   const handleGenerarLote = () => {
@@ -512,21 +553,49 @@ export default function AsistentesPage() {
       ? 'Pendiente de marcación en el pase de lista'
       : 'Descargar certificado';
 
+    const isSending = enviandoId === row?.id;
+    const enCurso = row?.estadoEnvioCertificado === 'Pendiente';
+    const envioDisabled =
+      !esFinalizada || noElegible || generating || enCurso || Boolean(enviandoId);
+    const envioTitle = enCurso
+      ? 'Envío en curso'
+      : !esFinalizada || noElegible
+      ? titleMsg
+      : row?.estadoEnvioCertificado === 'Enviado'
+      ? 'Reenviar certificado por correo'
+      : 'Enviar certificado por correo';
+
     return (
-      <button
-        type="button"
-        className="btn btn--icon btn--secondary btn--sm"
-        onClick={() => handleDescargar(row)}
-        disabled={disabled}
-        title={titleMsg}
-        aria-label={titleMsg}
-      >
-        {isDownloading ? (
-          <Spinner size={16} label="Descargando..." />
-        ) : (
-          <FileBadge width={18} height={18} />
-        )}
-      </button>
+      <>
+        <button
+          type="button"
+          className="btn btn--icon btn--secondary btn--sm"
+          onClick={() => handleDescargar(row)}
+          disabled={disabled}
+          title={titleMsg}
+          aria-label={titleMsg}
+        >
+          {isDownloading ? (
+            <Spinner size={16} label="Descargando..." />
+          ) : (
+            <FileBadge width={18} height={18} />
+          )}
+        </button>
+        <button
+          type="button"
+          className="btn btn--icon btn--secondary btn--sm"
+          onClick={() => handleEnviar(row)}
+          disabled={envioDisabled}
+          title={envioTitle}
+          aria-label={envioTitle}
+        >
+          {isSending ? (
+            <Spinner size={16} label="Enviando..." />
+          ) : (
+            <Mail width={18} height={18} />
+          )}
+        </button>
+      </>
     );
   };
 
@@ -649,6 +718,47 @@ export default function AsistentesPage() {
           El envío se hace en bloques de 5 con pausa entre bloques para no
           saturar el SMTP, así que la operación puede tardar varios segundos
           en cohortes grandes. ¿Deseas continuar?
+        </p>
+      </Modal>
+
+      {/* Modal confirmación reenvío individual */}
+      <Modal
+        isOpen={Boolean(confirmReenvio)}
+        onClose={() => setConfirmReenvio(null)}
+        title="Reenviar certificado"
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn btn--secondary"
+              onClick={() => setConfirmReenvio(null)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => ejecutarEnvio(confirmReenvio)}
+            >
+              Reenviar
+            </button>
+          </>
+        }
+      >
+        <p>
+          A{' '}
+          <strong>
+            {`${confirmReenvio?.nombres ?? ''} ${confirmReenvio?.apellidos ?? ''}`.trim()}
+          </strong>{' '}
+          ya se le envió el certificado
+          {confirmReenvio?.fechaEnvioCertificado
+            ? ` el ${formatFechaHora(confirmReenvio.fechaEnvioCertificado)}`
+            : ''}
+          . ¿Deseas reenviárselo?
+        </p>
+        <p className="text-sm text-secondary">
+          Se vuelve a generar con los datos actuales (por ejemplo, su calificación) y se
+          envía solo a esta persona.
         </p>
       </Modal>
 
