@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Eye, Pencil, Search } from 'lucide-react';
+import { Check, Eye, Pencil, Plus, Search } from 'lucide-react';
 import DataTable from '../../components/Table/DataTable.jsx';
 import Modal from '../../components/Modal/Modal.jsx';
 import Spinner from '../../components/Spinner/Spinner.jsx';
@@ -11,6 +11,7 @@ import { listCapacitaciones } from '../../services/capacitaciones.js';
 import { list as listCatalogo, CATALOGO_SLUGS } from '../../services/catalogos.js';
 import { listInscritos, getInscrito, updateInscrito } from '../../services/inscritos.js';
 import { formatFechaHora } from '../../utils/formatters.js';
+import AgregarInscritoModal from './AgregarInscritoModal.jsx';
 import styles from './InscritosPage.module.css';
 
 /**
@@ -20,6 +21,8 @@ import styles from './InscritosPage.module.css';
  *    cortadas, en blanco o equivocadas.
  *  - Editar: nombres, apellidos, cédula, área, correo y firma ("Reemplazar firma" muestra el
  *    SignaturePad). Al guardar el backend también actualiza el registro de personas.
+ *  - Agregar inscrito (toolbar): alta de quien asistió sin inscribirse, aunque la capacitación ya
+ *    haya finalizado (ver AgregarInscritoModal).
  *
  * La lista no trae las firmas (pueden pesar cientos de KB); se piden por id al abrir un modal.
  */
@@ -74,6 +77,9 @@ export default function InscritosPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
+  // Modal "Agregar inscrito"
+  const [agregando, setAgregando] = useState(false);
+
   // Identificadores de la última solicitud de cada modal: una respuesta que llega después de
   // cerrar el modal o de abrir otra fila se descarta (si no, se reabriría el modal o el
   // formulario quedaría con los datos de otra persona y el PUT iría al inscrito equivocado).
@@ -115,6 +121,16 @@ export default function InscritosPage() {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  const handleInscritoAgregado = (capacitacionAgregada) => {
+    setAgregando(false);
+    // Si había un filtro por otra capacitación, se cambia a la del nuevo inscrito para verlo.
+    if (capacitacionId && capacitacionId !== capacitacionAgregada) {
+      setCapacitacionId(capacitacionAgregada);
+    } else {
+      cargar();
+    }
+  };
 
   const handleBuscar = (event) => {
     event.preventDefault();
@@ -322,6 +338,10 @@ export default function InscritosPage() {
         </div>
         <div className="toolbar__actions">
           <span className={`text-secondary ${styles.contador}`}>{loading ? '' : `${rows.length} inscrito(s)`}</span>
+          <button type="button" className="btn btn--primary" onClick={() => setAgregando(true)}>
+            <Plus width={16} height={16} />
+            <span>Agregar inscrito</span>
+          </button>
         </div>
       </form>
 
@@ -364,6 +384,16 @@ export default function InscritosPage() {
           />
         </div>
       </div>
+
+      <AgregarInscritoModal
+        isOpen={agregando}
+        onClose={() => setAgregando(false)}
+        onCreated={handleInscritoAgregado}
+        capacitaciones={capacitaciones}
+        areas={areas}
+        capacitacionIdInicial={capacitacionId}
+        mensajeError={mensajeError}
+      />
 
       {/* Modal: ver firma */}
       <Modal

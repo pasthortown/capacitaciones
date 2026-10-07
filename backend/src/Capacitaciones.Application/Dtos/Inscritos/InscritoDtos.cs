@@ -44,3 +44,25 @@ public class EditarInscritoDto
     /// <summary>Firma nueva (data URL). Null o vacía = conservar la actual.</summary>
     public string? Firma { get; set; }
 }
+
+/// <summary>Payload de <c>POST /api/inscritos</c> (alta admin, también en capacitaciones finalizadas).</summary>
+public class AgregarInscritoDto
+{
+    public Guid CapacitacionId { get; set; }
+    public string Nombres { get; set; } = string.Empty;
+    public string Apellidos { get; set; } = string.Empty;
+    public string Identificacion { get; set; } = string.Empty;
+    public Guid AreaId { get; set; }
+
+    /// <summary>Parte local del correo (sin <c>@</c>).</summary>
+    public string EmailUsuario { get; set; } = string.Empty;
+
+    /// <summary>Firma nueva (data URL). Opcional: null o vacía = sin firma.</summary>
+    public string? Firma { get; set; }
+
+    /// <summary>Copia la firma guardada en el registro de personas para esta cédula.</summary>
+    public bool UsarFirmaRegistrada { get; set; }
+
+    /// <summary>True = queda Presente (elegible a certificado); false = asistencia sin marcar.</summary>
+    public bool Asistio { get; set; }
+}

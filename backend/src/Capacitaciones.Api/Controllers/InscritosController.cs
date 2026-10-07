@@ -1,5 +1,6 @@
 using Capacitaciones.Application.Dtos.Inscritos;
 using Capacitaciones.Application.UseCases.Capacitaciones;
+using Capacitaciones.Application.UseCases.Inscripcion;
 using Capacitaciones.Application.UseCases.Inscritos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ namespace Capacitaciones.Api.Controllers;
 
 /// <summary>
 /// Pantalla admin "Inscritos": lista transversal de asistentes (filtro por capacitación y
-/// búsqueda), detalle con firma y edición.
+/// búsqueda), detalle con firma, edición y alta (también en capacitaciones finalizadas).
 /// </summary>
 [ApiController]
 [Authorize(Policy = "Admin")]
@@ -21,12 +22,21 @@ public class InscritosController : ControllerBase
     private readonly ListarInscritosUseCase _listar;
     private readonly ObtenerInscritoUseCase _obtener;
     private readonly EditarInscritoUseCase _editar;
+    private readonly AgregarInscritoUseCase _agregar;
+    private readonly BuscarPersonaInscritaUseCase _buscarPersona;
 
-    public InscritosController(ListarInscritosUseCase listar, ObtenerInscritoUseCase obtener, EditarInscritoUseCase editar)
+    public InscritosController(
+        ListarInscritosUseCase listar,
+        ObtenerInscritoUseCase obtener,
+        EditarInscritoUseCase editar,
+        AgregarInscritoUseCase agregar,
+        BuscarPersonaInscritaUseCase buscarPersona)
     {
         _listar = listar;
         _obtener = obtener;
         _editar = editar;
+        _agregar = agregar;
+        _buscarPersona = buscarPersona;
     }
 
     [HttpGet]
@@ -39,6 +49,29 @@ public class InscritosController : ControllerBase
         try
         {
             return Ok(await _obtener.ExecuteAsync(id, ct));
+        }
+        catch (CapacitacionServiceException ex)
+        {
+            return ToProblem(ex);
+        }
+    }
+
+    /// <summary>Autocompletado por cédula del modal "Agregar inscrito". Nunca incluye la firma.</summary>
+    [HttpGet("persona/{identificacion}")]
+    public async Task<IActionResult> BuscarPersona(string identificacion, CancellationToken ct)
+    {
+        var dto = await _buscarPersona.ExecuteAsync(identificacion, ct);
+        return dto is null ? NotFound() : Ok(dto);
+    }
+
+    [HttpPost]
+    [RequestSizeLimit(MaxRequestBodyBytes)]
+    public async Task<IActionResult> Create([FromBody] AgregarInscritoDto input, CancellationToken ct)
+    {
+        try
+        {
+            var dto = await _agregar.ExecuteAsync(input, ct);
+            return Created($"/api/inscritos/{dto.Id}", dto);
         }
         catch (CapacitacionServiceException ex)
         {
@@ -65,6 +98,7 @@ public class InscritosController : ControllerBase
         var status = ex.Codigo switch
         {
             "INSCRITO_NO_ENCONTRADO" => StatusCodes.Status404NotFound,
+            "NOT_FOUND" => StatusCodes.Status404NotFound,
             "INSCRIPCION_DUPLICADA" => StatusCodes.Status409Conflict,
             "INSCRIPCION_CONCURRENTE" => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status400BadRequest
