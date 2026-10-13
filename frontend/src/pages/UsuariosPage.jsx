@@ -66,8 +66,8 @@ export default function UsuariosPage() {
   };
 
   const columns = useMemo(() => [
-    { key: 'usuarioRed', header: 'Usuario de red', accessor: (r) => r.usuarioRed },
-    { key: 'ultimoLogin', header: 'Último ingreso', accessor: (r) => fechaCorta(r.ultimoLogin) },
+    { key: 'usuarioRed', header: 'Usuario de red', sortable: true, accessor: (r) => r.usuarioRed },
+    { key: 'ultimoLogin', header: 'Último ingreso', sortable: true, accessor: (r) => fechaCorta(r.ultimoLogin) },
     {
       key: 'acciones', header: '', align: 'right',
       accessor: (r) => (

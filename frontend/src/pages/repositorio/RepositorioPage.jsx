@@ -161,6 +161,7 @@ export default function RepositorioPage() {
       {
         key: 'nombreOriginal',
         header: 'Nombre',
+        sortable: true,
         accessor: (row) => (
           <div className={styles.nombreCell} title={row?.nombreOriginal}>
             {row?.nombreOriginal || '—'}
@@ -170,6 +171,7 @@ export default function RepositorioPage() {
       {
         key: 'descripcion',
         header: 'Descripción',
+        sortable: true,
         accessor: (row) => (
           <div className={styles.descripcionCell} title={row?.descripcion || ''}>
             {truncate(row?.descripcion || '') || '—'}
@@ -180,6 +182,7 @@ export default function RepositorioPage() {
         key: 'tamanoBytes',
         header: 'Tamaño',
         width: '120px',
+        sortable: true,
         align: 'right',
         accessor: (row) => formatBytes(row?.tamanoBytes ?? 0),
       },
@@ -187,6 +190,8 @@ export default function RepositorioPage() {
         key: 'fechaCreacion',
         header: 'Fecha',
         width: '170px',
+        sortable: true,
+        sortValue: (row) => (row?.fechaCreacion ? Date.parse(row.fechaCreacion) : null),
         accessor: (row) => formatFechaHora(row?.fechaCreacion) || '—',
       },
     ],
@@ -263,6 +268,7 @@ export default function RepositorioPage() {
             <DataTable
               columns={columns}
               rows={sortedItems}
+              defaultSort={{ key: 'fechaCreacion', direction: 'desc' }}
               loading={false}
               emptyMessage="No hay recursos."
               actions={(row) => (

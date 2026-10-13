@@ -170,12 +170,14 @@ export default function CatalogoPage({ tipo, titulo, descripcion }) {
       {
         key: 'nombre',
         header: 'Nombre',
+        sortable: true,
         accessor: (row) => row?.nombre || '—',
       },
       {
         key: 'activo',
         header: 'Activo',
         width: '120px',
+        sortable: true,
         accessor: (row) => (
           <span className={`badge ${row?.activo ? 'badge--active' : 'badge--inactive'}`}>
             {row?.activo ? 'Activo' : 'Inactivo'}
@@ -186,6 +188,7 @@ export default function CatalogoPage({ tipo, titulo, descripcion }) {
         key: 'fechaCreacion',
         header: 'Fecha creación',
         width: '200px',
+        sortable: true,
         accessor: (row) => formatDate(row?.fechaCreacion),
       },
     ],
@@ -245,6 +248,7 @@ export default function CatalogoPage({ tipo, titulo, descripcion }) {
           <DataTable
             columns={columns}
             rows={sortedItems}
+            defaultSort={{ key: 'nombre', direction: 'asc' }}
             loading={loading}
             emptyMessage="No hay registros para mostrar."
             actions={(row) => (

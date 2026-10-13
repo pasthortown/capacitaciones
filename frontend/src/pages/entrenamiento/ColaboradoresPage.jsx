@@ -128,18 +128,19 @@ export default function ColaboradoresPage() {
   // ---------- Columnas compartidas ----------
   const baseColumns = useMemo(
     () => [
-      { key: 'cedula', header: 'Cédula', accessor: (r) => r?.cedula || '—' },
-      { key: 'name', header: 'Nombre', accessor: (r) => r?.name || '—' },
-      { key: 'jobPosition', header: 'Cargo', accessor: (r) => r?.jobPosition || '—' },
-      { key: 'workArea', header: 'Área', accessor: (r) => r?.workArea || '—' },
-      { key: 'society', header: 'Sociedad', accessor: (r) => r?.society || '—' },
-      { key: 'city', header: 'Ciudad', accessor: (r) => r?.city || '—' },
-      { key: 'phone', header: 'Teléfono', accessor: (r) => r?.phone || '—' },
-      { key: 'email', header: 'Correo', accessor: (r) => r?.email || '—' },
+      { key: 'cedula', header: 'Cédula', sortable: true, accessor: (r) => r?.cedula || '—' },
+      { key: 'name', header: 'Nombre', sortable: true, accessor: (r) => r?.name || '—' },
+      { key: 'jobPosition', header: 'Cargo', sortable: true, accessor: (r) => r?.jobPosition || '—' },
+      { key: 'workArea', header: 'Área', sortable: true, accessor: (r) => r?.workArea || '—' },
+      { key: 'society', header: 'Sociedad', sortable: true, accessor: (r) => r?.society || '—' },
+      { key: 'city', header: 'Ciudad', sortable: true, accessor: (r) => r?.city || '—' },
+      { key: 'phone', header: 'Teléfono', sortable: true, accessor: (r) => r?.phone || '—' },
+      { key: 'email', header: 'Correo', sortable: true, accessor: (r) => r?.email || '—' },
       {
         key: 'isActive',
         header: 'Estado',
         width: '110px',
+        sortable: true,
         accessor: (r) => (
           <span className={`badge ${r?.isActive ? 'badge--active' : 'badge--inactive'}`}>
             {r?.isActive ? 'Activo' : 'Inactivo'}
