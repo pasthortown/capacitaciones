@@ -87,8 +87,8 @@ export default function DataTable({
       >
         <span>{col.header}</span>
         <Icon
-          width={14}
-          height={14}
+          width={12}
+          height={12}
           aria-hidden="true"
           className={active ? styles.sortIconActive : styles.sortIcon}
         />

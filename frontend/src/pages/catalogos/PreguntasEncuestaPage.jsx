@@ -228,17 +228,22 @@ export default function PreguntasEncuestaPage() {
         key: 'tipoActividad',
         header: 'Tipo de actividad',
         width: '180px',
+        sortable: true,
+        sortValue: (row) => row?.tipoActividadNombre,
         accessor: (row) => row?.tipoActividadNombre || '—',
       },
       {
         key: 'tipoPregunta',
         header: 'Formato',
         width: '170px',
+        sortable: true,
+        sortValue: (row) => TIPO_LABEL[row?.tipoPregunta] || row?.tipoPregunta,
         accessor: (row) => TIPO_LABEL[row?.tipoPregunta] || row?.tipoPregunta || '—',
       },
       {
         key: 'texto',
         header: 'Pregunta',
+        sortable: true,
         accessor: (row) => (
           <div>
             <div>{row?.texto || '—'}</div>
@@ -254,6 +259,7 @@ export default function PreguntasEncuestaPage() {
         key: 'activo',
         header: 'Estado',
         width: '120px',
+        sortable: true,
         accessor: (row) => (
           <span className={`badge ${row?.activo ? 'badge--active' : 'badge--inactive'}`}>
             {row?.activo ? 'Activa' : 'Inactiva'}

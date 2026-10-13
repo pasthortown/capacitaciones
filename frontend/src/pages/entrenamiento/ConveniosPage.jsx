@@ -32,6 +32,8 @@ const MESES_OPCIONES = [
 const money = (n) =>
   n == null ? '—' : new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(Number(n));
 const fechaCorta = (s) => (s ? String(s).slice(0, 10) : '—');
+// Valor numérico para ordenar montos y porcentajes (pueden llegar como texto).
+const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
 
 const ESTADOS = ['Vigente', 'Devengado', 'Cobrado', 'Anulado'];
 
@@ -658,9 +660,9 @@ function ConveniosTab({ toast }) {
   };
 
   const columns = useMemo(() => [
-    { key: 'codigoRegistro', header: 'Código', width: '140px', accessor: (r) => r.codigoRegistro || '—' },
+    { key: 'codigoRegistro', header: 'Código', width: '140px', sortable: true, accessor: (r) => r.codigoRegistro || '—' },
     {
-      key: 'colaborador', header: 'Colaborador',
+      key: 'colaborador', header: 'Colaborador', sortable: true, sortValue: (r) => r.nombreColaborador,
       accessor: (r) => (
         <div>
           <div>{r.nombreColaborador}</div>
@@ -668,16 +670,17 @@ function ConveniosTab({ toast }) {
         </div>
       ),
     },
-    { key: 'nombreCurso', header: 'Curso / Certificación / Exámen', accessor: (r) => r.nombreCurso || '—' },
-    { key: 'fecha', header: 'Fecha', accessor: (r) => fechaCorta(r.fecha) },
-    { key: 'mesesADevengar', header: 'Meses', align: 'center', accessor: (r) => (r.mesesADevengar ? r.mesesADevengar : 'N/A') },
-    { key: 'montoTotal', header: 'Monto total', accessor: (r) => money(r.montoTotal) },
+    { key: 'nombreCurso', header: 'Curso / Certificación / Exámen', sortable: true, accessor: (r) => r.nombreCurso || '—' },
+    { key: 'fecha', header: 'Fecha', sortable: true, accessor: (r) => fechaCorta(r.fecha) },
+    { key: 'mesesADevengar', header: 'Meses', align: 'center', sortable: true, sortValue: (r) => num(r.mesesADevengar), accessor: (r) => (r.mesesADevengar ? r.mesesADevengar : 'N/A') },
+    { key: 'montoTotal', header: 'Monto total', sortable: true, sortValue: (r) => num(r.montoTotal), accessor: (r) => money(r.montoTotal) },
     {
-      key: 'montoPendiente', header: 'Pendiente',
+      key: 'montoPendiente', header: 'Pendiente', sortable: true,
+      sortValue: (r) => num(r.estado === 'Cobrado' ? r.montoCobrado : r.montoPendiente),
       accessor: (r) => (r.estado === 'Cobrado' ? `${money(r.montoCobrado)} (cobrado)` : money(r.montoPendiente)),
     },
     {
-      key: 'estado', header: 'Estado', width: '110px',
+      key: 'estado', header: 'Estado', width: '110px', sortable: true,
       accessor: (r) => {
         const cls = r.estado === 'Vigente' ? 'badge--active'
           : r.estado === 'Anulado' ? 'badge--inactive' : '';
@@ -685,7 +688,8 @@ function ConveniosTab({ toast }) {
       },
     },
     {
-      key: 'anexos', header: 'Anexos', align: 'center', width: '80px',
+      key: 'anexos', header: 'Anexos', align: 'center', width: '80px', sortable: true,
+      sortValue: (r) => r.anexos?.length || 0,
       accessor: (r) => (r.anexos?.length ? <span className="badge">{r.anexos.length}</span> : '—'),
     },
   ], []);
@@ -1108,13 +1112,13 @@ function HistorialTab({ toast }) {
       : null);
 
   const columns = useMemo(() => [
-    { key: 'nombreCurso', header: 'Curso / Certificación / Exámen', accessor: (r) => r.nombreCurso || '—' },
-    { key: 'solicitadoPor', header: 'Solicitado por', accessor: (r) => r.solicitadoPor || '—' },
-    { key: 'autorizadoPor', header: 'Aprobado por', accessor: (r) => r.autorizadoPor || '—' },
-    { key: 'fecha', header: 'Fecha', accessor: (r) => fechaCorta(r.fecha) },
-    { key: 'mesesPendientes', header: 'Meses pend.', align: 'center', accessor: (r) => (r.aplicaDevengo ? r.mesesPendientes : '—') },
-    { key: 'porcentajePendiente', header: '% pend.', align: 'right', accessor: (r) => (r.aplicaDevengo ? `${r.porcentajePendiente}%` : '—') },
-    { key: 'montoPendiente', header: 'Monto pendiente', align: 'right', accessor: (r) => money(r.montoPendiente) },
+    { key: 'nombreCurso', header: 'Curso / Certificación / Exámen', sortable: true, accessor: (r) => r.nombreCurso || '—' },
+    { key: 'solicitadoPor', header: 'Solicitado por', sortable: true, accessor: (r) => r.solicitadoPor || '—' },
+    { key: 'autorizadoPor', header: 'Aprobado por', sortable: true, accessor: (r) => r.autorizadoPor || '—' },
+    { key: 'fecha', header: 'Fecha', sortable: true, accessor: (r) => fechaCorta(r.fecha) },
+    { key: 'mesesPendientes', header: 'Meses pend.', align: 'center', sortable: true, sortValue: (r) => (r.aplicaDevengo ? num(r.mesesPendientes) : null), accessor: (r) => (r.aplicaDevengo ? r.mesesPendientes : '—') },
+    { key: 'porcentajePendiente', header: '% pend.', align: 'right', sortable: true, sortValue: (r) => (r.aplicaDevengo ? num(r.porcentajePendiente) : null), accessor: (r) => (r.aplicaDevengo ? `${r.porcentajePendiente}%` : '—') },
+    { key: 'montoPendiente', header: 'Monto pendiente', align: 'right', sortable: true, sortValue: (r) => num(r.montoPendiente), accessor: (r) => money(r.montoPendiente) },
   ], []);
 
   return (
@@ -1395,13 +1399,13 @@ function DesvinculacionTab({ toast }) {
   };
 
   const columns = useMemo(() => [
-    { key: 'codigoRegistro', header: 'Código', accessor: (r) => r.codigoRegistro || '—' },
-    { key: 'nombreCurso', header: 'Curso / Certificación / Exámen', accessor: (r) => r.nombreCurso || '—' },
-    { key: 'clasificacion', header: 'Clasificación', accessor: (r) => r.clasificacion },
-    { key: 'modalidad', header: 'Modalidad', accessor: (r) => r.modalidadReintegro },
-    { key: 'meses', header: 'Meses a la salida', align: 'center', accessor: (r) => r.mesesTranscurridosASalida },
-    { key: 'valorAsumido', header: 'Valor asumido', align: 'right', accessor: (r) => money(r.valorAsumidoEmpresa) },
-    { key: 'reintegro', header: 'Reintegro', align: 'right', accessor: (r) => money(r.montoReintegro) },
+    { key: 'codigoRegistro', header: 'Código', sortable: true, accessor: (r) => r.codigoRegistro || '—' },
+    { key: 'nombreCurso', header: 'Curso / Certificación / Exámen', sortable: true, accessor: (r) => r.nombreCurso || '—' },
+    { key: 'clasificacion', header: 'Clasificación', sortable: true, accessor: (r) => r.clasificacion },
+    { key: 'modalidad', header: 'Modalidad', sortable: true, sortValue: (r) => r.modalidadReintegro, accessor: (r) => r.modalidadReintegro },
+    { key: 'meses', header: 'Meses a la salida', align: 'center', sortable: true, sortValue: (r) => num(r.mesesTranscurridosASalida), accessor: (r) => r.mesesTranscurridosASalida },
+    { key: 'valorAsumido', header: 'Valor asumido', align: 'right', sortable: true, sortValue: (r) => num(r.valorAsumidoEmpresa), accessor: (r) => money(r.valorAsumidoEmpresa) },
+    { key: 'reintegro', header: 'Reintegro', align: 'right', sortable: true, sortValue: (r) => num(r.montoReintegro), accessor: (r) => money(r.montoReintegro) },
     {
       key: 'acciones', header: 'Acciones', align: 'center',
       accessor: (r) => (

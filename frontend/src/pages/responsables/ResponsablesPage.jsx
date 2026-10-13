@@ -272,27 +272,32 @@ export default function ResponsablesPage() {
       {
         key: 'nombres',
         header: 'Nombres',
+        sortable: true,
         accessor: (row) => row?.nombres || '—',
       },
       {
         key: 'cargo',
         header: 'Cargo',
+        sortable: true,
         accessor: (row) => row?.cargo || '—',
       },
       {
         key: 'empresa',
         header: 'Empresa',
+        sortable: true,
         accessor: (row) => row?.empresa || '—',
       },
       {
         key: 'email',
         header: 'Correo',
+        sortable: true,
         accessor: (row) => row?.email || '—',
       },
       {
         key: 'tieneFirma',
         header: 'Firma',
         width: '110px',
+        sortable: true,
         align: 'center',
         accessor: (row) =>
           row?.tieneFirma ? (
@@ -315,6 +320,7 @@ export default function ResponsablesPage() {
         key: 'activo',
         header: 'Estado',
         width: '120px',
+        sortable: true,
         accessor: (row) => (
           <span className={`badge ${row?.activo ? 'badge--active' : 'badge--inactive'}`}>
             {row?.activo ? 'Activo' : 'Inactivo'}
@@ -360,6 +366,7 @@ export default function ResponsablesPage() {
           <DataTable
             columns={columns}
             rows={sortedItems}
+            defaultSort={{ key: 'nombres', direction: 'asc' }}
             loading={loading}
             emptyMessage="No hay responsables registrados."
             actions={(row) => (

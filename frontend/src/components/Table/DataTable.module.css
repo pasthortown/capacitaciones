@@ -2,7 +2,7 @@
 .sortButton {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   padding: 0;
   border: 0;
   background: none;
