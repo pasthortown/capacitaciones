@@ -40,6 +40,9 @@ import styles from './AsistentesPage.module.css';
  *   503 SERVICIO_EMISOR_NO_DISPONIBLE → toast error ("intenta en unos minutos")
  *   404                              → toast error genérico
  */
+// Igual que el backend: por orden de inscripción. Los encabezados cambian el orden (asc/desc).
+const ORDEN_INICIAL = { key: 'fechaInscripcion', direction: 'asc' };
+
 export default function AsistentesPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -500,22 +503,29 @@ export default function AsistentesPage() {
           },
         ]
       : []),
-    { key: 'nombres', header: 'Nombres' },
-    { key: 'apellidos', header: 'Apellidos' },
-    { key: 'identificacion', header: 'Identificación' },
+    // Asistencia y Calificación no se ordenan: son editables y la fila saltaría de lugar al
+    // marcarla o calificarla.
+    { key: 'nombres', header: 'Nombres', sortable: true },
+    { key: 'apellidos', header: 'Apellidos', sortable: true },
+    { key: 'identificacion', header: 'Identificación', sortable: true },
     {
       key: 'email',
       header: 'Email',
+      sortable: true,
       accessor: (row) => row?.email || '—',
     },
     {
       key: 'area',
       header: 'Área',
+      sortable: true,
+      sortValue: (row) => row?.area?.nombre,
       accessor: (row) => row?.area?.nombre || '—',
     },
     {
       key: 'fechaInscripcion',
       header: 'Fecha inscripción',
+      sortable: true,
+      sortValue: (row) => (row?.fechaInscripcion ? Date.parse(row.fechaInscripcion) : null),
       accessor: (row) => formatFechaHora(row?.fechaInscripcion) || '—',
     },
     // Columna Certificado: estado del envío por correo. Visible sólo si el
@@ -525,6 +535,7 @@ export default function AsistentesPage() {
           {
             key: 'estadoEnvioCertificado',
             header: 'Certificado',
+            sortable: true,
             accessor: (row) => renderEstadoEnvio(row),
           },
         ]
@@ -678,6 +689,7 @@ export default function AsistentesPage() {
             rowKey={(row) => row?.id}
             actions={renderActions}
             loading={loading}
+            defaultSort={ORDEN_INICIAL}
             emptyMessage="Aún no hay inscritos."
           />
         </div>
