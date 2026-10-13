@@ -42,6 +42,7 @@ import styles from './AsistentesPage.module.css';
  */
 // Igual que el backend: por orden de inscripción. Los encabezados cambian el orden (asc/desc).
 const ORDEN_INICIAL = { key: 'fechaInscripcion', direction: 'asc' };
+const ORDEN_ASISTENCIA = { Presente: 1, Ausente: 2 };
 
 export default function AsistentesPage() {
   const { id } = useParams();
@@ -479,6 +480,9 @@ export default function AsistentesPage() {
     {
       key: 'asistencia',
       header: 'Asistencia',
+      sortable: true,
+      // Ascendente: Presente, Ausente y al final sin marcar.
+      sortValue: (row) => ORDEN_ASISTENCIA[row?.estadoAsistencia] ?? null,
       accessor: (row) => (
         <AttendanceToggle
           value={row?.estadoAsistencia ?? null}
