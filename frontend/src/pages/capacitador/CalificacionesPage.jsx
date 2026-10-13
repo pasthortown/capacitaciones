@@ -166,13 +166,13 @@ export default function CalificacionesPage() {
 
   const columns = useMemo(
     () => [
-      // Calificación y Estado no se ordenan: cambian al calificar y la fila saltaría de lugar.
       { key: 'apellidos', header: 'Apellidos', sortable: true },
       { key: 'nombres', header: 'Nombres', sortable: true },
       { key: 'identificacion', header: 'Identificación', sortable: true },
       {
         key: 'calificacion',
         header: 'Calificación',
+        sortable: true,
         accessor: (row) => (
           <CalificacionCell
             row={row}

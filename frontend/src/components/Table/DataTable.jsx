@@ -23,6 +23,8 @@ import styles from './DataTable.module.css';
  *   - defaultSort?: { key: string, direction: 'asc'|'desc' } // orden inicial (opcional)
  *
  * El orden es en el cliente, sobre las filas recibidas. Los valores vacíos van siempre al final.
+ * Se reordena al hacer clic en un encabezado o al cambiar las filas (altas, bajas, filtros); editar
+ * un valor no mueve la fila.
  */
 
 const collator = new Intl.Collator('es', { sensitivity: 'base', numeric: true });
@@ -50,20 +52,34 @@ export default function DataTable({
   const totalCols = columns.length + (hasActions ? 1 : 0);
   const [sort, setSort] = useState(defaultSort);
 
-  const sortedRows = useMemo(() => {
+  // El orden (lista de claves) se recalcula solo al cambiar el orden pedido o el conjunto de
+  // filas, no cuando cambia un valor: así, al editar una celda (asistencia, calificación…) con
+  // la tabla ordenada por esa columna, la fila no salta de lugar mientras se edita.
+  const keySignature = Array.isArray(rows) ? rows.map(rowKey).join('\u0000') : '';
+  const order = useMemo(() => {
     const col = sort && columns.find((c) => c.key === sort.key && c.sortable);
-    if (!col || !Array.isArray(rows)) return rows;
+    if (!col || !Array.isArray(rows)) return null;
     const getValue = col.sortValue || ((row) => row?.[col.key]);
     const factor = sort.direction === 'desc' ? -1 : 1;
-    return [...rows].sort((ra, rb) => {
-      const a = getValue(ra);
-      const b = getValue(rb);
-      if (isEmpty(a) && isEmpty(b)) return 0;
-      if (isEmpty(a)) return 1;
-      if (isEmpty(b)) return -1;
-      return compareValues(a, b) * factor;
-    });
-  }, [rows, columns, sort]);
+    return [...rows]
+      .sort((ra, rb) => {
+        const a = getValue(ra);
+        const b = getValue(rb);
+        if (isEmpty(a) && isEmpty(b)) return 0;
+        if (isEmpty(a)) return 1;
+        if (isEmpty(b)) return -1;
+        return compareValues(a, b) * factor;
+      })
+      .map(rowKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sort, keySignature]);
+
+  const sortedRows = useMemo(() => {
+    if (!order || !Array.isArray(rows)) return rows;
+    const byKey = new Map(rows.map((row) => [rowKey(row), row]));
+    return order.map((k) => byKey.get(k)).filter(Boolean);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order, rows]);
 
   function toggleSort(key) {
     setSort((prev) =>

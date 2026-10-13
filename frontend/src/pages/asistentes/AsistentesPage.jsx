@@ -493,6 +493,7 @@ export default function AsistentesPage() {
           {
             key: 'calificacion',
             header: 'Calificación',
+            sortable: true,
             accessor: (row) => (
               <CalificacionCell
                 row={row}
@@ -503,8 +504,6 @@ export default function AsistentesPage() {
           },
         ]
       : []),
-    // Asistencia y Calificación no se ordenan: son editables y la fila saltaría de lugar al
-    // marcarla o calificarla.
     { key: 'nombres', header: 'Nombres', sortable: true },
     { key: 'apellidos', header: 'Apellidos', sortable: true },
     { key: 'identificacion', header: 'Identificación', sortable: true },
