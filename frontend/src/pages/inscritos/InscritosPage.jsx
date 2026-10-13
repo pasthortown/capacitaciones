@@ -27,6 +27,13 @@ import styles from './InscritosPage.module.css';
  * La lista no trae las firmas (pueden pesar cientos de KB); se piden por id al abrir un modal.
  */
 
+// Igual que el backend: lo más reciente primero. Los encabezados cambian el orden (asc/desc).
+const ORDEN_INICIAL = { key: 'fechaInscripcion', direction: 'desc' };
+
+function nombreCompleto(r) {
+  return [r.nombres, r.apellidos].filter(Boolean).join(' ');
+}
+
 const EMPTY_FORM = {
   nombres: '',
   apellidos: '',
@@ -248,21 +255,26 @@ export default function InscritosPage() {
   }, [areas, editando]);
 
   const columns = [
-    { key: 'identificacion', header: 'Cédula', width: '120px' },
+    { key: 'identificacion', header: 'Cédula', width: '120px', sortable: true },
     {
       key: 'nombre',
       header: 'Nombre',
-      accessor: (r) => [r.nombres, r.apellidos].filter(Boolean).join(' ') || '—',
+      sortable: true,
+      sortValue: nombreCompleto,
+      accessor: (r) => nombreCompleto(r) || '—',
     },
-    { key: 'areaNombre', header: 'Área', accessor: (r) => r.areaNombre || '—' },
+    { key: 'areaNombre', header: 'Área', sortable: true, accessor: (r) => r.areaNombre || '—' },
     {
       key: 'email',
       header: 'Correo',
+      sortable: true,
       accessor: (r) => <span className={styles.correo}>{r.email || '—'}</span>,
     },
     {
       key: 'capacitacion',
       header: 'Capacitación',
+      sortable: true,
+      sortValue: (r) => r.capacitacionCodigo,
       // Código y tema en una línea cada uno, recortados con "…"; el tema completo va en el title.
       accessor: (r) => (
         <span className={styles.capacitacion} title={`${r.capacitacionCodigo} — ${r.capacitacionTema}`}>
@@ -275,12 +287,15 @@ export default function InscritosPage() {
       key: 'fechaInscripcion',
       header: 'Inscripción',
       width: '150px',
+      sortable: true,
+      sortValue: (r) => (r.fechaInscripcion ? Date.parse(r.fechaInscripcion) : null),
       accessor: (r) => formatFechaHora(r.fechaInscripcion) || '—',
     },
     {
       key: 'tieneFirma',
       header: 'Firma',
       width: '90px',
+      sortable: true,
       align: 'center',
       accessor: (r) =>
         r.tieneFirma ? (
@@ -357,6 +372,7 @@ export default function InscritosPage() {
             columns={columns}
             rows={rows}
             loading={loading}
+            defaultSort={ORDEN_INICIAL}
             emptyMessage="No hay inscritos con esos filtros."
             actions={(row) => (
               <>
